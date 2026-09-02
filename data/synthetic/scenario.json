@@ -1,0 +1,141 @@
+{
+    "blocks": [
+        {
+            "id": "B1",
+            "chainage_start": 0.0,
+            "chainage_end": 10.0,
+            "description": "Station A to B"
+        },
+        {
+            "id": "B2",
+            "chainage_start": 10.0,
+            "chainage_end": 25.0,
+            "description": "Station B to C"
+        },
+        {
+            "id": "B3",
+            "chainage_start": 25.0,
+            "chainage_end": 40.0,
+            "description": "Station C to D"
+        }
+    ],
+    "trains": [
+        {
+            "id": "T1",
+            "category": "premium",
+            "scheduled_start": 2.0,
+            "scheduled_end": 5.0,
+            "route": [
+                "B1",
+                "B2",
+                "B3"
+            ],
+            "min_travel_times": {
+                "B1": 1.0,
+                "B2": 1.0,
+                "B3": 1.0
+            }
+        },
+        {
+            "id": "T2",
+            "category": "freight",
+            "scheduled_start": 3.0,
+            "scheduled_end": 9.0,
+            "route": [
+                "B2",
+                "B3"
+            ],
+            "min_travel_times": {
+                "B2": 2.0,
+                "B3": 2.0
+            }
+        }
+    ],
+    "jobs": [
+        {
+            "id": "J_ENG_1",
+            "department": "Engineering",
+            "block_id": "B2",
+            "duration": 2.0,
+            "required_resources": {
+                "R_BCM": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.8,
+                "traffic_impact": 0.9,
+                "degradation_indicator": 0.7,
+                "overdue_days": 2
+            },
+            "is_fixed": false,
+            "fixed_start": null
+        },
+        {
+            "id": "J_OHE_1",
+            "department": "OHE",
+            "block_id": "B2",
+            "duration": 2.0,
+            "required_resources": {
+                "R_CREW_OHE": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.5,
+                "traffic_impact": 0.6,
+                "degradation_indicator": 0.4,
+                "overdue_days": 5
+            },
+            "is_fixed": false,
+            "fixed_start": null
+        },
+        {
+            "id": "J_SIG_1",
+            "department": "S&T",
+            "block_id": "B3",
+            "duration": 1.0,
+            "required_resources": {
+                "R_CREW_SIG": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.9,
+                "traffic_impact": 0.8,
+                "degradation_indicator": 0.6,
+                "overdue_days": 0
+            },
+            "is_fixed": false,
+            "fixed_start": null
+        },
+        {
+            "id": "J_FIXED_1",
+            "department": "Engineering",
+            "block_id": "B1",
+            "duration": 2.0,
+            "required_resources": {
+                "R_BCM": 0
+            },
+            "tci_inputs": {
+                "safety_severity": 1.0,
+                "traffic_impact": 1.0,
+                "degradation_indicator": 1.0,
+                "overdue_days": 0
+            },
+            "is_fixed": true,
+            "fixed_start": 6.0
+        }
+    ],
+    "resources": [
+        {
+            "id": "R_BCM",
+            "name": "Ballast Cleaning Machine",
+            "capacity": 1
+        },
+        {
+            "id": "R_CREW_OHE",
+            "name": "OHE Maintenance Crew",
+            "capacity": 2
+        },
+        {
+            "id": "R_CREW_SIG",
+            "name": "Signal Testing Crew",
+            "capacity": 2
+        }
+    ]
+}

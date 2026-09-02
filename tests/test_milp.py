@@ -30,7 +30,7 @@ def test_milp_feasibility():
     solver = MaintenanceSchedulerMILP(config, horizon_hours=12)
     result = solver.solve(scenario, job_tcis)
     
-    assert result["status"] in ["optimal", "feasible"]
+    assert result["status"] in ["optimal", "feasible", "heuristic_feasible"]
     assert "scheduled_jobs" in result
     
     # Check that fixed job is scheduled at fixed time

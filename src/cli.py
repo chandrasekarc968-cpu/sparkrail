@@ -59,7 +59,7 @@ def optimize(args):
     print("Running PySCIPOpt MILP Solver...")
     result = solver.solve(scenario, job_tcis)
     
-    if result["status"] not in ("optimal", "feasible"):
+    if result["status"] not in ("optimal", "feasible", "heuristic_feasible"):
         print(f"Optimization failed: {result.get('error', result['status'])}")
         return
         

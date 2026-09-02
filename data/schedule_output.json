@@ -1,0 +1,41 @@
+{
+    "status": "heuristic_feasible",
+    "scheduled_jobs": [
+        {
+            "job_id": "J_FIXED_1",
+            "block_id": "B1",
+            "start_time": 6,
+            "end_time": 8.0,
+            "tci": 89.99999999999999
+        },
+        {
+            "job_id": "J_ENG_1",
+            "block_id": "B2",
+            "start_time": 0,
+            "end_time": 2.0,
+            "tci": 76.19923233037447
+        },
+        {
+            "job_id": "J_SIG_1",
+            "block_id": "B3",
+            "start_time": 0,
+            "end_time": 1.0,
+            "tci": 72.00000000000001
+        },
+        {
+            "job_id": "J_OHE_1",
+            "block_id": "B2",
+            "start_time": 0,
+            "end_time": 2.0,
+            "tci": 51.217723196195465
+        }
+    ],
+    "unscheduled_jobs": [],
+    "train_delays": {
+        "T1": 0.0,
+        "T2": 0.0
+    },
+    "total_closure_time": 5,
+    "objective_value": 0.0,
+    "kpi_metrics": {}
+}
