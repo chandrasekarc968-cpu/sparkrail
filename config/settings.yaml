@@ -1,24 +1,32 @@
-kafka:
-  bootstrap_servers: "localhost:9092"
-  topic: "railway_events"
-
-spark:
-  app_name: "RailwayBlockPlanning"
-  master: "local[*]"
-
-database:
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "password"
-  dbname: "railway_db"
+tci:
+  weights:
+    safety_risk: 0.4
+    delay_capacity_impact: 0.3
+    degradation_velocity: 0.2
+    overdue_penalty: 0.1
+  # XGBoost optional config
+  use_xgboost_degradation: false
+  xgboost_model_path: "models/tci_degradation_xgb.model"
 
 optimization:
-  solver: "PULP_CBC_CMD"
-  time_limit: 3600
+  solver: "scip"
+  big_m: 100000.0
+  time_limit_seconds: 60
+  weights:
+    tci_completion: 100.0
+    closure_time: 1.0
+    train_delay: 5.0
 
-ml:
-  xgboost_model_path: "models/xgboost_criticality.json"
+data_pipeline:
+  use_local_synthetic: true
+  synthetic_data_path: "data/synthetic"
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    topics: ["train_movements", "signal_status"]
+  postgis:
+    url: "postgresql://user:pass@localhost:5432/railway"
 
-rl:
-  gnn_model_path: "models/gnn_network.pt"
+simulation:
+  use_sumo: false
+  sumo_config_path: "sim/railway.sumocfg"
+  gui: false
