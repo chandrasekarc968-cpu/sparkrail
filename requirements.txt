@@ -1,0 +1,15 @@
+confluent-kafka
+pyspark
+psycopg2-binary
+SQLAlchemy
+geoalchemy2
+scipy
+PuLP
+xgboost
+scikit-learn
+torch
+torch-geometric
+pandas
+numpy
+pyyaml
+pytest
