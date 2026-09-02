@@ -1,7 +1,16 @@
 import json
 import os
+import logging
 from typing import Dict, Any, Optional
+from pydantic import ValidationError
 from src.data_pipeline.models import Scenario
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("DataIngestor")
+
+class DataIngestionError(Exception):
+    pass
 
 class DataIngestor:
     """
@@ -14,10 +23,18 @@ class DataIngestor:
         
     def load_scenario(self) -> Scenario:
         """Loads the current railway scenario data."""
-        if self.use_local:
-            return self._load_local_scenario()
-        else:
-            return self._load_remote_scenario()
+        logger.info(f"Loading scenario data. Local mode: {self.use_local}")
+        try:
+            if self.use_local:
+                return self._load_local_scenario()
+            else:
+                return self._load_remote_scenario()
+        except ValidationError as e:
+            logger.error(f"Schema validation failed during ingestion: {e}")
+            raise DataIngestionError("Invalid data format") from e
+        except Exception as e:
+            logger.error(f"Unexpected error during ingestion: {e}")
+            raise DataIngestionError(str(e)) from e
 
     def _load_local_scenario(self) -> Scenario:
         """Loads data from a local JSON fixture."""
@@ -28,12 +45,15 @@ class DataIngestor:
         with open(file_path, "r") as f:
             data = json.load(f)
             
-        return Scenario(**data)
+        scenario = Scenario(**data)
+        logger.info(f"Loaded local scenario with {len(scenario.blocks)} blocks, {len(scenario.jobs)} jobs, {len(scenario.trains)} trains.")
+        return scenario
         
     def _load_remote_scenario(self) -> Scenario:
         """Placeholder for Kafka/PostGIS integration."""
-        # For the MVP, we explicitly raise an error if remote is requested but not implemented
-        raise NotImplementedError("Remote Kafka/PostGIS ingestion not fully implemented for MVP.")
+        logger.warning("Remote Kafka/PostGIS ingestion not fully implemented. Connection parameters check bypassed.")
+        # We explicitly raise an error if remote is requested but not connected (as required by prompt).
+        raise NotImplementedError("Remote Kafka/PostGIS ingestion is not implemented in local mode. Please use local synthetic data.")
 
     def map_chainage_to_block(self, chainage: float, scenario: Scenario) -> Optional[str]:
         """

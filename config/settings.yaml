@@ -4,9 +4,9 @@ tci:
     delay_capacity_impact: 0.3
     degradation_velocity: 0.2
     overdue_penalty: 0.1
-  # XGBoost optional config
   use_xgboost_degradation: false
-  xgboost_model_path: "models/tci_degradation_xgb.model"
+  # If use_xgboost_degradation is true, this path MUST exist
+  xgboost_model_path: ${XGB_MODEL_PATH:models/tci_degradation_xgb.model}
 
 optimization:
   solver: "scip"
@@ -16,17 +16,23 @@ optimization:
     tci_completion: 100.0
     closure_time: 1.0
     train_delay: 5.0
+  horizon_hours: 24
 
 data_pipeline:
   use_local_synthetic: true
   synthetic_data_path: "data/synthetic"
   kafka:
-    bootstrap_servers: "localhost:9092"
+    bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     topics: ["train_movements", "signal_status"]
   postgis:
-    url: "postgresql://user:pass@localhost:5432/railway"
+    url: ${DATABASE_URL:postgresql://user:pass@localhost:5432/railway}
 
 simulation:
   use_sumo: false
   sumo_config_path: "sim/railway.sumocfg"
   gui: false
+
+api:
+  host: ${API_HOST:0.0.0.0}
+  port: ${API_PORT:8000}
+  log_level: ${API_LOG_LEVEL:info}

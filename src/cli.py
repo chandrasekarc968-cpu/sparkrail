@@ -83,12 +83,36 @@ def evaluate(args):
         print("Schedule file not found. Run 'optimize' first.")
         return
         
+    scorer = TaskCriticalityScorer(config)
+    job_tcis = {job.id: scorer.calculate_tci(job.tci_inputs)[0] for job in scenario.jobs}
+        
     evaluator = KPIEvaluator(scenario)
-    result = evaluator.evaluate(schedule)
+    result = evaluator.evaluate(schedule, job_tcis)
     
     print("\n--- KPI Report ---")
     for k, v in result["kpi_metrics"].items():
         print(f"{k}: {v}")
+        
+    with open("data/kpi_report.json", "w") as f:
+        json.dump(result["kpi_metrics"], f, indent=4)
+    print("\nKPI Report saved to data/kpi_report.json")
+
+def run_demo(args):
+    """End-to-End full execution."""
+    print("=== SparkRail MVP Demo ===")
+    print("1. Generating Data...")
+    generate_data(args)
+    
+    print("\n2. Scoring Jobs...")
+    score(args)
+    
+    print("\n3. Optimizing Schedule...")
+    optimize(args)
+    
+    print("\n4. Evaluating KPIs (Optimized vs Baseline)...")
+    evaluate(args)
+    
+    print("\nDemo complete! All outputs saved to data/ directory.")
 
 def main():
     parser = argparse.ArgumentParser(description="AI-Powered Railway Block Planning MVP CLI")
@@ -106,6 +130,11 @@ def main():
 
     eval_parser = subparsers.add_parser("evaluate", help="Evaluate schedule KPIs")
 
+    demo_parser = subparsers.add_parser("demo", help="Run full end-to-end demo workflow")
+    demo_parser.add_argument("--output", default="data/synthetic", help="Output directory for data")
+    demo_parser.add_argument("-v", "--verbose", action="store_true", help="Show score explanation")
+    demo_parser.add_argument("--freeze", action="store_true", help="Apply rolling horizon freeze")
+
     args = parser.parse_args()
 
     if args.command == "generate-data":
@@ -116,6 +145,8 @@ def main():
         optimize(args)
     elif args.command == "evaluate":
         evaluate(args)
+    elif args.command == "demo":
+        run_demo(args)
     else:
         parser.print_help()
 

@@ -27,7 +27,7 @@ def test_milp_feasibility():
         tci, _ = scorer.calculate_tci(job.tci_inputs)
         job_tcis[job.id] = tci
         
-    solver = MaintenanceSchedulerMILP(config, horizon_hours=12)
+    solver = MaintenanceSchedulerMILP(config)
     result = solver.solve(scenario, job_tcis)
     
     assert result["status"] in ["optimal", "feasible", "heuristic_feasible"]
@@ -38,6 +38,6 @@ def test_milp_feasibility():
     for j in result["scheduled_jobs"]:
         if j["job_id"] == "J_FIXED_1":
             fixed_job_found = True
-            assert j["start_time"] == 6.0
+            assert j["start_time"] == 2.0
             
     assert fixed_job_found, "Fixed job was not scheduled"

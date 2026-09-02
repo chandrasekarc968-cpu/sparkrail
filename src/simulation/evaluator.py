@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 from src.data_pipeline.models import Scenario
+from src.simulation.simulator import LocalSimulator
 
 class KPIEvaluator:
     """
@@ -7,58 +8,60 @@ class KPIEvaluator:
     """
     def __init__(self, scenario: Scenario):
         self.scenario = scenario
+        self.simulator = LocalSimulator(scenario)
         
-    def evaluate(self, schedule: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculates BUE, SBR, ADR, PII, and Scheduled TCI coverage."""
+    def evaluate(self, schedule: Dict[str, Any], job_tcis: Dict[str, float]) -> Dict[str, Any]:
+        """Calculates KPIs and compares against baseline."""
         
+        # 1. Run Baseline Manual Schedule for comparison
+        baseline_schedule = self.simulator.run_baseline_manual_scheduler(job_tcis)
+        baseline_sim = self.simulator.simulate(baseline_schedule)
+        
+        # 2. Simulate Optimized Schedule
+        optimized_sim = self.simulator.simulate(schedule)
+        total_closure_time = optimized_sim["total_closure_hours"]
+        train_delays = optimized_sim["train_delays"]
         scheduled_jobs = schedule.get("scheduled_jobs", [])
-        total_closure_time = schedule.get("total_closure_time", 0.0)
-        train_delays = schedule.get("train_delays", {})
         
-        # 1. Block Utilization Efficiency (BUE)
-        # Ratio of actual machine/labor working hours to total block hours
+        # 3. Block Utilization Efficiency (BUE)
         actual_work_hours = sum(j["end_time"] - j["start_time"] for j in scheduled_jobs)
         bue = (actual_work_hours / total_closure_time) * 100 if total_closure_time > 0 else 0.0
         
-        # 2. Shadow Block Ratio (SBR)
-        # Ratio of blocks serving multiple departments
+        # Baseline BUE (usually 100% since no shadow blocks)
+        base_actual_work = sum(j["end_time"] - j["start_time"] for j in baseline_schedule["scheduled_jobs"])
+        base_bue = (base_actual_work / baseline_sim["total_closure_hours"]) * 100 if baseline_sim["total_closure_hours"] > 0 else 0.0
+        
+        # 4. Shadow Block Ratio (SBR)
         blocks_used = {}
         for j in scheduled_jobs:
             block_tup = (j["block_id"], j["start_time"], j["end_time"])
-            job_obj = next((job for job in self.scenario.jobs if job.id == j["job_id"]), None)
-            dept = job_obj.department if job_obj else "Unknown"
-            
             if block_tup not in blocks_used:
                 blocks_used[block_tup] = set()
-            blocks_used[block_tup].add(dept)
+            blocks_used[block_tup].add(j.get("department", "Unknown"))
             
         shadow_blocks = sum(1 for depts in blocks_used.values() if len(depts) > 1)
         sbr = (shadow_blocks / len(blocks_used)) * 100 if blocks_used else 0.0
         
-        # 3. Punctuality Impact Index (PII)
+        # 5. Punctuality Impact Index (PII)
         pii = sum(train_delays.values())
+        base_pii = sum(baseline_sim["train_delays"].values())
         
-        # 4. TCI Coverage
-        total_possible_tci = sum(j.get("tci", 0) for j in scheduled_jobs) + \
-                             sum(self._get_tci_for_unscheduled(j["job_id"]) for j in schedule.get("unscheduled_jobs", []))
-                             
+        # 6. TCI Coverage
+        total_possible_tci = sum(job_tcis.values())
         scheduled_tci = sum(j.get("tci", 0) for j in scheduled_jobs)
         tci_coverage = (scheduled_tci / total_possible_tci) * 100 if total_possible_tci > 0 else 0.0
 
         metrics = {
-            "Block Utilization Efficiency (BUE) %": round(bue, 2),
-            "Shadow Block Ratio (SBR) %": round(sbr, 2),
-            "Punctuality Impact Index (PII) delays": round(pii, 2),
-            "Scheduled TCI Coverage %": round(tci_coverage, 2),
-            "Total Closure Hours": round(total_closure_time, 2),
-            "Consolidated Blocks (Shadow)": shadow_blocks
+            "bue_percent": round(bue, 2),
+            "bue_baseline_percent": round(base_bue, 2),
+            "sbr_percent": round(sbr, 2),
+            "pii_delays": round(pii, 2),
+            "pii_baseline_delays": round(base_pii, 2),
+            "tci_coverage_percent": round(tci_coverage, 2),
+            "total_closure_hours": round(total_closure_time, 2),
+            "baseline_closure_hours": round(baseline_sim["total_closure_hours"], 2),
+            "consolidated_blocks": shadow_blocks
         }
         
         schedule["kpi_metrics"] = metrics
         return schedule
-        
-    def _get_tci_for_unscheduled(self, job_id: str) -> float:
-        # Simplification: we might need to pass the raw TCI dict to evaluate.
-        # For MVP, assume it's passed or retrieved. Since we don't have it here, we'll return a dummy value
-        # But wait, we can just calculate it or have it passed.
-        return 0.0 # Will be refined later if needed

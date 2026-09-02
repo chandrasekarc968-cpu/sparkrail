@@ -2,3 +2,5 @@ pydantic>=2.5.3
 pyscipopt
 pytest>=8.0.0
 pyyaml>=6.0.1
+fastapi
+uvicorn
