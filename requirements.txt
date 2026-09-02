@@ -4,7 +4,7 @@ psycopg2-binary
 SQLAlchemy
 geoalchemy2
 scipy
-PuLP
+pyscipopt
 xgboost
 scikit-learn
 torch

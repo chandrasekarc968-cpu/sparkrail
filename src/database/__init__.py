@@ -1,3 +1,0 @@
-"""
-Spatial Database connectivity module.
-"""

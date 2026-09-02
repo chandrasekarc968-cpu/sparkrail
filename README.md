@@ -4,11 +4,12 @@
 This is the backend repository for the AI-Powered Railway Block Planning System.
 
 ## Architecture Modules
-- **Data Ingestion**: Apache Kafka and PySpark for streaming and batch events.
-- **Database**: PostgreSQL with PostGIS for spatial track topology.
-- **Optimization**: Mixed-Integer Linear Programming (MILP) for scheduling.
-- **Machine Learning**: XGBoost for evaluating task criticality indices.
-- **Reinforcement Learning**: PyTorch Geometric for network representation.
+- **Data Pipeline**: Apache Kafka for streaming and PostgreSQL with PostGIS for spatial track topology.
+- **Optimization**: Mixed-Integer Linear Programming (MILP) using `pyscipopt` for scheduling, considering immovable maintenance constraints.
+- **AI & ML**: 
+  - XGBoost for evaluating Task Criticality Indices.
+  - PyTorch Geometric for Heterogeneous Graph Neural Network (GNN) state encoder.
+- **Simulation**: High-fidelity digital twin interface (e.g. SUMO) as a testbed for the RL agent.
 
 ## Setup
 Install requirements:
