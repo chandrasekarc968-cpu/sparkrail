@@ -1,6 +1,7 @@
-from typing import Dict, Any, Tuple, Optional
 import math
 import os
+import hashlib
+from typing import Dict, Any, Tuple, Optional, List
 from src.data_pipeline.models import TCIInputs, TCIExplanation
 
 class TaskCriticalityScorer:
@@ -11,22 +12,63 @@ class TaskCriticalityScorer:
     """
     
     MODEL_VERSION = "1.0.0"
+    FEATURE_SCHEMA_VERSION = "1.0.0"
+
+    # Standard Indian Railways Analytic Hierarchy Process (AHP) baseline weights
+    AHP_BASELINE_WEIGHTS = {
+        "safety_risk": 0.40,
+        "delay_capacity_impact": 0.30,
+        "degradation_velocity": 0.20,
+        "overdue_penalty": 0.10
+    }
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         tci_cfg = self.config.get("tci", {})
-        weights = tci_cfg.get("weights", {})
         
-        self.w_safety = float(weights.get("safety_risk", 0.4))
-        self.w_delay = float(weights.get("delay_capacity_impact", 0.3))
-        self.w_degrad = float(weights.get("degradation_velocity", 0.2))
-        self.w_overdue = float(weights.get("overdue_penalty", 0.1))
+        # Load weights from config, AHP matrix, or standard baseline
+        if "ahp_matrix" in tci_cfg:
+            weights = self._derive_weights_from_ahp(tci_cfg["ahp_matrix"])
+        else:
+            weights = tci_cfg.get("weights", self.AHP_BASELINE_WEIGHTS)
+        
+        self.w_safety = float(weights.get("safety_risk", 0.40))
+        self.w_delay = float(weights.get("delay_capacity_impact", 0.30))
+        self.w_degrad = float(weights.get("degradation_velocity", 0.20))
+        self.w_overdue = float(weights.get("overdue_penalty", 0.10))
         
         self._validate_weights()
         
         self.use_xgb = bool(tci_cfg.get("use_xgboost_degradation", False))
         self.xgb_model_path = tci_cfg.get("xgboost_model_path", "models/tci_degradation_xgb.model")
+        self.expected_xgb_checksum = tci_cfg.get("xgboost_model_checksum", None)
         self._xgb_model = None
+
+    def _derive_weights_from_ahp(self, matrix: List[List[float]]) -> Dict[str, float]:
+        """
+        Derives normalized priority weights from an AHP 4x4 pairwise comparison matrix.
+        Criteria order: [safety_risk, delay_impact, degradation_velocity, overdue_penalty]
+        """
+        if len(matrix) != 4 or any(len(row) != 4 for row in matrix):
+            return self.AHP_BASELINE_WEIGHTS
+
+        # Approximate principal eigenvector via normalized geometric mean
+        geom_means = [math.prod(row) ** 0.25 for row in matrix]
+        total_geom = sum(geom_means)
+        if total_geom <= 0:
+            return self.AHP_BASELINE_WEIGHTS
+        
+        norm_weights = [round(gm / total_geom, 4) for gm in geom_means]
+        # Ensure exact sum to 1.0
+        diff = 1.0 - sum(norm_weights)
+        norm_weights[0] += diff
+
+        return {
+            "safety_risk": norm_weights[0],
+            "delay_capacity_impact": norm_weights[1],
+            "degradation_velocity": norm_weights[2],
+            "overdue_penalty": norm_weights[3]
+        }
 
     def _validate_weights(self) -> None:
         total = self.w_safety + self.w_delay + self.w_degrad + self.w_overdue
@@ -48,6 +90,16 @@ class TaskCriticalityScorer:
                 f"Untrained XGBoost inference prevented. Model file '{self.xgb_model_path}' not found. "
                 "Provide a trained model artifact or set 'use_xgboost_degradation' to false."
             )
+        
+        # Verify model checksum if specified in configuration
+        if self.expected_xgb_checksum:
+            with open(self.xgb_model_path, "rb") as f:
+                actual_sha = hashlib.sha256(f.read()).hexdigest()
+            if actual_sha != self.expected_xgb_checksum:
+                raise ValueError(
+                    f"XGBoost model checksum verification failed! Expected {self.expected_xgb_checksum}, got {actual_sha}"
+                )
+
         try:
             import xgboost as xgb
             self._xgb_model = xgb.XGBRegressor()
@@ -114,3 +166,47 @@ class TaskCriticalityScorer:
         )
 
         return final_tci, explanation
+
+    def calculate_tci_from_evidence(self, evidence: Dict[str, Any]) -> Tuple[float, TCIExplanation]:
+        """
+        Synthesizes multi-attribute physical evidence into TCIInputs with conservative
+        missing-data imputation. Safety-critical defects cannot receive a low score
+        solely because of missing numerical readings.
+        """
+        # 1. Safety Score from USFD, IMR, Track Geometry
+        safety_severity = 0.2  # baseline routine
+        if evidence.get("is_imr_defect", False):
+            safety_severity = max(safety_severity, 0.95)  # Immediate Removal defect
+        elif evidence.get("is_usfd_flaw", False):
+            flaw_depth = evidence.get("flaw_depth_percent", None)
+            if flaw_depth is not None:
+                safety_severity = max(safety_severity, min(1.0, flaw_depth / 100.0))
+            else:
+                # Conservative upper-bound imputation when numerical depth is missing
+                safety_severity = max(safety_severity, 0.85)
+
+        if evidence.get("speed_restriction_imposed", False):
+            safety_severity = max(safety_severity, 0.80)
+
+        # 2. Delay Impact from Traffic Density & Centrality
+        traffic_impact = 0.3
+        if evidence.get("is_junction_block", False):
+            traffic_impact = max(traffic_impact, 0.85)
+        train_count = evidence.get("trains_per_day", 50)
+        traffic_impact = max(traffic_impact, min(1.0, train_count / 120.0))
+
+        # 3. Degradation Velocity from GMT & Asset Age
+        degradation = 0.25
+        gmt = evidence.get("cumulative_gmt", 20.0)
+        degradation = max(degradation, min(1.0, gmt / 80.0))
+
+        # 4. Overdue Days
+        overdue_days = int(evidence.get("days_overdue", 0))
+
+        inputs = TCIInputs(
+            safety_severity=round(safety_severity, 3),
+            traffic_impact=round(traffic_impact, 3),
+            degradation_indicator=round(degradation, 3),
+            overdue_days=overdue_days
+        )
+        return self.calculate_tci(inputs)

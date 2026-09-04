@@ -1,0 +1,40 @@
+{
+  "$schema": "https://sparkrail.indianrailways.gov.in/schemas/zonal-rules.v1.json",
+  "zone_code": "NCR",
+  "zone_name": "North Central Railway",
+  "version": "1.0.0",
+  "general_rules": {
+    "minimum_block_duration_hours": 2.0,
+    "maximum_block_duration_hours": 6.0,
+    "frozen_week_horizon_days": 7,
+    "rolling_block_horizon_days": 52,
+    "maximum_premium_train_delay_minutes": 15.0,
+    "maximum_express_train_delay_minutes": 30.0,
+    "maximum_freight_train_delay_minutes": 120.0
+  },
+  "headways": {
+    "absolute_block_minimum_headway_minutes": 10.0,
+    "automatic_block_minimum_headway_minutes": 4.0,
+    "buffer_headway_minutes": 2.0
+  },
+  "temporary_single_line_working": {
+    "allowed_on_double_line": true,
+    "pilotman_authorization_required": true,
+    "speed_restriction_first_train_kmh": 15.0,
+    "speed_restriction_subsequent_trains_kmh": 25.0,
+    "clearance_margin_minutes": 15.0
+  },
+  "weather_restrictions": {
+    "dense_fog_speed_limit_kmh": 60.0,
+    "high_wind_gale_speed_limit_kmh": 45.0,
+    "heavy_rain_waterlogging_speed_limit_kmh": 30.0
+  },
+  "department_incompatibility": [
+    {
+      "dept_a": "OHE",
+      "dept_b": "S&T",
+      "reason": "Mutual hazard between 25kV traction power isolation grounding and signaling track circuit live testing",
+      "severity": "HARD_INVARIANT"
+    }
+  ]
+}

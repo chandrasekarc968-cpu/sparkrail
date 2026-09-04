@@ -388,3 +388,112 @@ export interface DivisionInfo {
   route_km: number;
   active_blocks_count: number;
 }
+
+export type PossessionLifecycle =
+  | "REQUESTED"
+  | "SANCTIONED"
+  | "GRANTED"
+  | "IN_PROGRESS"
+  | "CLEARANCE_PENDING"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "REJECTED";
+
+export type ApprovalRole =
+  | "CTPC"
+  | "SR_DOM"
+  | "SECTION_CONTROLLER"
+  | "STATION_MASTER"
+  | "SSE_PWAY"
+  | "SSE_TRD"
+  | "SSE_SIGNAL";
+
+export interface CandidateBundleItem {
+  bundle_id: string;
+  primary_job_id: string;
+  secondary_job_ids: string[];
+  block_id: string;
+  departments: string[];
+  spatial_extent_km: [number, number];
+  time_envelope_hours: [number, number];
+  required_duration_hours: number;
+  total_tci_benefit: number;
+  compatibility_rationale: string;
+}
+
+export interface RecommendedBlockItem {
+  job_id: string;
+  block_id: string;
+  start_time: number;
+  end_time: number;
+  tci: number;
+  is_shadow: boolean;
+  shadow_parent?: string;
+  department: string;
+  lifecycle_state: PossessionLifecycle;
+}
+
+export interface ApprovalChainRecord {
+  status: "PENDING" | "APPROVED" | "REJECTED" | "OVERRIDDEN";
+  approver_id?: string | null;
+  approver_name?: string | null;
+  comments?: string | null;
+  timestamp?: string | null;
+}
+
+export interface AdvisoryProposal {
+  optimization_run_id: string;
+  idempotency_key: string;
+  division_code: string;
+  planning_window: string;
+  schema_version: string;
+  advisory_mode: string;
+  solver_mode: string;
+  safety_status: "SAFETY_CERTIFIED" | "SAFETY_REJECTED";
+  approval_status: "PENDING_CTPC_REVIEW" | "SANCTIONED" | "GRANTED" | "REJECTED" | "OVERRIDDEN";
+  statutory_compliance: string;
+  created_at: string;
+  created_by: string;
+  recommended_blocks: RecommendedBlockItem[];
+  candidate_bundles: CandidateBundleItem[];
+  train_regulation_plan: Record<string, { accumulated_delay_hours: number; regulation_strategy: string }>;
+  computed_metrics: {
+    total_closure_hours: number;
+    objective_tci_value: number;
+    scheduled_count: number;
+    runtime_seconds: number;
+  };
+  approval_chain: Record<string, ApprovalChainRecord>;
+  diagnostics: string[];
+}
+
+export interface ApprovalActionPayload {
+  role: ApprovalRole;
+  approver_id: string;
+  approver_name: string;
+  decision: "APPROVED" | "REJECTED" | "OVERRIDDEN";
+  comments: string;
+  override_reason_code?: string;
+  overridden_schedule?: Record<string, unknown>;
+}
+
+export interface OperationalOverridePayload {
+  user_id: string;
+  role: ApprovalRole;
+  reason_code: string;
+  justification: string;
+  overridden_schedule: Record<string, unknown>;
+}
+
+export interface AuditEventRecord {
+  id: string;
+  event_id: string;
+  event_type: string;
+  user_id: string;
+  role?: string | null;
+  timestamp: string;
+  resource_type: string;
+  resource_id: string;
+  action: string;
+  details: Record<string, unknown>;
+}

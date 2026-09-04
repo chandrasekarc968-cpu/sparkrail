@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple, Set
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -464,3 +464,273 @@ class PlanningCapabilitiesResponse(BaseModel):
     routes_available: List[str] = []
     max_blocks_capacity: int = 100
     max_trains_capacity: int = 200
+
+# =====================================================================
+# Canonical Indian Railways Domain Models & Enums (BDMS Specification)
+# =====================================================================
+
+class TrainPriority(str, Enum):
+    PREMIUM = "PREMIUM"
+    EXPRESS = "EXPRESS"
+    ORDINARY_PASSENGER = "ORDINARY_PASSENGER"
+    FREIGHT = "FREIGHT"
+
+class PossessionLifecycle(str, Enum):
+    REQUESTED = "REQUESTED"
+    SANCTIONED = "SANCTIONED"
+    GRANTED = "GRANTED"
+    IN_PROGRESS = "IN_PROGRESS"
+    CLEARANCE_PENDING = "CLEARANCE_PENDING"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    REJECTED = "REJECTED"
+
+class ApprovalRole(str, Enum):
+    CTPC = "CTPC"
+    SR_DOM = "SR_DOM"
+    SECTION_CONTROLLER = "SECTION_CONTROLLER"
+    STATION_MASTER = "STATION_MASTER"
+    SSE_PWAY = "SSE_PWAY"
+    SSE_TRD = "SSE_TRD"
+    SSE_SIGNAL = "SSE_SIGNAL"
+
+class CanonicalEntity(BaseModel):
+    id: str
+    schema_version: str = "1.0.0"
+    source_system: str = "SPARKRAIL"
+    source_record_id: Optional[str] = None
+    event_timestamp: Optional[str] = None
+    ingestion_timestamp: Optional[str] = None
+    data_freshness_seconds: Optional[float] = None
+    audit_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class RailwayZone(CanonicalEntity):
+    zone_code: str
+    name: str
+    headquarters: str
+
+class Division(CanonicalEntity):
+    division_code: str
+    name: str
+    zone_code: str
+    headquarters: str
+    route_km: float
+
+class Station(CanonicalEntity):
+    code: str
+    name: str
+    division_code: str
+    chainage_km: float
+    platforms: int
+    station_type: str = "station"
+
+class Interlocking(CanonicalEntity):
+    station_code: str
+    interlocking_type: str = "Electronic"
+    route_count: int = 12
+    point_count: int = 8
+    is_operational: bool = True
+
+class BlockSection(CanonicalEntity):
+    block_id: str
+    line_id: str = "MAIN_LINE"
+    start_station: str
+    end_station: str
+    chainage_start_km: float
+    chainage_end_km: float
+    speed_limit_kmh: float = 110.0
+    signaling_type: str = "Automatic"
+    electrification_type: str = "25kV AC"
+
+class TrackSegment(CanonicalEntity):
+    segment_id: str
+    block_id: str
+    track_type: str = "Mainline"
+    start_chainage_km: float
+    end_chainage_km: float
+    gradient_permille: float = 0.0
+    curvature_radius_m: Optional[float] = None
+
+class ElementaryElectricalSection(CanonicalEntity):
+    section_id: str
+    name: str
+    feeding_post_id: str
+    catenary_voltage_kv: float = 25.0
+    block_ids: List[str]
+    isolator_switch_ids: List[str] = []
+    is_energized: bool = True
+
+class FeedingPost(CanonicalEntity):
+    post_id: str
+    name: str
+    chainage_km: float
+    capacity_mva: float = 30.0
+    feeding_sections: List[str] = []
+
+class IsolatorSwitch(CanonicalEntity):
+    switch_id: str
+    elementary_section_id: str
+    location_chainage_km: float
+    state: str = "CLOSED"
+    is_motorized: bool = True
+
+class SignalAsset(CanonicalEntity):
+    signal_id: str
+    block_id: str
+    chainage_km: float
+    signal_type: str = "Multi-Aspect Colour Light"
+    current_aspect: str = "CLEAR"
+    is_operational: bool = True
+
+class OHEAsset(CanonicalEntity):
+    mast_id: str
+    block_id: str
+    chainage_km: float
+    catenary_height_m: float = 5.5
+    contact_wire_wear_percent: float = 12.0
+    is_isolated: bool = False
+
+class PossessionDemand(CanonicalEntity):
+    demand_id: str
+    department: Department
+    block_id: str
+    chainage_start_km: float
+    chainage_end_km: float
+    required_duration_hours: float
+    preferred_window_start: float
+    preferred_window_end: float
+    work_type: str
+    machine_ids: List[str] = []
+    crew_ids: List[str] = []
+    priority_score: float = 50.0
+    lifecycle_status: PossessionLifecycle = PossessionLifecycle.REQUESTED
+
+class ShadowPossession(CanonicalEntity):
+    shadow_id: str
+    primary_demand_id: str
+    secondary_demand_ids: List[str]
+    block_id: str
+    window_start: float
+    window_end: float
+    departments: List[str]
+    compatibility_rationale: str
+
+class TrainPriorityClass(CanonicalEntity):
+    priority: TrainPriority
+    speed_restriction_kmh: float
+    max_delay_minutes: float
+
+class TrainMovement(CanonicalEntity):
+    train_id: str
+    name: Optional[str] = None
+    priority: TrainPriority = TrainPriority.EXPRESS
+    current_block: str
+    current_chainage_km: float
+    current_speed_kmh: float
+    dynamic_eta_hours: float
+    destination: str
+    delay_minutes: float = 0.0
+
+class Machine(CanonicalEntity):
+    machine_id: str
+    machine_type: str
+    home_depot: str
+    transit_speed_kmh: float = 40.0
+    setup_time_hours: float = 0.5
+    clearing_time_hours: float = 0.5
+    is_available: bool = True
+
+class Crew(CanonicalEntity):
+    crew_id: str
+    department: Department
+    base_station: str
+    certified_block_ids: List[str] = []
+    max_shift_hours: float = 8.0
+    mandatory_rest_hours: float = 12.0
+
+class CrewShift(CanonicalEntity):
+    crew_id: str
+    shift_start: float
+    shift_end: float
+    active_job_id: Optional[str] = None
+
+class FixedPossession(CanonicalEntity):
+    possession_id: str
+    block_id: str
+    start_time: float
+    end_time: float
+    reason: str
+    department: Optional[Department] = None
+
+class ScheduleWindow(CanonicalEntity):
+    window_id: str
+    block_id: str
+    start_time: float
+    end_time: float
+    assigned_demands: List[str] = []
+    is_shadow: bool = False
+
+class ApprovalRequest(CanonicalEntity):
+    proposal_id: str
+    division_code: str
+    requested_by: str
+    role: ApprovalRole
+    submission_time: str
+    scheduled_windows: List[Dict[str, Any]]
+    safety_status: str
+    explainability: Dict[str, Any] = Field(default_factory=dict)
+
+class ApprovalDecision(CanonicalEntity):
+    decision_id: str
+    proposal_id: str
+    role: ApprovalRole
+    decision: str
+    approver_id: str
+    approver_name: str
+    comments: str
+    timestamp: str
+    override_reason_code: Optional[str] = None
+
+class OperationalOverride(CanonicalEntity):
+    override_id: str
+    proposal_id: str
+    user_id: str
+    role: ApprovalRole
+    previous_schedule: Dict[str, Any]
+    overridden_schedule: Dict[str, Any]
+    reason_code: str
+    justification: str
+    timestamp: str
+    safety_audit_passed: bool = True
+
+class DisruptionEvent(CanonicalEntity):
+    event_id: str
+    event_type: str
+    severity: str
+    timestamp: str
+    affected_block_ids: List[str]
+    delay_minutes: float
+    train_id: Optional[str] = None
+    machine_id: Optional[str] = None
+    localized_corridor_km_range: Optional[Tuple[float, float]] = None
+
+class SafetyDiagnostic(CanonicalEntity):
+    diagnostic_id: str
+    rule_id: str
+    rule_description: str
+    severity: str = "CRITICAL"
+    entity_id: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+    passed: bool = True
+
+class AuditEvent(CanonicalEntity):
+    event_id: str
+    event_type: str
+    user_id: str
+    role: Optional[str] = None
+    timestamp: str
+    resource_type: str
+    resource_id: str
+    action: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+    ip_address: Optional[str] = None

@@ -23,8 +23,10 @@ import {
   ChevronRight,
   ShieldCheck,
   Info,
-  Zap
+  Zap,
+  FileCheck
 } from 'lucide-react';
+import { AdvisoryProposalDrawer } from '../components/shared/AdvisoryProposalDrawer';
 
 export function BlockPlanner() {
   const { lastRefresh, isDemoMode } = useAppContext();
@@ -51,6 +53,7 @@ export function BlockPlanner() {
   const [hoveredJob, setHoveredJob] = useState<ScheduledJob | null>(null);
   const [localPreviewJob, setLocalPreviewJob] = useState<string | null>(null);
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+  const [showAdvisoryDrawer, setShowAdvisoryDrawer] = useState<boolean>(false);
 
   const handleRunOptimization = async () => {
     try {
@@ -186,6 +189,16 @@ export function BlockPlanner() {
           >
             <Zap className="w-3.5 h-3.5 mr-1" />
             {isOptimizing ? 'Running Solver...' : 'Run Optimization'}
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowAdvisoryDrawer(true)}
+            className="border-neutral-300 hover:border-emerald-500 hover:text-emerald-700 text-xs font-semibold cursor-pointer"
+          >
+            <FileCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+            BDMS Proposals
           </Button>
 
           {/* Week Selector */}
@@ -858,6 +871,11 @@ export function BlockPlanner() {
           </CardContent>
         </Card>
       </div>
+
+      <AdvisoryProposalDrawer
+        isOpen={showAdvisoryDrawer}
+        onClose={() => setShowAdvisoryDrawer(false)}
+      />
     </div>
   );
 }

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://sparkrail.indianrailways.gov.in/schemas/division-rules.v1.json",
+  "division_code": "PRYJ",
+  "division_name": "Prayagraj Division",
+  "headquarters": "Prayagraj",
+  "version": "1.0.0",
+  "corridor_limits": {
+    "line_name": "Subedarganj - Mirzapur Mainline",
+    "start_station": "SFG",
+    "end_station": "MZP",
+    "total_route_km": 80.0
+  },
+  "elementary_sections": [
+    {
+      "section_id": "ES_SFG_PRYJ",
+      "name": "Subedarganj - Prayagraj Jn 25kV Traction Feed",
+      "feeding_post": "FP_SFG",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B1"],
+      "isolator_switches": ["ISO_SFG_1", "ISO_SFG_2"]
+    },
+    {
+      "section_id": "ES_PRYJ_NYN",
+      "name": "Prayagraj Jn - Naini Jn 25kV Traction Feed",
+      "feeding_post": "FP_PRYJ",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B2"],
+      "isolator_switches": ["ISO_PRYJ_1", "ISO_PRYJ_2"]
+    },
+    {
+      "section_id": "ES_NYN_KCN",
+      "name": "Naini Jn - Karchana 25kV Traction Feed",
+      "feeding_post": "FP_NYN",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B3"],
+      "isolator_switches": ["ISO_NYN_1", "ISO_NYN_2"]
+    },
+    {
+      "section_id": "ES_KCN_BHP",
+      "name": "Karchana - Bheepur 25kV Traction Feed",
+      "feeding_post": "FP_KCN",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B4"],
+      "isolator_switches": ["ISO_KCN_1", "ISO_KCN_2"]
+    },
+    {
+      "section_id": "ES_BHP_MJA",
+      "name": "Bheepur - Meja Road 25kV Traction Feed",
+      "feeding_post": "FP_BHP",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B5"],
+      "isolator_switches": ["ISO_BHP_1", "ISO_BHP_2"]
+    },
+    {
+      "section_id": "ES_MJA_UND",
+      "name": "Meja Road - Unchdih 25kV Traction Feed",
+      "feeding_post": "FP_MJA",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B6"],
+      "isolator_switches": ["ISO_MJA_1", "ISO_MJA_2"]
+    },
+    {
+      "section_id": "ES_UND_MNF",
+      "name": "Unchdih - Manda Road 25kV Traction Feed",
+      "feeding_post": "FP_UND",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B7"],
+      "isolator_switches": ["ISO_UND_1", "ISO_UND_2"]
+    },
+    {
+      "section_id": "ES_MNF_MZP",
+      "name": "Manda Road - Mirzapur 25kV Traction Feed",
+      "feeding_post": "FP_MNF",
+      "catenary_voltage_kv": 25.0,
+      "block_ids": ["B8"],
+      "isolator_switches": ["ISO_MNF_1", "ISO_MNF_2"]
+    }
+  ],
+  "disruption_thresholds": {
+    "priority_train_delay_trigger_minutes": 15.0,
+    "chainage_radius_km": 25.0,
+    "max_allowed_reschedule_latency_seconds": 90.0
+  }
+}

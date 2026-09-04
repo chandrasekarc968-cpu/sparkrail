@@ -8,7 +8,9 @@ import type {
   DivisionInfo,
   NetworkGeometryResponse,
   PlanningCapabilitiesResponse,
-  ConflictItem
+  ConflictItem,
+  AdvisoryProposal,
+  AuditEventRecord
 } from './types';
 
 export const mockDivisions: DivisionInfo[] = [
@@ -907,3 +909,151 @@ export const mockPlanningCapabilities: PlanningCapabilitiesResponse = {
   max_blocks_capacity: 100,
   max_trains_capacity: 200
 };
+
+export const mockAdvisoryProposals: AdvisoryProposal[] = [
+  {
+    optimization_run_id: "BDMS-PROP-PRYJ-20260904-01",
+    idempotency_key: "IDEMP-PRYJ-8842-A1",
+    division_code: "PRYJ",
+    planning_window: "T+0h to T+24h",
+    schema_version: "1.0.0",
+    advisory_mode: "ADVISORY_ONLY_NOT_EXECUTED",
+    solver_mode: "OR-Tools CP-SAT (Integer Optimization)",
+    safety_status: "SAFETY_CERTIFIED",
+    approval_status: "PENDING_CTPC_REVIEW",
+    statutory_compliance: "Indian Railways G&SR and Block Working Manual compliant",
+    created_at: "2026-09-04T08:30:00Z",
+    created_by: "AI_PLANNER_PRYJ",
+    recommended_blocks: [
+      {
+        job_id: "J11",
+        block_id: "B5",
+        start_time: 16.0,
+        end_time: 17.0,
+        tci: 56.8,
+        is_shadow: true,
+        shadow_parent: "J14",
+        department: "Engineering",
+        lifecycle_state: "REQUESTED"
+      },
+      {
+        job_id: "J14",
+        block_id: "B5",
+        start_time: 16.0,
+        end_time: 19.0,
+        tci: 63.3,
+        is_shadow: true,
+        department: "OHE",
+        lifecycle_state: "REQUESTED"
+      },
+      {
+        job_id: "J18",
+        block_id: "B6",
+        start_time: 20.0,
+        end_time: 22.0,
+        tci: 89.9,
+        is_shadow: true,
+        department: "Engineering",
+        lifecycle_state: "SANCTIONED"
+      },
+      {
+        job_id: "J12",
+        block_id: "B6",
+        start_time: 20.0,
+        end_time: 21.0,
+        tci: 61.6,
+        is_shadow: true,
+        shadow_parent: "J18",
+        department: "OHE",
+        lifecycle_state: "SANCTIONED"
+      },
+      {
+        job_id: "J_FIXED_1",
+        block_id: "B1",
+        start_time: 2.0,
+        end_time: 6.0,
+        tci: 90.0,
+        is_shadow: false,
+        department: "Engineering",
+        lifecycle_state: "GRANTED"
+      }
+    ],
+    candidate_bundles: [
+      {
+        bundle_id: "BUNDLE-B5-SHADOW-01",
+        primary_job_id: "J14",
+        secondary_job_ids: ["J11"],
+        block_id: "B5",
+        departments: ["OHE", "Engineering"],
+        spatial_extent_km: [40.0, 50.0],
+        time_envelope_hours: [16.0, 19.0],
+        required_duration_hours: 3.0,
+        total_tci_benefit: 120.1,
+        compatibility_rationale: "Civil track tamping scheduled inside OHE contact wire renewal window with elementary section B5-ES-01 de-energized."
+      },
+      {
+        bundle_id: "BUNDLE-B6-SHADOW-02",
+        primary_job_id: "J18",
+        secondary_job_ids: ["J12"],
+        block_id: "B6",
+        departments: ["Engineering", "OHE"],
+        spatial_extent_km: [50.0, 60.0],
+        time_envelope_hours: [20.0, 22.0],
+        required_duration_hours: 2.0,
+        total_tci_benefit: 151.5,
+        compatibility_rationale: "Ballast cleaning machine and catenary insulator replacement coordinated on isolated track."
+      }
+    ],
+    train_regulation_plan: {
+      "12301_RAJDHANI": { accumulated_delay_hours: 0.0, regulation_strategy: "RUN_THROUGH" },
+      "22436_VANDE_BHARAT": { accumulated_delay_hours: 0.0, regulation_strategy: "RUN_THROUGH" },
+      "BOXN_FREIGHT_8842": { accumulated_delay_hours: 0.45, regulation_strategy: "HOLD_AT_LOOP" }
+    },
+    computed_metrics: {
+      total_closure_hours: 29.0,
+      objective_tci_value: 121050.5,
+      scheduled_count: 5,
+      runtime_seconds: 0.253
+    },
+    approval_chain: {
+      "CTPC": { status: "PENDING", approver_id: null, approver_name: null, comments: null, timestamp: null },
+      "SR_DOM": { status: "PENDING", approver_id: null, approver_name: null, comments: null, timestamp: null },
+      "SECTION_CONTROLLER": { status: "PENDING", approver_id: null, approver_name: null, comments: null, timestamp: null },
+      "STATION_MASTER": { status: "PENDING", approver_id: null, approver_name: null, comments: null, timestamp: null }
+    },
+    diagnostics: [
+      "Headways verified against 15-minute automatic block rule",
+      "OHE section B5-ES-01 isolation verified: no electric locomotives scheduled during possession",
+      "All Class 1 passenger trains guaranteed zero delay",
+      "BDMS advisory outbound payload staged; direct command execution locked"
+    ]
+  }
+];
+
+export const mockAuditEvents: AuditEventRecord[] = [
+  {
+    id: "AUDIT-001",
+    event_id: "EVT-AUD-8841",
+    event_type: "PROPOSAL_CREATED",
+    user_id: "AI_PLANNER_PRYJ",
+    role: "CTPC",
+    timestamp: "2026-09-04T08:30:00Z",
+    resource_type: "ADVISORY_PROPOSAL",
+    resource_id: "BDMS-PROP-PRYJ-20260904-01",
+    action: "CREATE_PROPOSAL",
+    details: { division: "PRYJ", safety_status: "SAFETY_CERTIFIED", scheduled_jobs: 5 }
+  },
+  {
+    id: "AUDIT-002",
+    event_id: "EVT-AUD-8842",
+    event_type: "HEALTH_CHECK",
+    user_id: "SYSTEM",
+    role: "SYSTEM",
+    timestamp: "2026-09-04T08:35:10Z",
+    resource_type: "SYSTEM_HEALTH",
+    resource_id: "SR_ENGINE",
+    action: "VERIFY_BOUNDARIES",
+    details: { advisory_only: true, direct_signaling: false }
+  }
+];
+

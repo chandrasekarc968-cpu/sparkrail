@@ -10,6 +10,7 @@ import { TimelineController } from '../components/3d/TimelineController';
 import { PlanningInspector } from '../components/3d/PlanningInspector';
 import { PerfInstrumentationPanel } from '../components/3d/PerfInstrumentationPanel';
 import { generateStressNetworkFixture } from '../fixtures/stressFixture';
+import { AdvisoryProposalDrawer } from '../components/shared/AdvisoryProposalDrawer';
 
 export const ThreeDNetwork: React.FC = () => {
   const {
@@ -38,6 +39,7 @@ export const ThreeDNetwork: React.FC = () => {
   } = useScheduleData();
 
   const [stressMode, setStressMode] = useState<boolean>(false);
+  const [showAdvisoryDrawer, setShowAdvisoryDrawer] = useState<boolean>(false);
   const [showPerfPanel, setShowPerfPanel] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return new URLSearchParams(window.location.search).get('perf') === 'true';
@@ -196,6 +198,9 @@ export const ThreeDNetwork: React.FC = () => {
               NON-OPTIMAL FALLBACK
             </span>
           )}
+          <span style={badgeTagStyle('#d97706')} title="SparkRail operates in strict Advisory Mode - BDMS sanction required">
+            ADVISORY MODE
+          </span>
         </div>
 
         {/* Action Controls */}
@@ -203,6 +208,19 @@ export const ThreeDNetwork: React.FC = () => {
           <div style={{ fontSize: '11px', color: '#64748b' }}>
             Refreshed: {lastRefreshed.toLocaleTimeString()}
           </div>
+
+          <button
+            onClick={() => setShowAdvisoryDrawer(true)}
+            style={{
+              ...secondaryBtnStyle,
+              backgroundColor: '#ecfdf5',
+              color: '#065f46',
+              borderColor: '#a7f3d0'
+            }}
+            title="Review and Sanction BDMS Advisory Proposals"
+          >
+            📋 BDMS Proposals
+          </button>
 
           <button
             onClick={() => setStressMode(prev => !prev)}
@@ -444,6 +462,11 @@ export const ThreeDNetwork: React.FC = () => {
           activeTrainsCount={movingTrainsCount}
         />
       </div>
+
+      <AdvisoryProposalDrawer
+        isOpen={showAdvisoryDrawer}
+        onClose={() => setShowAdvisoryDrawer(false)}
+      />
     </div>
   );
 };

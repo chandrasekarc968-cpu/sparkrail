@@ -7,7 +7,11 @@ import type {
   AssetHealthRecord,
   NetworkGeometryResponse,
   PlanningCapabilitiesResponse,
-  HealthResponse
+  HealthResponse,
+  AdvisoryProposal,
+  ApprovalActionPayload,
+  OperationalOverridePayload,
+  AuditEventRecord
 } from './types';
 import { validateNetworkGeometryContract, GeometryContractError } from './geometryValidator';
 import {
@@ -18,7 +22,9 @@ import {
   mockEvents,
   mockAssetHealth,
   mockNetworkGeometry,
-  mockPlanningCapabilities
+  mockPlanningCapabilities,
+  mockAdvisoryProposals,
+  mockAuditEvents
 } from './mockData';
 
 export class ApiError extends Error {
@@ -94,6 +100,8 @@ async function fetchWithRetry(
     throw err;
   }
 }
+
+const demoAdvisoryProposals: AdvisoryProposal[] = [...mockAdvisoryProposals];
 
 export const ApiClient = {
   isDemoMode(): boolean {
@@ -262,6 +270,166 @@ export const ApiClient = {
     const data = await res.json();
     if (!data || typeof data.solver_name !== 'string') {
       throw new ApiError(502, "Invalid planning capabilities response from backend", data);
+    }
+    return data;
+  },
+
+  async getAdvisoryProposals(signal?: AbortSignal): Promise<AdvisoryProposal[]> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 150));
+      return [...demoAdvisoryProposals];
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals`, { signal });
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      throw new ApiError(502, "Invalid advisory proposals list response from backend", data);
+    }
+    return data;
+  },
+
+  async getAdvisoryProposal(proposalId: string, signal?: AbortSignal): Promise<AdvisoryProposal> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 150));
+      const found = demoAdvisoryProposals.find((p) => p.optimization_run_id === proposalId);
+      if (!found) throw new ApiError(404, `Proposal ${proposalId} not found`);
+      return { ...found };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals/${proposalId}`, { signal });
+    const data = await res.json();
+    if (!data || typeof data.optimization_run_id !== 'string') {
+      throw new ApiError(502, "Invalid advisory proposal details from backend", data);
+    }
+    return data;
+  },
+
+  async createAdvisoryProposal(
+    params: { division_code?: string; horizon_hours?: number; freeze_week1?: boolean; dry_run?: boolean } = {},
+    signal?: AbortSignal
+  ): Promise<AdvisoryProposal> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 400));
+      const newProposal: AdvisoryProposal = {
+        ...mockAdvisoryProposals[0],
+        optimization_run_id: `BDMS-PROP-${params.division_code || 'PRYJ'}-${Date.now().toString().slice(-6)}`,
+        idempotency_key: `IDEMP-${Date.now()}`,
+        division_code: params.division_code || "PRYJ",
+        created_at: new Date().toISOString()
+      };
+      demoAdvisoryProposals.unshift(newProposal);
+      return newProposal;
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+      signal
+    });
+    const data = await res.json();
+    if (!data || typeof data.optimization_run_id !== 'string') {
+      throw new ApiError(502, "Invalid proposal creation response from backend", data);
+    }
+    return data;
+  },
+
+  async approveProposal(proposalId: string, action: ApprovalActionPayload, signal?: AbortSignal): Promise<AdvisoryProposal> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 200));
+      const prop = demoAdvisoryProposals.find((p) => p.optimization_run_id === proposalId);
+      if (!prop) throw new ApiError(404, `Proposal ${proposalId} not found`);
+      if (prop.approval_chain[action.role]) {
+        prop.approval_chain[action.role] = {
+          status: "APPROVED",
+          approver_id: action.approver_id,
+          approver_name: action.approver_name,
+          comments: action.comments,
+          timestamp: new Date().toISOString()
+        };
+      }
+      const ctpc = prop.approval_chain["CTPC"]?.status;
+      const srDom = prop.approval_chain["SR_DOM"]?.status;
+      if (ctpc === "APPROVED" && srDom === "APPROVED") {
+        prop.approval_status = "SANCTIONED";
+        prop.recommended_blocks.forEach((b) => {
+          b.lifecycle_state = "SANCTIONED";
+        });
+      }
+      return { ...prop };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals/${proposalId}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+      signal
+    });
+    return res.json();
+  },
+
+  async rejectProposal(proposalId: string, action: ApprovalActionPayload, signal?: AbortSignal): Promise<AdvisoryProposal> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 200));
+      const prop = demoAdvisoryProposals.find((p) => p.optimization_run_id === proposalId);
+      if (!prop) throw new ApiError(404, `Proposal ${proposalId} not found`);
+      prop.approval_status = "REJECTED";
+      if (prop.approval_chain[action.role]) {
+        prop.approval_chain[action.role] = {
+          status: "REJECTED",
+          approver_id: action.approver_id,
+          approver_name: action.approver_name,
+          comments: action.comments,
+          timestamp: new Date().toISOString()
+        };
+      }
+      prop.recommended_blocks.forEach((b) => {
+        b.lifecycle_state = "REJECTED";
+      });
+      return { ...prop };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals/${proposalId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+      signal
+    });
+    return res.json();
+  },
+
+  async overrideProposal(
+    proposalId: string,
+    payload: OperationalOverridePayload,
+    signal?: AbortSignal
+  ): Promise<{ status: string; proposal_id: string; overridden_by: string; reason_code: string; timestamp: string; updated_proposal: AdvisoryProposal }> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 250));
+      const prop = demoAdvisoryProposals.find((p) => p.optimization_run_id === proposalId);
+      if (!prop) throw new ApiError(404, `Proposal ${proposalId} not found`);
+      prop.approval_status = "OVERRIDDEN";
+      return {
+        status: "OVERRIDE_RECORDED",
+        proposal_id: proposalId,
+        overridden_by: payload.user_id,
+        reason_code: payload.reason_code,
+        timestamp: new Date().toISOString(),
+        updated_proposal: { ...prop }
+      };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/proposals/${proposalId}/override`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal
+    });
+    return res.json();
+  },
+
+  async getAuditTrail(limit = 100, signal?: AbortSignal): Promise<AuditEventRecord[]> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 120));
+      return [...mockAuditEvents];
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/advisory/audit?limit=${limit}`, { signal });
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      throw new ApiError(502, "Invalid audit trail response from backend", data);
     }
     return data;
   }

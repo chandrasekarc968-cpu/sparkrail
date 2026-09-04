@@ -1,0 +1,28 @@
+{
+  "$schema": "https://sparkrail.indianrailways.gov.in/schemas/safety-margins.v1.json",
+  "version": "1.0.0",
+  "crew_regulations": {
+    "standard": "Railway Servants (Hours of Work and Period of Rest) Rules",
+    "max_continuous_duty_hours": 8.0,
+    "mandatory_rest_period_hours": 12.0,
+    "maximum_overtime_per_week_hours": 12.0
+  },
+  "track_machines": {
+    "maximum_transit_speed_kmh": 40.0,
+    "setup_time_hours": 0.5,
+    "clearing_time_hours": 0.5,
+    "minimum_headway_behind_train_minutes": 15.0
+  },
+  "possession_protection": {
+    "minimum_flagman_distance_meters": 600.0,
+    "intermediate_detonator_distance_meters": 1200.0,
+    "collar_lock_applied": true,
+    "station_master_grant_token_required": true
+  },
+  "tci_weights_default": {
+    "safety_risk": 0.40,
+    "delay_impact": 0.30,
+    "degradation_velocity": 0.20,
+    "overdue_penalty": 0.10
+  }
+}

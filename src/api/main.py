@@ -43,6 +43,7 @@ from src.data_pipeline.geometry_validator import validate_network_geometry, Geom
 from src.ai_ml.criticality_scorer import TaskCriticalityScorer
 from src.optimization.milp_solver import MaintenanceSchedulerMILP, SCIP_AVAILABLE
 from src.simulation.evaluator import KPIEvaluator
+from src.api.advisory import router as advisory_router
 
 # Setup structured logger
 logging.basicConfig(
@@ -117,6 +118,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": "Validation error", "errors": exc.errors()},
         headers={"X-Request-ID": req_id}
     )
+
+app.include_router(advisory_router)
 
 def get_base_data_dir() -> str:
     """Returns configurable data directory, preventing hardcoded paths."""

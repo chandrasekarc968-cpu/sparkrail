@@ -22,6 +22,11 @@ test.describe('SparkRail Live End-to-End Control Room Smoke Tests', () => {
       }
     });
 
+    // Ensure demo mode is explicitly disabled so we test against the live backend
+    await page.addInitScript(() => {
+      localStorage.setItem('sparkrail_demo_mode', 'false');
+    });
+
     // 1. Open http://127.0.0.1:5173
     await page.goto('/');
 

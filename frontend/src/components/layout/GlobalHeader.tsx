@@ -8,12 +8,15 @@ import {
   Menu,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown
+  ChevronDown,
+  ShieldAlert,
+  FileCheck
 } from 'lucide-react';
 import { useAppContext } from '../../context/useAppContext';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { mockEvents } from '../../api/mockData';
+import { AdvisoryProposalDrawer } from '../shared/AdvisoryProposalDrawer';
 
 interface GlobalHeaderProps {
   onToggleMobileNav: () => void;
@@ -33,6 +36,7 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showAdvisoryDrawer, setShowAdvisoryDrawer] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleManualRefresh = async () => {
@@ -128,6 +132,27 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
               <span className="hidden sm:inline">Offline</span>
             </div>
           )}
+        </div>
+
+        {/* BDMS Advisory Badge & Proposals Trigger */}
+        <div className="hidden sm:flex items-center space-x-2 border-l border-neutral-200 pl-3">
+          <div
+            className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-800 text-xs font-semibold"
+            title="SparkRail operates in strict Advisory Mode - BDMS sanction required"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden md:inline">ADVISORY MODE</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAdvisoryDrawer(true)}
+            className="text-xs border-neutral-300 hover:border-emerald-500 hover:text-emerald-700 flex items-center gap-1.5 py-1 px-2.5"
+            title="Review and Sanction BDMS Advisory Proposals"
+          >
+            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>BDMS Proposals</span>
+          </Button>
         </div>
 
         {/* Last Refresh & Manual Sync */}
@@ -269,6 +294,11 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
           )}
         </div>
       </div>
+
+      <AdvisoryProposalDrawer
+        isOpen={showAdvisoryDrawer}
+        onClose={() => setShowAdvisoryDrawer(false)}
+      />
     </header>
   );
 }
