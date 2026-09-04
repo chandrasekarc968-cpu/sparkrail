@@ -42,3 +42,11 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Playwright E2E test results, reports, and media
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+playwright/.cache/
+*.log
+/tmp/*.log

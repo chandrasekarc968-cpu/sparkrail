@@ -6,8 +6,10 @@ import type {
   SystemEvent,
   AssetHealthRecord,
   NetworkGeometryResponse,
-  PlanningCapabilitiesResponse
+  PlanningCapabilitiesResponse,
+  HealthResponse
 } from './types';
+import { validateNetworkGeometryContract, GeometryContractError } from './geometryValidator';
 import {
   mockScenario,
   mockSchedule,
@@ -98,17 +100,24 @@ export const ApiClient = {
     return isDemoModeEnabled();
   },
 
-  async getHealth(signal?: AbortSignal): Promise<{ status: string; version: string }> {
+  async getHealth(signal?: AbortSignal): Promise<HealthResponse> {
     if (this.isDemoMode()) {
       await new Promise((r) => setTimeout(r, 120));
-      return { status: "ok", version: "1.0.0-demo" };
+      return {
+        status: "ok",
+        version: "1.0.0-demo",
+        geometry_schema_version: "1.0.0",
+        solver_available: true,
+        solver_name: "PySCIPOpt (MIP Solver)",
+        data_mode: "local_synthetic"
+      };
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/health`, { signal });
     const data = await res.json();
     if (!data || typeof data !== 'object' || typeof data.status !== 'string') {
       throw new ApiError(502, "Invalid health response from backend API", data);
     }
-    return data;
+    return data as HealthResponse;
   },
 
   async generateData(signal?: AbortSignal): Promise<{ message: string }> {
@@ -230,14 +239,18 @@ export const ApiClient = {
   async getNetworkGeometry(signal?: AbortSignal): Promise<NetworkGeometryResponse> {
     if (this.isDemoMode()) {
       await new Promise((r) => setTimeout(r, 180));
-      return mockNetworkGeometry;
+      return validateNetworkGeometryContract(mockNetworkGeometry, true);
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/network/geometry`, { signal });
     const data = await res.json();
-    if (!data || !Array.isArray(data.tracks) || !Array.isArray(data.nodes)) {
-      throw new ApiError(502, "Invalid 3D network geometry response from backend", data);
+    try {
+      return validateNetworkGeometryContract(data, false);
+    } catch (err: unknown) {
+      if (err instanceof GeometryContractError) {
+        throw new ApiError(502, err.message, data);
+      }
+      throw err;
     }
-    return data;
   },
 
   async getPlanningCapabilities(signal?: AbortSignal): Promise<PlanningCapabilitiesResponse> {

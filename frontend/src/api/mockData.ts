@@ -439,7 +439,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.94,
     last_ultrasonic_test: "2026-08-28",
     days_overdue: 0,
-    associated_job_id: "J_FIXED_1"
+    associated_job_id: "J_FIXED_1",
+    position: { x: -355.0, y: 0.41, z: 2.19 },
+    coordinates: { x: -355.0, y: 0.41, z: 2.19 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-TRK-B6-12",
@@ -455,7 +459,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.96,
     last_ultrasonic_test: "2026-09-02",
     days_overdue: 24,
-    associated_job_id: "J18"
+    associated_job_id: "J18",
+    position: { x: 141.0, y: -1.2, z: 7.85 },
+    coordinates: { x: 141.0, y: -1.2, z: 7.85 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-SIG-B3-08",
@@ -471,7 +479,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.82,
     last_ultrasonic_test: "2026-08-15",
     days_overdue: 20,
-    associated_job_id: "J16"
+    associated_job_id: "J16",
+    position: { x: -169.0, y: 1.9, z: 12.4 },
+    coordinates: { x: -169.0, y: 1.9, z: 12.4 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-SIG-B5-02",
@@ -487,7 +499,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.76,
     last_ultrasonic_test: "2026-08-18",
     days_overdue: 18,
-    associated_job_id: "J7"
+    associated_job_id: "J7",
+    position: { x: 20.0, y: -0.5, z: -15.4 },
+    coordinates: { x: 20.0, y: -0.5, z: -15.4 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-OHE-B5-18",
@@ -503,7 +519,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.65,
     last_ultrasonic_test: "2026-08-20",
     days_overdue: 14,
-    associated_job_id: "J14"
+    associated_job_id: "J14",
+    position: { x: 15.0, y: -0.4, z: -13.1 },
+    coordinates: { x: 15.0, y: -0.4, z: -13.1 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-TRK-B2-07",
@@ -519,7 +539,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.58,
     last_ultrasonic_test: "2026-08-25",
     days_overdue: 12,
-    associated_job_id: "J6"
+    associated_job_id: "J6",
+    position: { x: -250.0, y: 1.1, z: 7.6 },
+    coordinates: { x: -250.0, y: 1.1, z: 7.6 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-OHE-B4-09",
@@ -535,7 +559,11 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.52,
     last_ultrasonic_test: "2026-08-22",
     days_overdue: 10,
-    associated_job_id: "J1"
+    associated_job_id: "J1",
+    position: { x: -58.0, y: 1.2, z: 2.4 },
+    coordinates: { x: -58.0, y: 1.2, z: 2.4 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
   },
   {
     asset_id: "AST-TRK-B7-11",
@@ -551,8 +579,12 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     model_predicted_risk: 0.35,
     last_ultrasonic_test: "2026-08-30",
     days_overdue: 4,
-    associated_job_id: "J3"
-  },
+    associated_job_id: "J3",
+    position: { x: 210.0, y: 1.1, z: 8.5 },
+    coordinates: { x: 210.0, y: 1.1, z: 8.5 },
+    geometry_source: "synthetic",
+    geometry_schema_version: "1.0.0"
+  }
 ];
 
 export const mockConflicts: ConflictItem[] = [
@@ -611,10 +643,26 @@ export const mockConflicts: ConflictItem[] = [
 ];
 
 export const mockNetworkGeometry: NetworkGeometryResponse = {
+  geometry_schema_version: "1.0.0",
+  coordinate_system: {
+    name: "LOCAL_CORRIDOR",
+    crs: "LOCAL_CORRIDOR",
+    units: "meters",
+    axis_order: ["x", "y", "z"],
+    handedness: "right-handed",
+    origin_description: "Synthetic local origin for the bounded railway division",
+    geometry_source: "synthetic"
+  },
   division: "Prayagraj (PRYJ)",
   line_name: "Subedarganj - Mirzapur Mainline Corridor",
   total_length_km: 80.0,
   is_synthetic: true,
+  geometry_source: "synthetic",
+  coordinate_convention: "X: corridor longitudinal (m), Y: elevation (m), Z: lateral offset (m)",
+  schema_version: "1.0.0",
+  junctions: [],
+  disconnected_components: [],
+  assets: mockAssetHealth,
   nodes: [
     { id: "NODE_SFG", name: "Subedarganj", code: "SFG", position: { x: -400.0, y: 0.0, z: 0.0 }, chainage_km: 0.0, node_type: "terminal", platforms: 4, connected_blocks: ["B1"] },
     { id: "NODE_PRYJ", name: "Prayagraj Jn", code: "PRYJ", position: { x: -300.0, y: 0.0, z: 2.0 }, chainage_km: 10.0, node_type: "junction", platforms: 8, connected_blocks: ["B1", "B2"] },
@@ -845,6 +893,8 @@ export const mockNetworkGeometry: NetworkGeometryResponse = {
 };
 
 export const mockPlanningCapabilities: PlanningCapabilitiesResponse = {
+  geometry_schema_version: "1.0.0",
+  coordinate_system: mockNetworkGeometry.coordinate_system,
   solver_available: true,
   solver_name: "PySCIPOpt (MIP Solver)",
   fallback_active: false,

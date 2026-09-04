@@ -62,11 +62,52 @@ def test_api_network_geometry_endpoint(client):
     res = client.get("/network/geometry")
     assert res.status_code == 200
     data = res.json()
+    assert data["geometry_schema_version"] == "1.0.0"
+    assert "coordinate_system" in data
+    cs = data["coordinate_system"]
+    assert cs["name"] == "LOCAL_CORRIDOR"
+    assert cs["crs"] == "LOCAL_CORRIDOR"
+    assert cs["units"] == "meters"
+    assert cs["axis_order"] == ["x", "y", "z"]
+    assert cs["handedness"] == "right-handed"
+    assert cs["origin_description"] == "Synthetic local origin for the bounded railway division"
+    assert cs["geometry_source"] == "synthetic"
     assert "division" in data
     assert "tracks" in data
     assert "nodes" in data
     assert len(data["tracks"]) == 8
     assert data["tracks"][0]["block_id"] == "B1"
+    assert data["tracks"][0]["geometry_schema_version"] == "1.0.0"
+    assert data["nodes"][0]["geometry_schema_version"] == "1.0.0"
+    assert data["signals"][0]["geometry_schema_version"] == "1.0.0"
+    assert data["ohe_masts"][0]["geometry_schema_version"] == "1.0.0"
+    assert len(data["assets"]) > 0
+    assert data["assets"][0]["geometry_schema_version"] == "1.0.0"
+    assert data["assets"][0]["position"] is not None
+
+def test_geometry_schema_version_exposed_across_endpoints(client):
+    """geometry_schema_version: '1.0.0' must be exposed in /health, /planning/capabilities, and /network/geometry."""
+    # 1. /health
+    health_res = client.get("/health")
+    assert health_res.status_code == 200
+    assert health_res.json()["geometry_schema_version"] == "1.0.0"
+
+    # 2. /planning/capabilities
+    cap_res = client.get("/planning/capabilities")
+    assert cap_res.status_code == 200
+    assert cap_res.json()["geometry_schema_version"] == "1.0.0"
+    assert cap_res.json()["coordinate_system"]["name"] == "LOCAL_CORRIDOR"
+
+    # 3. /network/geometry
+    geom_res = client.get("/network/geometry")
+    assert geom_res.status_code == 200
+    geom_data = geom_res.json()
+    assert geom_data["geometry_schema_version"] == "1.0.0"
+
+    # Synthetic coordinates must never be described as GPS or surveyed
+    raw_text = geom_res.text.lower()
+    assert "gps" not in raw_text
+    assert "surveyed" not in raw_text
 
 def test_api_planning_capabilities_endpoint(client):
     res = client.get("/planning/capabilities")

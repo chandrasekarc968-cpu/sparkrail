@@ -123,6 +123,8 @@ export interface KPIReport {
   consolidated_blocks: number;
   mttg_minutes?: number;
   high_crit_completion_percent?: number;
+  asset_downtime_reduction_percent?: number;
+  solver_runtime_seconds?: number;
 }
 
 export interface OptimizedSchedule {
@@ -147,18 +149,61 @@ export interface ScoredJob {
   explanation: TCIExplanation;
 }
 
-export interface Vector3D {
+export interface Coordinate3D {
   x: number;
   y: number;
   z: number;
 }
 
-export interface TrackGeometry {
-  block_id: string;
+export type Vector3D = Coordinate3D;
+
+export interface CoordinateSystemContract {
+  name: "LOCAL_CORRIDOR" | string;
+  crs: "LOCAL_CORRIDOR" | string;
+  units: "meters";
+  axis_order: string[];
+  handedness: "right-handed";
+  origin_description: string;
+  geometry_source: "synthetic" | "surveyed";
+}
+
+export interface GeometryNode {
+  id: string;
+  entity_type?: string;
+  coordinates?: Coordinate3D;
+  position: Coordinate3D;
+  chainage_km: number;
+  referenced_block_id?: string;
+  referenced_asset_id?: string;
+  geometry_source?: string;
+  geometry_schema_version?: string;
+  schema_version?: string;
+}
+
+export interface StationNode extends GeometryNode {
   name: string;
-  start_coord: Vector3D;
-  end_coord: Vector3D;
-  path_points: Vector3D[];
+  code: string;
+  node_type: "station" | "junction" | "terminal";
+  platforms: number;
+  connected_blocks: string[];
+}
+
+export interface JunctionNode extends GeometryNode {
+  name: string;
+  code: string;
+  diverging_blocks?: string[];
+  switch_type?: string;
+  interlocking_status?: string;
+}
+
+export interface TrackGeometry {
+  id?: string;
+  block_id: string;
+  entity_type?: string;
+  name: string;
+  start_coord: Coordinate3D;
+  end_coord: Coordinate3D;
+  path_points: Coordinate3D[];
   length_km: number;
   chainage_start: number;
   chainage_end: number;
@@ -167,34 +212,42 @@ export interface TrackGeometry {
   electrification: string;
   gauge?: string;
   speed_limit_kmh: number;
+  referenced_block_id?: string;
+  geometry_source?: string;
+  geometry_schema_version?: string;
+  schema_version?: string;
 }
 
-export interface StationNode {
-  id: string;
-  name: string;
-  code: string;
-  position: Vector3D;
-  chainage_km: number;
-  node_type: "station" | "junction" | "terminal";
-  platforms: number;
-  connected_blocks: string[];
-}
+export type GeometryTrack = TrackGeometry;
 
 export interface SignalMarker {
   id: string;
+  entity_type?: string;
   block_id: string;
+  referenced_block_id?: string;
   chainage_km: number;
-  position: Vector3D;
+  coordinates?: Coordinate3D;
+  position: Coordinate3D;
   aspect: "clear" | "caution" | "danger" | "stop";
   direction: "UP" | "DOWN";
+  geometry_source?: string;
+  geometry_schema_version?: string;
+  schema_version?: string;
 }
 
 export interface OHEMast {
   id: string;
+  entity_type?: string;
   block_id: string;
-  position: Vector3D;
+  referenced_block_id?: string;
+  coordinates?: Coordinate3D;
+  position: Coordinate3D;
+  chainage_km?: number;
   catenary_height_m: number;
   is_isolated: boolean;
+  geometry_source?: string;
+  geometry_schema_version?: string;
+  schema_version?: string;
 }
 
 export type ConflictType = 
@@ -208,32 +261,50 @@ export type ConflictType =
 
 export interface ConflictItem {
   id: string;
+  entity_type?: string;
   conflict_type: ConflictType;
   severity: "CRITICAL" | "MAJOR" | "WARNING" | "INFO";
   block_id: string;
+  referenced_block_id?: string;
   title: string;
   description: string;
   affected_jobs: string[];
   affected_trains: string[];
   time_window?: { start: number; end: number };
   suggested_resolution: string;
-  position?: Vector3D;
+  coordinates?: Coordinate3D;
+  position?: Coordinate3D;
+  geometry_source?: string;
+  geometry_schema_version?: string;
+  schema_version?: string;
 }
 
+export type NetworkConflict = ConflictItem;
+
 export interface NetworkGeometryResponse {
+  geometry_schema_version: string;
+  coordinate_system: CoordinateSystemContract;
   division: string;
   line_name: string;
   total_length_km: number;
   is_synthetic: boolean;
+  geometry_source?: string;
+  coordinate_convention?: string;
+  schema_version?: string;
   nodes: StationNode[];
   tracks: TrackGeometry[];
   signals: SignalMarker[];
   ohe_masts: OHEMast[];
   blocks: TrackBlock[];
   conflicts: ConflictItem[];
+  junctions?: JunctionNode[];
+  assets?: AssetHealthRecord[];
+  disconnected_components?: string[][];
 }
 
 export interface PlanningCapabilitiesResponse {
+  geometry_schema_version: string;
+  coordinate_system?: CoordinateSystemContract;
   solver_available: boolean;
   solver_name: string;
   fallback_active: boolean;
@@ -292,6 +363,20 @@ export interface AssetHealthRecord {
   last_ultrasonic_test: string;
   days_overdue: number;
   associated_job_id?: string;
+  coordinates?: Coordinate3D;
+  position?: Coordinate3D;
+  geometry_source?: string;
+  geometry_schema_version?: string;
+}
+
+export interface HealthResponse {
+  status: string;
+  version: string;
+  geometry_schema_version: string;
+  solver_available: boolean;
+  solver_name: string;
+  data_mode: string;
+  commit_sha?: string;
 }
 
 export interface DivisionInfo {

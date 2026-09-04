@@ -15,12 +15,17 @@ from src.data_pipeline.models import (
     AssetHealthRecord,
     SystemEvent,
     Vector3D,
+    Coordinate3D,
     TrackGeometry,
+    GeometryTrack,
     StationNode,
+    JunctionNode,
     SignalMarker,
     OHEMast,
     ConflictType,
     ConflictItem,
+    NetworkConflict,
+    CoordinateSystemContract,
     NetworkGeometryResponse,
     OptimizedSchedule
 )
@@ -184,8 +189,19 @@ def save_synthetic_data(
         f.write(scenario.model_dump_json(indent=4))
     return file_path
 
+def pos_at_corridor_km(km: float, total_km: float = 80.0, lateral_offset: float = 0.0) -> Vector3D:
+    ratio = km / max(1.0, total_km)
+    x = -400.0 + (ratio * 800.0)
+    # Gentle realistic railway curve: maximum 16m lateral deviation
+    z = math.sin(ratio * math.pi * 2.5) * 16.0 + lateral_offset
+    # Gentle elevation: grade up to +3.5m over river bridges / flyovers
+    y = math.sin(ratio * math.pi * 3.0) * 2.5 + (0.5 if 18.0 <= km <= 24.0 else 0.0)
+    return Vector3D(x=round(x, 2), y=round(y, 2), z=round(z, 2))
+
 def generate_synthetic_assets(scenario: Scenario) -> List[AssetHealthRecord]:
     """Generates asset health telemetry synchronized with current scenario blocks."""
+    blocks = scenario.blocks
+    total_km = blocks[-1].chainage_end if blocks else 80.0
     assets = [
         AssetHealthRecord(
             asset_id="AST-TRK-B2-01",
@@ -201,7 +217,10 @@ def generate_synthetic_assets(scenario: Scenario) -> List[AssetHealthRecord]:
             model_predicted_risk=0.88,
             last_ultrasonic_test="2026-08-20",
             days_overdue=14,
-            associated_job_id="J2"
+            associated_job_id="J2",
+            position=pos_at_corridor_km(12.4, total_km, lateral_offset=2.5),
+            geometry_source="synthetic",
+            geometry_schema_version="1.0.0"
         ),
         AssetHealthRecord(
             asset_id="AST-OHE-B4-09",
@@ -217,7 +236,10 @@ def generate_synthetic_assets(scenario: Scenario) -> List[AssetHealthRecord]:
             model_predicted_risk=0.64,
             last_ultrasonic_test="2026-08-14",
             days_overdue=7,
-            associated_job_id="J_FIXED_2"
+            associated_job_id="J_FIXED_2",
+            position=pos_at_corridor_km(34.2, total_km, lateral_offset=2.2),
+            geometry_source="synthetic",
+            geometry_schema_version="1.0.0"
         ),
         AssetHealthRecord(
             asset_id="AST-TRK-B1-04",
@@ -233,7 +255,10 @@ def generate_synthetic_assets(scenario: Scenario) -> List[AssetHealthRecord]:
             model_predicted_risk=0.25,
             last_ultrasonic_test="2026-08-28",
             days_overdue=0,
-            associated_job_id="J_FIXED_1"
+            associated_job_id="J_FIXED_1",
+            position=pos_at_corridor_km(4.8, total_km, lateral_offset=0.0),
+            geometry_source="synthetic",
+            geometry_schema_version="1.0.0"
         )
     ]
     return assets
@@ -408,13 +433,7 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
         return -400.0 + (ratio * 800.0)
     
     def pos_at_km(km: float, lateral_offset: float = 0.0) -> Vector3D:
-        ratio = km / max(1.0, total_km)
-        x = km_to_x(km)
-        # Gentle realistic railway curve: maximum 16m lateral deviation
-        z = math.sin(ratio * math.pi * 2.5) * 16.0 + lateral_offset
-        # Gentle elevation: grade up to +3.5m over river bridges / flyovers
-        y = math.sin(ratio * math.pi * 3.0) * 2.5 + (0.5 if 18.0 <= km <= 24.0 else 0.0)
-        return Vector3D(x=round(x, 2), y=round(y, 2), z=round(z, 2))
+        return pos_at_corridor_km(km, total_km, lateral_offset)
 
     nodes: List[StationNode] = []
     for stn in station_templates:
@@ -494,17 +513,52 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
 
     conflicts = derive_conflicts(scenario)
 
+    junctions: List[JunctionNode] = []
+    for stn in station_templates:
+        if stn["type"] == "junction" and stn["km"] <= total_km + 5.0:
+            connected = [b.id for b in blocks if b.chainage_start <= stn["km"] <= b.chainage_end]
+            junctions.append(JunctionNode(
+                id=f"JUNC_{stn['code']}",
+                name=f"{stn['name']} Interlocking Junction",
+                code=stn["code"],
+                coordinates=pos_at_km(stn["km"]),
+                position=pos_at_km(stn["km"]),
+                chainage_km=stn["km"],
+                node_type="junction",
+                diverging_blocks=connected,
+                switch_type="Turnout 1-in-12",
+                interlocking_status="Active"
+            ))
+
+    assets = generate_synthetic_assets(scenario)
+
     return NetworkGeometryResponse(
+        geometry_schema_version="1.0.0",
+        coordinate_system=CoordinateSystemContract(
+            name="LOCAL_CORRIDOR",
+            crs="LOCAL_CORRIDOR",
+            units="meters",
+            axis_order=["x", "y", "z"],
+            handedness="right-handed",
+            origin_description="Synthetic local origin for the bounded railway division",
+            geometry_source="synthetic"
+        ),
         division="Prayagraj (PRYJ)",
         line_name="Subedarganj - Mirzapur Mainline Corridor",
         total_length_km=total_km,
         is_synthetic=True,
+        geometry_source="synthetic",
+        coordinate_convention="X: corridor longitudinal (m), Y: elevation (m), Z: lateral offset (m)",
+        schema_version="1.0.0",
         nodes=nodes,
         tracks=tracks,
         signals=signals,
         ohe_masts=ohe_masts,
         blocks=blocks,
-        conflicts=conflicts
+        conflicts=conflicts,
+        junctions=junctions,
+        assets=assets,
+        disconnected_components=[]
     )
 
 if __name__ == "__main__":

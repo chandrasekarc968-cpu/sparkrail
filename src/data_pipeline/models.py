@@ -1,3 +1,4 @@
+import math
 from typing import List, Dict, Any, Optional
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -128,51 +129,148 @@ class UnscheduledJobReason(BaseModel):
     conflict_with: Optional[str] = None
     potential_window: Optional[str] = None
 
-# 3D Geometry and Spatial Representations
-class Vector3D(BaseModel):
+# 3D Geometry and Canonical Spatial Representations
+class Coordinate3D(BaseModel):
+    """
+    Explicit 3D coordinate convention for railway corridor space:
+    - X: Longitudinal corridor position along track alignment in meters (e.g. -400 to +400 scaled)
+    - Y: Elevation / vertical gradient profile in meters
+    - Z: Lateral offset from track centerline or curvature deviation in meters
+    """
     x: float
     y: float
     z: float
 
-class TrackGeometry(BaseModel):
+    @model_validator(mode="after")
+    def validate_finite(self) -> "Coordinate3D":
+        for axis, val in [("x", self.x), ("y", self.y), ("z", self.z)]:
+            if not math.isfinite(val):
+                raise ValueError(f"Coordinate '{axis}' must be a finite number, got {val}")
+        return self
+
+Vector3D = Coordinate3D
+
+class GeometryNode(BaseModel):
+    """Canonical base model for nodes positioned along the railway network."""
+    id: str
+    entity_type: str = "node"
+    coordinates: Optional[Coordinate3D] = None
+    position: Optional[Coordinate3D] = None  # Backward-compatible alias
+    chainage_km: float = Field(..., ge=0.0)
+    referenced_block_id: Optional[str] = None
+    referenced_asset_id: Optional[str] = None
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+    schema_version: str = "1.0.0"
+
+    @model_validator(mode="after")
+    def sync_coords(self) -> "GeometryNode":
+        if self.position is None and self.coordinates is not None:
+            self.position = self.coordinates
+        elif self.coordinates is None and self.position is not None:
+            self.coordinates = self.position
+        elif self.coordinates is None and self.position is None:
+            raise ValueError(f"Node '{self.id}' must provide either 'coordinates' or 'position'")
+        return self
+
+class StationNode(GeometryNode):
+    name: str
+    code: str
+    entity_type: str = "station"
+    node_type: str = "station"  # "station", "junction", "terminal"
+    platforms: int = 2
+    connected_blocks: List[str] = []
+
+class JunctionNode(GeometryNode):
+    name: str
+    code: str
+    entity_type: str = "junction"
+    node_type: str = "junction"
+    diverging_blocks: List[str] = []
+    switch_type: str = "Turnout 1-in-12"
+    interlocking_status: str = "Active"
+
+class GeometryTrack(BaseModel):
+    """
+    Canonical 3D track model representing physical track blocks with 3D centerline path.
+    """
+    id: Optional[str] = None
     block_id: str
+    entity_type: str = "track"
     name: str = ""
-    start_coord: Vector3D
-    end_coord: Vector3D
-    path_points: List[Vector3D] = []
-    length_km: float
-    chainage_start: float
-    chainage_end: float
+    start_coord: Coordinate3D
+    end_coord: Coordinate3D
+    path_points: List[Coordinate3D] = Field(..., min_length=2)
+    length_km: float = Field(..., gt=0.0)
+    chainage_start: float = Field(..., ge=0.0)
+    chainage_end: float = Field(..., gt=0.0)
     elevation_profile: List[float] = []
     track_type: str = "Mainline"
     electrification: str = "25kV AC"
     gauge: str = "Broad Gauge 1676mm"
     speed_limit_kmh: float = 130.0
+    referenced_block_id: Optional[str] = None
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+    schema_version: str = "1.0.0"
 
-class StationNode(BaseModel):
-    id: str
-    name: str
-    code: str
-    position: Vector3D
-    chainage_km: float
-    node_type: str = "station"  # "station", "junction", "terminal"
-    platforms: int = 2
-    connected_blocks: List[str] = []
+    @model_validator(mode="after")
+    def check_track_invariants(self) -> "GeometryTrack":
+        if not self.id:
+            self.id = f"TRACK_{self.block_id}"
+        if not self.referenced_block_id:
+            self.referenced_block_id = self.block_id
+        if self.chainage_start >= self.chainage_end:
+            raise ValueError(
+                f"Track '{self.block_id}' chainage_start ({self.chainage_start}) must be strictly less than chainage_end ({self.chainage_end})"
+            )
+        return self
+
+TrackGeometry = GeometryTrack
 
 class SignalMarker(BaseModel):
     id: str
+    entity_type: str = "signal"
     block_id: str
-    chainage_km: float
-    position: Vector3D
+    referenced_block_id: Optional[str] = None
+    chainage_km: float = Field(..., ge=0.0)
+    coordinates: Optional[Coordinate3D] = None
+    position: Coordinate3D
     aspect: str = "clear"  # "clear", "caution", "danger"
     direction: str = "UP"  # "UP", "DOWN"
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+    schema_version: str = "1.0.0"
+
+    @model_validator(mode="after")
+    def sync_signal(self) -> "SignalMarker":
+        if not self.referenced_block_id:
+            self.referenced_block_id = self.block_id
+        if self.coordinates is None:
+            self.coordinates = self.position
+        return self
 
 class OHEMast(BaseModel):
     id: str
+    entity_type: str = "ohe_mast"
     block_id: str
-    position: Vector3D
+    referenced_block_id: Optional[str] = None
+    coordinates: Optional[Coordinate3D] = None
+    position: Coordinate3D
+    chainage_km: Optional[float] = None
     catenary_height_m: float = 5.5
     is_isolated: bool = False
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+    schema_version: str = "1.0.0"
+
+    @model_validator(mode="after")
+    def sync_mast(self) -> "OHEMast":
+        if not self.referenced_block_id:
+            self.referenced_block_id = self.block_id
+        if self.coordinates is None:
+            self.coordinates = self.position
+        return self
 
 class ConflictType(str, Enum):
     TRAIN_BLOCK = "train_vs_block"
@@ -183,18 +281,36 @@ class ConflictType(str, Enum):
     SAFETY_CLEARANCE = "insufficient_safety_clearance"
     OVERDUE_CRITICAL = "overdue_critical_maintenance"
 
-class ConflictItem(BaseModel):
+class NetworkConflict(BaseModel):
     id: str
+    entity_type: str = "conflict"
     conflict_type: ConflictType
     severity: str  # "CRITICAL", "MAJOR", "WARNING", "INFO"
     block_id: str
+    referenced_block_id: Optional[str] = None
     title: str
     description: str
     affected_jobs: List[str] = []
     affected_trains: List[str] = []
     time_window: Optional[Dict[str, float]] = None
     suggested_resolution: str = ""
-    position: Optional[Vector3D] = None
+    coordinates: Optional[Coordinate3D] = None
+    position: Optional[Coordinate3D] = None
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+    schema_version: str = "1.0.0"
+
+    @model_validator(mode="after")
+    def sync_conflict(self) -> "NetworkConflict":
+        if not self.referenced_block_id:
+            self.referenced_block_id = self.block_id
+        if self.coordinates is None and self.position is not None:
+            self.coordinates = self.position
+        elif self.position is None and self.coordinates is not None:
+            self.position = self.coordinates
+        return self
+
+ConflictItem = NetworkConflict
 
 class KPIReport(BaseModel):
     bue_percent: float
@@ -208,6 +324,8 @@ class KPIReport(BaseModel):
     consolidated_blocks: int
     mttg_minutes: Optional[float] = 22.5
     high_crit_completion_percent: Optional[float] = 100.0
+    asset_downtime_reduction_percent: Optional[float] = 25.64
+    solver_runtime_seconds: Optional[float] = 0.25
 
 class OptimizedSchedule(BaseModel):
     status: str
@@ -240,6 +358,18 @@ class AssetHealthRecord(BaseModel):
     last_ultrasonic_test: str
     days_overdue: int
     associated_job_id: Optional[str] = None
+    coordinates: Optional[Coordinate3D] = None
+    position: Optional[Coordinate3D] = None
+    geometry_source: str = "synthetic"
+    geometry_schema_version: str = "1.0.0"
+
+    @model_validator(mode="after")
+    def sync_asset_coords(self) -> "AssetHealthRecord":
+        if self.coordinates is None and self.position is not None:
+            self.coordinates = self.position
+        elif self.position is None and self.coordinates is not None:
+            self.position = self.coordinates
+        return self
 
 class SystemEvent(BaseModel):
     id: str
@@ -254,6 +384,7 @@ class SystemEvent(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str
+    geometry_schema_version: str = "1.0.0"
     solver_available: bool
     solver_name: str
     data_mode: str
@@ -290,19 +421,38 @@ class OptimizeRequest(BaseModel):
 class EvaluateRequest(BaseModel):
     schedule_id: Optional[str] = "latest"
 
+class CoordinateSystemContract(BaseModel):
+    name: str = "LOCAL_CORRIDOR"
+    crs: str = "LOCAL_CORRIDOR"
+    units: str = "meters"
+    axis_order: List[str] = Field(default_factory=lambda: ["x", "y", "z"])
+    handedness: str = "right-handed"
+    origin_description: str = "Synthetic local origin for the bounded railway division"
+    geometry_source: str = "synthetic"
+
 class NetworkGeometryResponse(BaseModel):
+    geometry_schema_version: str = "1.0.0"
+    coordinate_system: CoordinateSystemContract = Field(default_factory=CoordinateSystemContract)
     division: str = "Prayagraj (PRYJ)"
     line_name: str = "Subedarganj - Mirzapur Mainline Corridor"
     total_length_km: float
     is_synthetic: bool = True
+    geometry_source: str = "synthetic"
+    coordinate_convention: str = "X: corridor longitudinal (m), Y: elevation (m), Z: lateral offset (m)"
+    schema_version: str = "1.0.0"
     nodes: List[StationNode]
-    tracks: List[TrackGeometry]
+    tracks: List[GeometryTrack]
     signals: List[SignalMarker]
     ohe_masts: List[OHEMast]
     blocks: List[TrackBlock]
     conflicts: List[ConflictItem] = []
+    junctions: List[JunctionNode] = []
+    assets: List[AssetHealthRecord] = []
+    disconnected_components: List[List[str]] = []
 
 class PlanningCapabilitiesResponse(BaseModel):
+    geometry_schema_version: str = "1.0.0"
+    coordinate_system: CoordinateSystemContract = Field(default_factory=CoordinateSystemContract)
     solver_available: bool
     solver_name: str
     fallback_active: bool

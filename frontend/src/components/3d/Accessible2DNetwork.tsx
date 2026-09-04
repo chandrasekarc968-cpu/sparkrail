@@ -46,6 +46,8 @@ export const Accessible2DNetwork: React.FC<Accessible2DNetworkProps> = ({
   const tracks = geometry?.tracks || [];
   const nodes = geometry?.nodes || [];
   const conflicts = schedule?.conflicts || geometry?.conflicts || [];
+  const totalLengthKm = geometry?.total_length_km || 
+    (tracks.length > 0 ? Math.max(...tracks.map(t => t.chainage_end)) : 80.0);
 
   return (
     <div
@@ -117,8 +119,8 @@ export const Accessible2DNetwork: React.FC<Accessible2DNetworkProps> = ({
 
           {/* Block Sections */}
           {tracks.map((track) => {
-            const startX = 50 + (track.chainage_start / 80.0) * 900;
-            const endX = 50 + (track.chainage_end / 80.0) * 900;
+            const startX = 50 + (track.chainage_start / totalLengthKm) * 900;
+            const endX = 50 + (track.chainage_end / totalLengthKm) * 900;
             const blockState = blockStates.get(track.block_id) || { status: 'available' };
             const color = STATE_COLORS[blockState.status] || '#94a3b8';
             const isSelected = selectedEntityId === track.block_id;
@@ -173,7 +175,7 @@ export const Accessible2DNetwork: React.FC<Accessible2DNetworkProps> = ({
 
           {/* Station Nodes along Corridor */}
           {nodes.map((node) => {
-            const nodeX = 50 + (node.chainage_km / 80.0) * 900;
+            const nodeX = 50 + (node.chainage_km / totalLengthKm) * 900;
             const isSelected = selectedEntityId === node.id;
 
             return (
@@ -230,7 +232,14 @@ export const Accessible2DNetwork: React.FC<Accessible2DNetworkProps> = ({
 
           {/* Active Trains along Track */}
           {trainPositions.map((tp) => {
-            const trainX = 50 + ((tp.position.x + 400.0) / 800.0) * 900;
+            const track = tracks.find(t => t.block_id === tp.currentBlockId);
+            let trainChainage: number;
+            if (track) {
+              trainChainage = track.chainage_start + (track.chainage_end - track.chainage_start) * tp.progress;
+            } else {
+              trainChainage = ((tp.position.x + 400.0) / 800.0) * totalLengthKm;
+            }
+            const trainX = 50 + (trainChainage / totalLengthKm) * 900;
             const isPrem = tp.train.category === 'premium';
             const color = isPrem ? '#d97706' : '#1d4ed8';
             const isSelected = selectedEntityId === tp.train.id;
@@ -263,8 +272,20 @@ export const Accessible2DNetwork: React.FC<Accessible2DNetworkProps> = ({
           })}
 
           {/* Active Conflicts Alert Icons */}
-          {conflicts.map((conf, cIdx) => {
-            const confX = conf.position ? 50 + ((conf.position.x + 400.0) / 800.0) * 900 : 150 + cIdx * 120;
+          {conflicts.map((conf) => {
+            let confChainage: number | null = null;
+            if (conf.position) {
+              confChainage = ((conf.position.x + 400.0) / 800.0) * totalLengthKm;
+            } else if (conf.block_id) {
+              const trk = tracks.find(t => t.block_id === conf.block_id);
+              if (trk) {
+                confChainage = (trk.chainage_start + trk.chainage_end) / 2;
+              }
+            }
+            if (confChainage === null) {
+              return null; // Zero-invention: do not render conflicts without canonical spatial coordinates or track
+            }
+            const confX = 50 + (confChainage / totalLengthKm) * 900;
             return (
               <g
                 key={conf.id}

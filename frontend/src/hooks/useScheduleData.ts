@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ApiClient } from '../api/client';
 import type { OptimizedSchedule, KPIReport } from '../api/types';
 
@@ -13,26 +13,39 @@ export function useScheduleData() {
   const [viewMode, setViewMode] = useState<ScheduleViewMode>('optimized');
   const [freezeWeek1, setFreezeWeek1] = useState<boolean>(false);
   const [solverProgress, setSolverProgress] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchSchedule = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      const sched = await ApiClient.getSchedule('latest');
+      const sched = await ApiClient.getSchedule('latest', controller.signal);
       setSchedule(sched);
       if (sched.kpi_metrics) {
         setKpis(sched.kpi_metrics);
       }
     } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
       console.warn("No active schedule found, optimizing initial baseline:", err);
       // Fallback: trigger optimize to initialize schedule
       try {
-        const newSched = await ApiClient.optimizeSchedule();
+        const newSched = await ApiClient.optimizeSchedule(controller.signal);
         setSchedule(newSched);
         if (newSched.kpi_metrics) {
           setKpis(newSched.kpi_metrics);
         }
       } catch (optErr: unknown) {
+        if (optErr instanceof DOMException && optErr.name === 'AbortError') {
+          return;
+        }
         setError(optErr instanceof Error ? optErr.message : "Failed to load schedule");
       }
     } finally {
@@ -64,6 +77,11 @@ export function useScheduleData() {
 
   useEffect(() => {
     fetchSchedule();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchSchedule]);
 
   return {

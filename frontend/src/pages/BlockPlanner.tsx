@@ -22,7 +22,8 @@ import {
   ChevronDown,
   ChevronRight,
   ShieldCheck,
-  Info
+  Info,
+  Zap
 } from 'lucide-react';
 
 export function BlockPlanner() {
@@ -49,6 +50,20 @@ export function BlockPlanner() {
 
   const [hoveredJob, setHoveredJob] = useState<ScheduledJob | null>(null);
   const [localPreviewJob, setLocalPreviewJob] = useState<string | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
+
+  const handleRunOptimization = async () => {
+    try {
+      setIsOptimizing(true);
+      setError(null);
+      const newSched = await ApiClient.optimizeSchedule();
+      setSchedule(newSched);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to run optimization.");
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -154,8 +169,25 @@ export function BlockPlanner() {
           </p>
         </div>
 
-        {/* Schedule Mode Switcher & Week selector */}
-        <div className="flex items-center space-x-2">
+        {/* Schedule Mode Switcher, Optimization Trigger & Week selector */}
+        <div className="flex items-center flex-wrap gap-2">
+          {schedule && (
+            <Badge variant="neutral" size="sm" className="font-mono text-xs hidden sm:inline-flex">
+              Solver: {schedule.solver} ({schedule.status})
+            </Badge>
+          )}
+
+          <Button
+            size="sm"
+            onClick={handleRunOptimization}
+            disabled={isOptimizing}
+            isLoading={isOptimizing}
+            className="bg-accent-600 hover:bg-accent-700 text-white font-semibold cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5 mr-1" />
+            {isOptimizing ? 'Running Solver...' : 'Run Optimization'}
+          </Button>
+
           {/* Week Selector */}
           <div className="flex bg-neutral-100 p-1 rounded border border-neutral-200 text-xs font-semibold">
             {[1, 2, 3, 4].map((w) => (

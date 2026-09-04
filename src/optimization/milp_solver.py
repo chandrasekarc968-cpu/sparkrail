@@ -10,6 +10,7 @@ from src.data_pipeline.models import (
     UnscheduledJobReason,
     OptimizedSchedule
 )
+from src.optimization.safety_validator import validate_schedule_safety, SafetyViolationError
 
 try:
     from pyscipopt import Model, quicksum
@@ -56,6 +57,16 @@ class MaintenanceSchedulerMILP:
         else:
             result = self._solve_heuristic(scenario, job_tcis)
         result["runtime_seconds"] = round(time.time() - start_time, 4)
+
+        # Audit schedule against physical railway safety invariants
+        safety_audit = validate_schedule_safety(
+            result, scenario, horizon=self.horizon, raise_on_error=False
+        )
+        result["safety_audit"] = {
+            "is_safe": safety_audit.is_safe,
+            "violations": safety_audit.violations,
+            "warnings": safety_audit.warnings
+        }
         return result
 
     def _solve_scip(self, scenario: Scenario, job_tcis: Dict[str, float]) -> Dict[str, Any]:
@@ -118,6 +129,15 @@ class MaintenanceSchedulerMILP:
             end = min(self.horizon, int(fb.end_time))
             for t in range(start, end):
                 model.addCons(y[k, t] == 1, name=f"fb_{fb.id}_{t}")
+
+            # Non-fixed jobs cannot overlap external fixed blocks on the same section
+            for job in jobs:
+                if not job.is_fixed and job.block_id == k:
+                    dur = int(job.duration)
+                    for t_start in range(self.horizon - dur + 1):
+                        if (job.id, t_start) in x:
+                            if not (t_start + dur <= start or t_start >= end):
+                                model.addCons(x[job.id, t_start] == 0, name=f"no_fb_overlap_{job.id}_{fb.id}_{t_start}")
 
         # c) Block closure linking: any active job forces y[k, t] = 1
         for job in jobs:
@@ -459,6 +479,18 @@ class MaintenanceSchedulerMILP:
             # Find best candidate slot
             best_t = None
             for t_cand in range(self.horizon - dur + 1):
+                # 0. Fixed block non-overlap check
+                fb_conflict = False
+                for fb in scenario.fixed_blocks:
+                    if fb.block_id == k:
+                        fb_s = int(fb.start_time)
+                        fb_e = int(fb.end_time)
+                        if not (t_cand + dur <= fb_s or t_cand >= fb_e):
+                            fb_conflict = True
+                            break
+                if fb_conflict:
+                    continue
+
                 # 1. Department compatibility
                 incompat = False
                 for t in range(t_cand, t_cand + dur):

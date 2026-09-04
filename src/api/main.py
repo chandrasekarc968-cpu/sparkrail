@@ -39,6 +39,7 @@ from src.data_pipeline.synthetic_data import (
     derive_conflicts
 )
 from src.data_pipeline.ingestion import DataIngestor, DataIngestionError
+from src.data_pipeline.geometry_validator import validate_network_geometry, GeometryValidationError
 from src.ai_ml.criticality_scorer import TaskCriticalityScorer
 from src.optimization.milp_solver import MaintenanceSchedulerMILP, SCIP_AVAILABLE
 from src.simulation.evaluator import KPIEvaluator
@@ -152,6 +153,7 @@ def health_check():
     return HealthResponse(
         status="ok",
         version="1.0.0",
+        geometry_schema_version="1.0.0",
         solver_available=SCIP_AVAILABLE,
         solver_name="PySCIPOpt" if SCIP_AVAILABLE else "NON_OPTIMAL_FALLBACK",
         data_mode="local_synthetic",
@@ -481,7 +483,15 @@ def get_network_3d_geometry():
             save_synthetic_data(path=synth_path)
         ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
         scenario = ingestor.load_scenario()
-        return generate_network_geometry(scenario)
+        geom = generate_network_geometry(scenario)
+        validate_network_geometry(geom, scenario=scenario, raise_on_error=True)
+        return geom
+    except GeometryValidationError as gve:
+        logger.error(f"Geometry invariant validation failed: {gve}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Railway geometry failed invariant validation: {gve}"
+        )
     except Exception as e:
         logger.error(f"Error generating 3D network geometry: {e}")
         raise HTTPException(
@@ -497,6 +507,7 @@ def get_planning_capabilities():
     supported horizons, and capacity metrics for 3D AI planning.
     """
     return PlanningCapabilitiesResponse(
+        geometry_schema_version="1.0.0",
         solver_available=SCIP_AVAILABLE,
         solver_name="PySCIPOpt" if SCIP_AVAILABLE else "NON_OPTIMAL_FALLBACK",
         fallback_active=(not SCIP_AVAILABLE),

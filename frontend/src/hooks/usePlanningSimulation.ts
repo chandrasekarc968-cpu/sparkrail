@@ -25,10 +25,27 @@ export interface TrainPosition {
   affectedByMaintenance: boolean;
 }
 
+function interpolateAlongPath(points: Vector3D[], progress: number): Vector3D {
+  if (!points || points.length === 0) return { x: 0, y: 0, z: 0 };
+  if (points.length === 1) return { ...points[0], y: points[0].y + 0.5 };
+  const p = Math.max(0.0, Math.min(1.0, progress));
+  const segCount = points.length - 1;
+  const segIdx = Math.min(segCount - 1, Math.floor(p * segCount));
+  const segProgress = (p * segCount) - segIdx;
+  const p0 = points[segIdx];
+  const p1 = points[segIdx + 1];
+  return {
+    x: p0.x + (p1.x - p0.x) * segProgress,
+    y: p0.y + (p1.y - p0.y) * segProgress + 0.5,
+    z: p0.z + (p1.z - p0.z) * segProgress
+  };
+}
+
 export function usePlanningSimulation(
   scenario: Scenario | null,
   schedule: OptimizedSchedule | null,
-  tracks: TrackGeometry[]
+  tracks: TrackGeometry[],
+  isDemo: boolean = true
 ) {
   const [currentTime, setCurrentTime] = useState<number>(3.5); // Start at 3.5h (mid-morning operations)
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -51,7 +68,18 @@ export function usePlanningSimulation(
   // Animation frame loop for timeline replay
   const lastTickRef = useRef<number>(0);
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      lastTickRef.current = 0;
+      return;
+    }
+
+    const prefersReducedMotion = typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      // Reduced-motion users receive a stable non-animated view, but can still scrub manually
+      setIsPlaying(false);
+      return;
+    }
 
     let animId: number;
     const tick = (now: number) => {
@@ -88,7 +116,7 @@ export function usePlanningSimulation(
   const trainPositions = useMemo<TrainPosition[]>(() => {
     if (!scenario || !scenario.trains) return [];
 
-    return scenario.trains.map(train => {
+    const positions: (TrainPosition | null)[] = scenario.trains.map(train => {
       const { scheduled_start, scheduled_end, route } = train;
       const duration = Math.max(0.1, scheduled_end - scheduled_start);
 
@@ -96,11 +124,14 @@ export function usePlanningSimulation(
       if (currentTime < scheduled_start) {
         // Train parked at first station
         const firstTrack = trackMap.get(route[0]);
-        const pos = firstTrack ? firstTrack.start_coord : { x: -400, y: 0, z: 0 };
+        if (!firstTrack) {
+          if (!isDemo) return null; // In non-demo mode, never invent coordinates
+          return null;
+        }
         return {
           train,
           currentBlockId: route[0],
-          position: pos,
+          position: { ...firstTrack.start_coord, y: firstTrack.start_coord.y + 0.5 },
           progress: 0,
           isMoving: false,
           affectedByMaintenance: false
@@ -111,11 +142,14 @@ export function usePlanningSimulation(
         // Train arrived at terminus
         const lastBlockId = route[route.length - 1];
         const lastTrack = trackMap.get(lastBlockId);
-        const pos = lastTrack ? lastTrack.end_coord : { x: 400, y: 0, z: 0 };
+        if (!lastTrack) {
+          if (!isDemo) return null;
+          return null;
+        }
         return {
           train,
           currentBlockId: lastBlockId,
-          position: pos,
+          position: { ...lastTrack.end_coord, y: lastTrack.end_coord.y + 0.5 },
           progress: 1,
           isMoving: false,
           affectedByMaintenance: false
@@ -132,24 +166,13 @@ export function usePlanningSimulation(
       );
       const currBlockId = route[blockIndex];
       const track = trackMap.get(currBlockId);
+      if (!track) {
+        if (!isDemo) return null; // Never invent position when track is absent
+        return null;
+      }
 
       const blockProgress = (overallProgress * route.length) - blockIndex;
-      
-      let pos: Vector3D = { x: 0, y: 0, z: 0 };
-      if (track) {
-        const startX = track.start_coord.x;
-        const endX = track.end_coord.x;
-        const startZ = track.start_coord.z;
-        const endZ = track.end_coord.z;
-        const startY = track.start_coord.y;
-        const endY = track.end_coord.y;
-
-        pos = {
-          x: startX + (endX - startX) * blockProgress,
-          y: startY + (endY - startY) * blockProgress + 0.5,
-          z: startZ + (endZ - startZ) * blockProgress
-        };
-      }
+      const pos = interpolateAlongPath(track.path_points || [track.start_coord, track.end_coord], blockProgress);
 
       // Check if current block has active maintenance possession
       let affected = false;
@@ -168,7 +191,9 @@ export function usePlanningSimulation(
         affectedByMaintenance: affected
       };
     });
-  }, [scenario, currentTime, trackMap, schedule]);
+
+    return positions.filter((tp): tp is TrainPosition => tp !== null);
+  }, [scenario, currentTime, trackMap, schedule, isDemo]);
 
   // Operational state for each block at currentTime
   const blockStates = useMemo(() => {

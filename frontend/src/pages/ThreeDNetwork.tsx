@@ -8,6 +8,8 @@ import { Accessible2DNetwork } from '../components/3d/Accessible2DNetwork';
 import { SceneControls } from '../components/3d/SceneControls';
 import { TimelineController } from '../components/3d/TimelineController';
 import { PlanningInspector } from '../components/3d/PlanningInspector';
+import { PerfInstrumentationPanel } from '../components/3d/PerfInstrumentationPanel';
+import { generateStressNetworkFixture } from '../fixtures/stressFixture';
 
 export const ThreeDNetwork: React.FC = () => {
   const {
@@ -35,7 +37,26 @@ export const ThreeDNetwork: React.FC = () => {
     runOptimization
   } = useScheduleData();
 
-  const tracks = useMemo(() => geometry?.tracks || [], [geometry]);
+  const [stressMode, setStressMode] = useState<boolean>(false);
+  const [showPerfPanel, setShowPerfPanel] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('perf') === 'true';
+    }
+    return false;
+  });
+
+  const stressData = useMemo(() => {
+    if (!stressMode) return null;
+    return generateStressNetworkFixture();
+  }, [stressMode]);
+
+  const activeGeometry = stressMode ? stressData?.geometry || geometry : geometry;
+  const activeScenario = stressMode ? stressData?.scenario || scenario : scenario;
+  const activeAssets = stressMode
+    ? stressData?.assets || assets
+    : (activeGeometry?.assets && activeGeometry.assets.length > 0 ? activeGeometry.assets : assets);
+
+  const tracks = useMemo(() => activeGeometry?.tracks || [], [activeGeometry]);
 
   const {
     currentTime,
@@ -55,7 +76,7 @@ export const ThreeDNetwork: React.FC = () => {
     trainPositions,
     blockStates,
     maxHorizonHours
-  } = usePlanningSimulation(scenario, schedule, tracks);
+  } = usePlanningSimulation(activeScenario, schedule, tracks, isDemo);
 
   const [is2DView, setIs2DView] = useState<boolean>(false);
   const [showKpiDrawer, setShowKpiDrawer] = useState<boolean>(true);
@@ -178,10 +199,36 @@ export const ThreeDNetwork: React.FC = () => {
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ fontSize: '11px', color: '#64748b' }}>
             Refreshed: {lastRefreshed.toLocaleTimeString()}
           </div>
+
+          <button
+            onClick={() => setStressMode(prev => !prev)}
+            style={{
+              ...secondaryBtnStyle,
+              backgroundColor: stressMode ? '#7c3aed' : '#ffffff',
+              color: stressMode ? '#ffffff' : '#0f172a',
+              borderColor: stressMode ? '#6d28d9' : '#cbd5e1'
+            }}
+            title="Toggle deterministic 1,000-block, 5,000-asset stress test fixture"
+          >
+            {stressMode ? '⚡ Stress: 1,000 Blocks (ON)' : '⚡ Stress Fixture'}
+          </button>
+
+          <button
+            onClick={() => setShowPerfPanel(prev => !prev)}
+            style={{
+              ...secondaryBtnStyle,
+              backgroundColor: showPerfPanel ? '#0284c7' : '#ffffff',
+              color: showPerfPanel ? '#ffffff' : '#0f172a',
+              borderColor: showPerfPanel ? '#0369a1' : '#cbd5e1'
+            }}
+            title="Toggle WebGL performance instrumentation (FPS, draw calls, memory)"
+          >
+            {showPerfPanel ? '📊 Telemetry (ON)' : '📊 Telemetry'}
+          </button>
 
           <button
             onClick={() => runOptimization()}
@@ -343,7 +390,7 @@ export const ThreeDNetwork: React.FC = () => {
         {/* Scene Viewport */}
         {is2DView ? (
           <Accessible2DNetwork
-            geometry={geometry}
+            geometry={activeGeometry}
             schedule={schedule}
             currentTime={currentTime}
             trainPositions={trainPositions}
@@ -353,18 +400,25 @@ export const ThreeDNetwork: React.FC = () => {
           />
         ) : (
           <NetworkScene
-            geometry={geometry}
-            scenario={scenario}
+            geometry={activeGeometry!}
+            scenario={activeScenario}
             schedule={schedule}
-            assets={assets}
+            assets={activeAssets}
             trainPositions={trainPositions}
             blockStates={blockStates}
             cameraMode={cameraMode}
             selectedEntity={selectedEntity}
             onSelectEntity={selectEntity}
             focusTarget={focusTarget}
+            onFallbackTo2D={() => setIs2DView(true)}
           />
         )}
+
+        {/* Development WebGL Performance Instrumentation Panel */}
+        <PerfInstrumentationPanel
+          isVisible={showPerfPanel}
+          onToggle={() => setShowPerfPanel(false)}
+        />
 
         {/* Detail Inspector Drawer (Right Side) */}
         {selectedEntity && (
