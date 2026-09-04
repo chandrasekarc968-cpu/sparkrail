@@ -1,38 +1,18 @@
 """
-Main entry point for the AI-Powered Railway Block Planning System.
+SparkRail AI Block Planning System - Main Entry Point.
 """
-import os
 import sys
-
-# Import modules from src
-from src.data_pipeline.ingestion import KafkaStreamConnector, PostGISConnector
-from src.optimization.milp_scip import MaintenanceSchedulerMILP
-from src.ai_ml.xgboost_criticality import TaskCriticalityModel
-from src.ai_ml.gnn_encoder import RailwayStateEncoder
-from src.simulation.sumo_interface import SUMOSimulationEnv
+from src.cli import main as cli_main
 
 def main():
-    print("Initializing AI-Powered Railway Block Planning System...")
-    
-    # Placeholder for configuration loading (from config/ directory)
-    config = {}
-
-    # Initialize components
-    print("Setting up Data Pipeline...")
-    kafka_conn = KafkaStreamConnector(config)
-    db_conn = PostGISConnector(config)
-    
-    print("Setting up Optimization Module...")
-    scheduler = MaintenanceSchedulerMILP()
-    
-    print("Setting up AI/ML Modules...")
-    criticality_model = TaskCriticalityModel()
-    state_encoder = RailwayStateEncoder(hidden_channels=64, out_channels=32)
-    
-    print("Setting up Simulation Environment...")
-    sim_env = SUMOSimulationEnv(config)
-    
-    print("System initialization complete.")
+    """
+    Entry point for SparkRail.
+    Delegates to the canonical CLI in src.cli.
+    """
+    if len(sys.argv) == 1:
+        # Default to running the demo if no arguments are provided
+        sys.argv.append("demo")
+    cli_main()
 
 if __name__ == "__main__":
     main()

@@ -395,6 +395,37 @@ export function BlockPlanner() {
                 <span>Frozen Week 1 Boundary</span>
               </div>
             </div>
+
+            {/* Unscheduled Tasks in Current Horizon */}
+            {schedule.unscheduled_jobs.length > 0 && (
+              <div className="pt-3 border-t border-neutral-100">
+                <span className="font-bold text-neutral-800 uppercase tracking-tight block text-[10px] mb-1.5">
+                  Unscheduled Tasks ({schedule.unscheduled_jobs.length})
+                </span>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {schedule.unscheduled_jobs.map((u) => (
+                    <button
+                      key={u.job_id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedJobId(u.job_id);
+                        setLocalPreviewJob(null);
+                      }}
+                      className={`w-full text-left p-1.5 rounded border text-[11px] font-mono flex items-center justify-between cursor-pointer transition-colors ${
+                        selectedJobId === u.job_id
+                          ? "bg-op-red-light/50 border-op-red text-op-red-dark font-bold"
+                          : "bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+                      }`}
+                    >
+                      <span>{u.job_id}</span>
+                      <span className="text-[9px] text-op-red font-sans font-medium truncate max-w-[120px]">
+                        {u.conflict_with || "Unscheduled"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -748,11 +779,31 @@ export function BlockPlanner() {
                   <span className="font-bold text-neutral-800 text-[10px] uppercase tracking-wider block mb-1">
                     Solver Allocation Rationale
                   </span>
-                  <p className="text-xs text-neutral-600 leading-relaxed bg-white p-2 rounded border border-neutral-200">
-                    {selectedScheduledJob
-                      ? `Scheduled during traffic window to clear high TCI safety penalty (${selectedScoredJob.tci}). Synchronized with adjacent tasks to minimize cumulative section closure.`
-                      : "Rejected from Week 1 rolling horizon due to conflicting premium train priority."}
-                  </p>
+                  <div className="text-xs text-neutral-600 leading-relaxed bg-white p-2.5 rounded border border-neutral-200">
+                    {selectedScheduledJob ? (
+                      <div>
+                        <span className="font-semibold text-op-green-dark block mb-1">
+                          ✓ Allocated Possession Window
+                        </span>
+                        <span>
+                          Scheduled on section {selectedScheduledJob.block_id} from {selectedScheduledJob.start_time}:00 to {selectedScheduledJob.end_time}:00.
+                          {selectedScheduledJob.is_shadow_block
+                            ? ` Multi-department shadow block consolidated with: ${selectedScheduledJob.shadow_with_jobs?.join(", ") || "parallel task"}.`
+                            : " Exclusive track possession."}
+                        </span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="font-semibold text-op-red block mb-1">
+                          ✗ Unscheduled in Horizon
+                        </span>
+                        <span>
+                          {schedule.unscheduled_jobs.find((u) => u.job_id === selectedFullJob.id)?.reason ||
+                            "Rejected from current horizon due to corridor congestion or priority tradeoffs."}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Local Preview Action */}

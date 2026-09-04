@@ -49,7 +49,7 @@ export function isDemoModeEnabled(): boolean {
       return localVal === 'true';
     }
   }
-  return import.meta.env.VITE_DEMO_MODE !== 'false';
+  return import.meta.env.VITE_DEMO_MODE === 'true';
 }
 
 export function setDemoModeEnabled(enabled: boolean): void {
@@ -100,7 +100,11 @@ export const ApiClient = {
       return { status: "ok", version: "1.0.0-demo" };
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/health`, { signal });
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data !== 'object' || typeof data.status !== 'string') {
+      throw new ApiError(502, "Invalid health response from backend API", data);
+    }
+    return data;
   },
 
   async generateData(signal?: AbortSignal): Promise<{ message: string }> {
@@ -112,7 +116,11 @@ export const ApiClient = {
       method: 'POST',
       signal
     });
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data !== 'object' || typeof data.message !== 'string') {
+      throw new ApiError(502, "Invalid response from data generation endpoint", data);
+    }
+    return data;
   },
 
   async getScenario(signal?: AbortSignal): Promise<Scenario> {
@@ -120,9 +128,12 @@ export const ApiClient = {
       await new Promise((r) => setTimeout(r, 200));
       return mockScenario;
     }
-    // Backend loads scenario via /scenario or scores
     const res = await fetchWithRetry(`${getApiBaseUrl()}/scenario`, { signal });
-    return res.json();
+    const data = await res.json();
+    if (!data || !Array.isArray(data.blocks) || !Array.isArray(data.jobs)) {
+      throw new ApiError(502, "Invalid scenario response schema from backend", data);
+    }
+    return data;
   },
 
   async scoreJobs(signal?: AbortSignal): Promise<{ scored_jobs: ScoredJob[] }> {
@@ -134,7 +145,11 @@ export const ApiClient = {
       method: 'POST',
       signal
     });
-    return res.json();
+    const data = await res.json();
+    if (!data || !Array.isArray(data.scored_jobs)) {
+      throw new ApiError(502, "Invalid scoring response schema from backend", data);
+    }
+    return data;
   },
 
   async optimizeSchedule(signal?: AbortSignal): Promise<OptimizedSchedule> {
@@ -146,7 +161,11 @@ export const ApiClient = {
       method: 'POST',
       signal
     });
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data.status !== 'string' || !Array.isArray(data.scheduled_jobs)) {
+      throw new ApiError(502, "Invalid schedule optimization schema from backend", data);
+    }
+    return data;
   },
 
   async evaluateKPIs(signal?: AbortSignal): Promise<KPIReport> {
@@ -158,7 +177,11 @@ export const ApiClient = {
       method: 'POST',
       signal
     });
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data.bue_percent !== 'number') {
+      throw new ApiError(502, "Invalid KPI evaluation schema from backend", data);
+    }
+    return data;
   },
 
   async getSchedule(scheduleId = "latest", signal?: AbortSignal): Promise<OptimizedSchedule> {
@@ -167,7 +190,11 @@ export const ApiClient = {
       return mockSchedule;
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/schedule/${scheduleId}`, { signal });
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data.status !== 'string' || !Array.isArray(data.scheduled_jobs)) {
+      throw new ApiError(502, "Invalid schedule response schema from backend", data);
+    }
+    return data;
   },
 
   async getAssetHealth(signal?: AbortSignal): Promise<AssetHealthRecord[]> {
@@ -176,7 +203,11 @@ export const ApiClient = {
       return mockAssetHealth;
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/assets/health`, { signal });
-    return res.json();
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      throw new ApiError(502, "Invalid asset health list response from backend", data);
+    }
+    return data;
   },
 
   async getEvents(signal?: AbortSignal): Promise<SystemEvent[]> {
@@ -185,6 +216,10 @@ export const ApiClient = {
       return mockEvents;
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/events`, { signal });
-    return res.json();
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      throw new ApiError(502, "Invalid events list response from backend", data);
+    }
+    return data;
   }
 };

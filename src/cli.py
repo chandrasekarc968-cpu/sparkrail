@@ -15,14 +15,20 @@ def load_config(path="config/settings.yaml"):
     if not os.path.exists(path):
         return {}
     with open(path, "r") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f) or {}
 
 def generate_data(args):
-    save_synthetic_data(args.output)
-    print(f"Synthetic data generated at {args.output}")
+    out_dir = getattr(args, "output", "data/synthetic")
+    seed = getattr(args, "seed", 42)
+    os.makedirs(out_dir, exist_ok=True)
+    file_path = save_synthetic_data(path=out_dir, seed=seed)
+    print(f"Synthetic data generated at {file_path}")
 
 def score(args):
     config = load_config(args.config)
+    synth_path = getattr(args, "output", "data/synthetic")
+    config.setdefault("data_pipeline", {})["synthetic_data_path"] = synth_path
+    
     ingestor = DataIngestor(config)
     scenario = ingestor.load_scenario()
     
@@ -32,31 +38,32 @@ def score(args):
     for job in scenario.jobs:
         tci, explanation = scorer.calculate_tci(job.tci_inputs)
         print(f"Job {job.id} ({job.department}) - TCI: {tci:.2f}")
-        if args.verbose:
-            pprint(explanation)
+        if getattr(args, "verbose", False):
+            pprint(explanation.model_dump())
             print("-" * 40)
 
 def optimize(args):
     config = load_config(args.config)
+    synth_path = getattr(args, "output", "data/synthetic")
+    config.setdefault("data_pipeline", {})["synthetic_data_path"] = synth_path
+    
     ingestor = DataIngestor(config)
     scenario = ingestor.load_scenario()
     
     # 1. Score
     scorer = TaskCriticalityScorer(config)
-    job_tcis = {}
-    for job in scenario.jobs:
-        tci, _ = scorer.calculate_tci(job.tci_inputs)
-        job_tcis[job.id] = tci
+    job_tcis = {job.id: scorer.calculate_tci(job.tci_inputs)[0] for job in scenario.jobs}
         
-    # 2. Rolling Horizon (Optional freeze step for demo)
-    if args.freeze:
-        # Load previous dummy schedule or mock one
-        rh = RollingHorizonScheduler(freeze_duration_hours=12)
-        scenario = rh.apply_freeze({"scheduled_jobs": [{"job_id": "J_ENG_1", "start_time": 5}]}, scenario)
+    # 2. Rolling Horizon (Optional freeze step)
+    if getattr(args, "freeze", False):
+        rh = RollingHorizonScheduler(freeze_duration_hours=24)
+        mock_prev = {"scheduled_jobs": [{"job_id": "J_FIXED_1", "start_time": 2.0}]}
+        scenario = rh.apply_freeze(mock_prev, scenario)
         
     # 3. Optimize
     solver = MaintenanceSchedulerMILP(config)
-    print("Running PySCIPOpt MILP Solver...")
+    solver_name = "PySCIPOpt" if getattr(solver, "_solve_scip", None) else "NON_OPTIMAL_FALLBACK"
+    print(f"Running {solver_name} MILP Solver...")
     result = solver.solve(scenario, job_tcis)
     
     if result["status"] not in ("optimal", "feasible", "heuristic_feasible"):
@@ -67,21 +74,25 @@ def optimize(args):
     print(f"Scheduled Jobs: {len(result['scheduled_jobs'])} / {len(scenario.jobs)}")
     
     # Save schedule
+    os.makedirs("data", exist_ok=True)
     with open("data/schedule_output.json", "w") as f:
         json.dump(result, f, indent=4)
     print("Schedule saved to data/schedule_output.json")
 
 def evaluate(args):
     config = load_config(args.config)
+    synth_path = getattr(args, "output", "data/synthetic")
+    config.setdefault("data_pipeline", {})["synthetic_data_path"] = synth_path
+    
     ingestor = DataIngestor(config)
     scenario = ingestor.load_scenario()
     
-    try:
-        with open("data/schedule_output.json", "r") as f:
-            schedule = json.load(f)
-    except FileNotFoundError:
-        print("Schedule file not found. Run 'optimize' first.")
+    if not os.path.exists("data/schedule_output.json"):
+        print("Schedule file not found at data/schedule_output.json. Run 'optimize' first.")
         return
+        
+    with open("data/schedule_output.json", "r") as f:
+        schedule = json.load(f)
         
     scorer = TaskCriticalityScorer(config)
     job_tcis = {job.id: scorer.calculate_tci(job.tci_inputs)[0] for job in scenario.jobs}
@@ -93,6 +104,7 @@ def evaluate(args):
     for k, v in result["kpi_metrics"].items():
         print(f"{k}: {v}")
         
+    os.makedirs("data", exist_ok=True)
     with open("data/kpi_report.json", "w") as f:
         json.dump(result["kpi_metrics"], f, indent=4)
     print("\nKPI Report saved to data/kpi_report.json")
@@ -121,17 +133,22 @@ def main():
 
     gen_parser = subparsers.add_parser("generate-data", help="Generate synthetic BDMS/COA data")
     gen_parser.add_argument("--output", default="data/synthetic", help="Output directory")
+    gen_parser.add_argument("--seed", type=int, default=42, help="Random seed")
 
     score_parser = subparsers.add_parser("score", help="Calculate TCI for all jobs")
+    score_parser.add_argument("--output", default="data/synthetic", help="Scenario directory")
     score_parser.add_argument("-v", "--verbose", action="store_true", help="Show score explanation")
 
     opt_parser = subparsers.add_parser("optimize", help="Run MILP block scheduler")
+    opt_parser.add_argument("--output", default="data/synthetic", help="Scenario directory")
     opt_parser.add_argument("--freeze", action="store_true", help="Apply rolling horizon freeze")
 
     eval_parser = subparsers.add_parser("evaluate", help="Evaluate schedule KPIs")
+    eval_parser.add_argument("--output", default="data/synthetic", help="Scenario directory")
 
     demo_parser = subparsers.add_parser("demo", help="Run full end-to-end demo workflow")
     demo_parser.add_argument("--output", default="data/synthetic", help="Output directory for data")
+    demo_parser.add_argument("--seed", type=int, default=42, help="Random seed")
     demo_parser.add_argument("-v", "--verbose", action="store_true", help="Show score explanation")
     demo_parser.add_argument("--freeze", action="store_true", help="Apply rolling horizon freeze")
 
