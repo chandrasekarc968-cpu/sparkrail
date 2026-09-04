@@ -135,12 +135,136 @@ export interface OptimizedSchedule {
   objective_value: number;
   runtime_seconds?: number;
   kpi_metrics?: KPIReport;
+  conflicts?: ConflictItem[];
+  shadow_block_groups?: ShadowBlockGroup[];
+  is_fallback?: boolean;
+  explainability?: Record<string, JobExplanation>;
 }
 
 export interface ScoredJob {
   job_id: string;
   tci: number;
   explanation: TCIExplanation;
+}
+
+export interface Vector3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface TrackGeometry {
+  block_id: string;
+  name: string;
+  start_coord: Vector3D;
+  end_coord: Vector3D;
+  path_points: Vector3D[];
+  length_km: number;
+  chainage_start: number;
+  chainage_end: number;
+  elevation_profile: number[];
+  track_type: string;
+  electrification: string;
+  gauge?: string;
+  speed_limit_kmh: number;
+}
+
+export interface StationNode {
+  id: string;
+  name: string;
+  code: string;
+  position: Vector3D;
+  chainage_km: number;
+  node_type: "station" | "junction" | "terminal";
+  platforms: number;
+  connected_blocks: string[];
+}
+
+export interface SignalMarker {
+  id: string;
+  block_id: string;
+  chainage_km: number;
+  position: Vector3D;
+  aspect: "clear" | "caution" | "danger" | "stop";
+  direction: "UP" | "DOWN";
+}
+
+export interface OHEMast {
+  id: string;
+  block_id: string;
+  position: Vector3D;
+  catenary_height_m: number;
+  is_isolated: boolean;
+}
+
+export type ConflictType = 
+  | "train_vs_block"
+  | "premium_train_risk"
+  | "incompatible_department"
+  | "resource_overallocation"
+  | "fixed_block_collision"
+  | "insufficient_safety_clearance"
+  | "overdue_critical_maintenance";
+
+export interface ConflictItem {
+  id: string;
+  conflict_type: ConflictType;
+  severity: "CRITICAL" | "MAJOR" | "WARNING" | "INFO";
+  block_id: string;
+  title: string;
+  description: string;
+  affected_jobs: string[];
+  affected_trains: string[];
+  time_window?: { start: number; end: number };
+  suggested_resolution: string;
+  position?: Vector3D;
+}
+
+export interface NetworkGeometryResponse {
+  division: string;
+  line_name: string;
+  total_length_km: number;
+  is_synthetic: boolean;
+  nodes: StationNode[];
+  tracks: TrackGeometry[];
+  signals: SignalMarker[];
+  ohe_masts: OHEMast[];
+  blocks: TrackBlock[];
+  conflicts: ConflictItem[];
+}
+
+export interface PlanningCapabilitiesResponse {
+  solver_available: boolean;
+  solver_name: string;
+  fallback_active: boolean;
+  model_mode: string;
+  model_version: string;
+  supports_3d_geometry: boolean;
+  demo_mode: boolean;
+  supported_horizons_days: number[];
+  routes_available: string[];
+  max_blocks_capacity: number;
+  max_trains_capacity: number;
+}
+
+export interface ShadowBlockGroup {
+  group_id: string;
+  block_id: string;
+  start_time: number;
+  end_time: number;
+  jobs: string[];
+  departments?: Department[];
+}
+
+export interface JobExplanation {
+  job_id: string;
+  tci: number;
+  tci_components: Record<string, unknown>;
+  priority_rationale: string;
+  window_rationale: string;
+  consolidation_rationale?: string;
+  protected_trains: string[];
+  active_constraints: string[];
 }
 
 export interface SystemEvent {

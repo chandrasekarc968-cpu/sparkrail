@@ -53,9 +53,21 @@ graph TD
    - Typed Pydantic request/response validation.
    - `X-Request-ID` tracing middleware and structured logging.
    - Sanitized error envelopes without leaking stack traces or internal server paths.
+   - 3D Corridor Spatial endpoints: `GET /network/geometry` and `GET /planning/capabilities`.
    - Configurable data directories and environment-based CORS.
-6. **React Operations Control Room (`frontend/`)**:
-   - 7 primary pages: Overview, Block Planner, Jobs Register, Live Operations, Asset Health, Reports, Settings.
+6. **3D Railway Control Room & Accessible 2D Interface (`frontend/src/pages/ThreeDNetwork.tsx`)**:
+   - Built on React 19 + TypeScript + Vite + `@react-three/fiber` + `@react-three/drei` + Three.js.
+   - 3D spatial coordinate conventions:
+     - **X Axis (-400m to +400m)**: Longitudinal track corridor across Prayagraj Division (SFG to MZP).
+     - **Y Axis (0m to 12m)**: Elevation gradient, catenary wire height, and marker elevation.
+     - **Z Axis (-30m to +30m)**: Track curvature, yard loop divergence, and lateral clearance.
+   - Full operational state visualization: Available, Active Possession, Planned Maintenance, Frozen Week 1, Fixed Block, Shadow Consolidation, High-Risk Asset, and Active Conflict.
+   - Dynamic simulation timeline with play/pause, scrub, 0.5x–5x speed, and horizon presets (24h, 48h, 7d, 28d).
+   - Multi-angle camera controls: Fit to Network, Reset Angle, Overhead Top-Down, and Side Elevation.
+   - Accessible 2D SVG Schematic fallback with tabular operational status for low-power or non-WebGL environments.
+   - Planning Detail Inspector with job TCI component breakdown, AI explainability, and train protection notes.
+7. **React Operations Control Room (`frontend/`)**:
+   - 8 primary pages: Overview, 3D Network, Block Planner, Jobs Register, Live Operations, Asset Health, Reports, Settings.
    - Dual-mode operation: Live API connection or deterministic simulation demo mode.
 
 ---
@@ -67,9 +79,10 @@ graph TD
 | **Core TCI Scorer** | **Production MVP** | Deterministic multi-attribute formula normalized to [0, 100] with full explanations. |
 | **PySCIPOpt MILP** | **Production MVP** | Exact mathematical solver with OHE safety isolation, shadow rewards, and premium train limits. |
 | **Fallback Scheduler** | **Production MVP** | Deterministic heuristic explicitly labeled `NON_OPTIMAL_FALLBACK` (never claims optimality). |
+| **3D Corridor Scene** | **Production MVP** | Navigable 3D WebGL corridor with rails, ballast, OHE masts, signals, trains, and volumetric possessions. |
+| **Accessible 2D View** | **Production MVP** | High-contrast 2D SVG schematic with WCAG AA compliance and accessible HTML tabular status. |
 | **Rolling Horizon Engine**| **Production MVP** | Week 1 freeze, disruption replanning, rollover, and structured audit trail. |
-| **FastAPI REST Service** | **Production MVP** | Typed Pydantic endpoints (`/health`, `/score`, `/optimize`, `/evaluate`, etc.). |
-| **React 19 Frontend** | **Production MVP** | Complete 7-page control-room UI with WCAG AA compliance and interactive Gantt planner. |
+| **FastAPI REST Service** | **Production MVP** | Typed Pydantic endpoints (`/health`, `/score`, `/optimize`, `/network/geometry`, `/planning/capabilities`). |
 | **Kafka / PostGIS** | **Optional Integration** | Ingestion placeholders for real-time COA/TMS streams in Indian Railways enterprise networks. |
 | **XGBoost Degradation** | **Experimental Research** | Gradient boosted tree model requiring offline GMT training datasets; guarded against untrained inference. |
 | **GNN State Encoder** | **Experimental Research** | PyTorch Geometric heterogeneous graph neural network prototype for topological embedding. |
@@ -189,9 +202,11 @@ Where:
 | Method | Route | Description |
 |:---|:---|:---|
 | `GET` | `/health` | System status, version, solver engine, data mode, and commit SHA |
+| `GET` | `/network/geometry` | 3D corridor geometry (tracks, nodes, signals, OHE masts, coordinates) |
+| `GET` | `/planning/capabilities`| Solver availability, fallback status, routes, and 3D geometry capacity |
 | `POST` | `/data/generate` | Generates deterministic synthetic railway division dataset |
 | `POST` | `/score` | Calculates normalized TCI scores with component explanations |
-| `POST` | `/optimize` | Runs MILP or fallback optimizer, returning complete schedule |
+| `POST` | `/optimize` | Runs MILP or fallback optimizer, returning schedule with conflicts and explainability |
 | `POST` | `/evaluate` | Evaluates BUE, SBR, PII delay savings against manual baseline |
 | `GET` | `/schedule/{id}` | Retrieves optimized schedule by ID (e.g. `/schedule/latest`) |
 | `GET` | `/scenario` | Retrieves active block, train, job, and resource topology |
@@ -202,11 +217,15 @@ Where:
 
 ## Automated Testing Suite
 
-### Backend Pytest Suite
+### Backend Pytest Suite (37 Tests)
 ```bash
 pytest -q
 ```
 Covers:
+- 3D network corridor geometry generation, station coordinates, signal markers, and OHE masts.
+- Network connectivity, chainage continuity, and coordinate range bounds (-400m to +400m).
+- Conflict derivation (train vs block, cross-department safety hazards, premium train risk).
+- Explainability generation (prioritization rationale, constraints, consolidated departments).
 - Model validation (track block chainage ordering, train schedules, fixed job constraints).
 - TCI weight validation, normalization bounds [0, 100], overdue curves, and determinism.
 - Untrained XGBoost inference protection.
@@ -216,11 +235,17 @@ Covers:
 - Rolling horizon Week 1 freeze, disruption replanning, rollover, and freight ETAs.
 - Full API endpoint contracts, CORS headers, sanitized validation error envelopes, and request ID propagation.
 
-### Frontend Vitest Suite
+### Frontend Vitest Suite (29 Tests across 8 Test Files)
 ```bash
 cd frontend && npm test -- --run
 ```
 Covers:
+- 3D network geometry API retrieval and planning capabilities contract.
+- Accessible 2D SVG schematic rendering, high-contrast symbols, and corridor operational status table.
+- Operations timeline controller (scrubber, playback 0.5x–5x, play/pause, time window presets).
+- Planning Detail Inspector (block details, job TCI component breakdown, AI explainability, no fake confidence scores).
+- Viewport controls (fit to network, reset angle, top-down, side elevation, 2D fallback toggle).
+- Navigation routing and active links (`/3d`, `/planner`, etc.).
 - API client live vs demo mode switching.
 - KPI calculations and comparison metric deltas.
 - TCI badges and accessibility screen-reader landmarks.
@@ -229,7 +254,9 @@ Covers:
 
 ---
 
-## Known Limitations
-1. **Remote Kafka/PostGIS Ingestion**: Configured as an optional enterprise integration; in local and standalone environments, the deterministic synthetic data pipeline is utilized.
-2. **PySCIPOpt Platform Availability**: PySCIPOpt requires compatible SCIP shared libraries on Linux/macOS/Windows. If binary wheels are absent, SparkRail smoothly falls back to `NON_OPTIMAL_FALLBACK` without crashing.
-3. **DRL / GNN Modules**: Provided as research prototypes in `src/ai_ml/` and labeled as experimental in the settings UI.
+## Known Limitations & Production Disclosures
+1. **Corridor Geometry**: The 3D view utilizes a realistic synthetic corridor modeled after the Prayagraj Division (Subedarganj to Mirzapur, 80 km). It is clearly disclosed in the UI as "Synthetic Corridor (PRYJ Division)" until GIS/PostGIS shapefiles are plugged in.
+2. **PySCIPOpt Platform Availability**: PySCIPOpt requires SCIP shared libraries. When available, it solves the MILP formulation to provable optimality. If unavailable, SparkRail automatically activates the deterministic priority heuristic and transparently flags all outputs as `NON_OPTIMAL_FALLBACK`.
+3. **Remote Kafka/PostGIS Ingestion**: Configured as an optional enterprise integration; in local and standalone environments, the deterministic synthetic data pipeline is utilized.
+4. **DRL / GNN Modules**: Provided as research prototypes in `src/ai_ml/` and labeled as experimental in the settings UI.
+5. **Explainability vs Artificial Confidence**: SparkRail provides mathematical and constraint-based explanations for every AI recommendation. It does not invent or hallucinate synthetic probability or confidence percentages.

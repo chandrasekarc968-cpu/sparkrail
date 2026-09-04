@@ -25,13 +25,18 @@ from src.data_pipeline.models import (
     OptimizeRequest,
     EvaluateRequest,
     AssetHealthRecord,
-    SystemEvent
+    SystemEvent,
+    NetworkGeometryResponse,
+    PlanningCapabilitiesResponse,
+    ConflictItem
 )
 from src.data_pipeline.synthetic_data import (
     generate_synthetic_data,
     save_synthetic_data,
     generate_synthetic_assets,
-    generate_synthetic_events
+    generate_synthetic_events,
+    generate_network_geometry,
+    derive_conflicts
 )
 from src.data_pipeline.ingestion import DataIngestor, DataIngestionError
 from src.ai_ml.criticality_scorer import TaskCriticalityScorer
@@ -221,6 +226,81 @@ def score_jobs(req: Optional[ScoreRequest] = None):
             detail="Failed to calculate Task Criticality Index scores."
         )
 
+def build_schedule_explainability(scenario: Scenario, schedule_data: Dict[str, Any], job_tcis: Dict[str, float]) -> Dict[str, Any]:
+    scorer = TaskCriticalityScorer(get_config())
+    explanations = {}
+    
+    for sj in schedule_data.get("scheduled_jobs", []):
+        job_id = sj["job_id"] if isinstance(sj, dict) else sj.job_id
+        block_id = sj["block_id"] if isinstance(sj, dict) else sj.block_id
+        start_time = sj["start_time"] if isinstance(sj, dict) else sj.start_time
+        end_time = sj["end_time"] if isinstance(sj, dict) else sj.end_time
+        is_shadow = sj.get("is_shadow_block", False) if isinstance(sj, dict) else sj.is_shadow_block
+        shadow_with = sj.get("shadow_with_jobs", []) if isinstance(sj, dict) else sj.shadow_with_jobs
+
+        job = next((j for j in scenario.jobs if j.id == job_id), None)
+        tci_val = job_tcis.get(job_id, 0.0)
+        tci_expl = scorer.calculate_tci(job.tci_inputs)[1] if job else None
+        
+        priority_reasons = []
+        if job and job.is_fixed:
+            priority_reasons.append("Pre-scheduled immutable mega-block commitment.")
+        elif tci_val >= 0.7:
+            priority_reasons.append(f"High Task Criticality Index ({tci_val:.2f}) prioritizing safety & track integrity.")
+        elif job and job.tci_inputs.overdue_days > 14:
+            priority_reasons.append(f"Statutory maintenance overdue by {job.tci_inputs.overdue_days} days.")
+        else:
+            priority_reasons.append(f"Routine preventive maintenance (TCI: {tci_val:.2f}).")
+            
+        consolidation = ""
+        if is_shadow:
+            consolidation = f"Consolidated into shadow possession with {', '.join(shadow_with)} to minimize corridor closure hours."
+            
+        protected_trains = [
+            t.id for t in scenario.trains 
+            if block_id in t.route and (t.scheduled_start >= end_time or t.scheduled_end <= start_time)
+        ]
+        
+        explanations[job_id] = {
+            "job_id": job_id,
+            "tci": tci_val,
+            "tci_components": tci_expl.model_dump() if tci_expl else {},
+            "priority_rationale": " ".join(priority_reasons),
+            "window_rationale": f"Scheduled in operational corridor gap [T+{start_time:.1f}h - T+{end_time:.1f}h].",
+            "consolidation_rationale": consolidation,
+            "protected_trains": protected_trains[:3],
+            "active_constraints": [
+                "Track possession exclusivity",
+                "Department traction power isolation (PTW)" if (job and job.department.value == "OHE") else "Standard track possession clearance",
+                "Resource capacity limit"
+            ]
+        }
+        
+    return explanations
+
+def extract_shadow_groups(scheduled_jobs: List[Any]) -> List[Dict[str, Any]]:
+    groups = []
+    processed = set()
+    for item in scheduled_jobs:
+        job_id = item["job_id"] if isinstance(item, dict) else item.job_id
+        is_shadow = item.get("is_shadow_block", False) if isinstance(item, dict) else item.is_shadow_block
+        shadow_with = item.get("shadow_with_jobs", []) if isinstance(item, dict) else item.shadow_with_jobs
+        block_id = item["block_id"] if isinstance(item, dict) else item.block_id
+        start_time = item["start_time"] if isinstance(item, dict) else item.start_time
+        end_time = item["end_time"] if isinstance(item, dict) else item.end_time
+
+        if is_shadow and job_id not in processed:
+            group_jobs = [job_id] + list(shadow_with)
+            processed.update(group_jobs)
+            groups.append({
+                "group_id": f"SHADOW-{block_id}-{int(start_time)}",
+                "block_id": block_id,
+                "start_time": start_time,
+                "end_time": end_time,
+                "jobs": group_jobs
+            })
+    return groups
+
 # 4. Schedule Optimization
 @app.post("/optimize", response_model=OptimizedSchedule)
 def optimize_schedule(req: Optional[OptimizeRequest] = None):
@@ -246,6 +326,17 @@ def optimize_schedule(req: Optional[OptimizeRequest] = None):
         # Run KPI evaluation to enrich schedule output
         evaluator = KPIEvaluator(scenario)
         result = evaluator.evaluate(result, job_tcis)
+
+        # Add conflicts, shadow groups, and explainability
+        is_fallback = (result.get("solver") == "NON_OPTIMAL_FALLBACK")
+        result["is_fallback"] = is_fallback
+        result["shadow_block_groups"] = extract_shadow_groups(result.get("scheduled_jobs", []))
+        result["explainability"] = build_schedule_explainability(scenario, result, job_tcis)
+
+        # Derive operational conflicts
+        temp_sched = OptimizedSchedule(**result)
+        conflicts = derive_conflicts(scenario, temp_sched)
+        result["conflicts"] = [c.model_dump() for c in conflicts]
 
         # Save schedule output safely
         data_dir = get_base_data_dir()
@@ -375,6 +466,49 @@ def get_assets_health():
 def get_system_events():
     """Returns the operational and solver event stream."""
     return generate_synthetic_events()
+
+# 10. 3D Network Geometry Endpoint
+@app.get("/network/geometry", response_model=NetworkGeometryResponse)
+def get_network_3d_geometry():
+    """
+    Returns 3D spatial geometry for tracks, stations, signals, and OHE masts
+    along the Prayagraj division corridor, plus active operational conflicts.
+    """
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        scenario_file = os.path.join(synth_path, "scenario.json")
+        if not os.path.exists(scenario_file):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+        return generate_network_geometry(scenario)
+    except Exception as e:
+        logger.error(f"Error generating 3D network geometry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate 3D network geometry."
+        )
+
+# 11. Planning Capabilities Endpoint
+@app.get("/planning/capabilities", response_model=PlanningCapabilitiesResponse)
+def get_planning_capabilities():
+    """
+    Returns solver availability, fallback status, model versions,
+    supported horizons, and capacity metrics for 3D AI planning.
+    """
+    return PlanningCapabilitiesResponse(
+        solver_available=SCIP_AVAILABLE,
+        solver_name="PySCIPOpt" if SCIP_AVAILABLE else "NON_OPTIMAL_FALLBACK",
+        fallback_active=(not SCIP_AVAILABLE),
+        model_mode="rule_based",
+        model_version=TaskCriticalityScorer.MODEL_VERSION,
+        supports_3d_geometry=True,
+        demo_mode=True,
+        supported_horizons_days=[7, 14, 28],
+        routes_available=["Subedarganj - Mirzapur Mainline", "Naini Jn - Chheoki Bypass", "Prayagraj West Freight Loop"],
+        max_blocks_capacity=100,
+        max_trains_capacity=200
+    )
 
 if __name__ == "__main__":
     import uvicorn

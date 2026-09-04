@@ -9,10 +9,11 @@ The system replaces manual, heuristic-driven block coordination with mathematica
 ## Technology Stack
 
 - **Core**: React 19, TypeScript, Vite
+- **3D Engine**: Three.js, `@react-three/fiber`, `@react-three/drei`
 - **Styling**: Tailwind CSS v4 with OKLCH Color Palette & Railway Control-Room Tokens
 - **Icons**: Lucide React
 - **Charts**: Recharts
-- **Testing**: Vitest + React Testing Library + JSDOM
+- **Testing**: Vitest + React Testing Library + JSDOM (29 tests across 8 suites)
 - **Linting & Types**: ESLint 9 (Flat Config), TypeScript 5.8+ (Strict, `erasableSyntaxOnly` compliant)
 
 ---
@@ -28,7 +29,7 @@ The interface adheres strictly to an Indian Railways control-room standard rathe
 
 ---
 
-## 7 Primary Operational Views
+## 8 Primary Operational Views
 
 1. **Operations Overview (`/overview`)**:
    - Dominant division operations summary area with real-time health indicator.
@@ -39,7 +40,16 @@ The interface adheres strictly to an Indian Railways control-room standard rathe
    - Department workload distribution (Engineering, S&T, OHE).
    - "Run Optimization" (MILP solver trigger) and "Review Conflicts" modal actions.
 
-2. **Block Planner (`/planner`)**:
+2. **3D Railway Corridor & Allocation Control Room (`/3d`)**:
+   - WebGL-powered 3D corridor visualization representing Prayagraj Division (SFG to MZP, 80 km).
+   - High-fidelity physical assets: 3D steel rails, ballast foundation, OHE catenary masts, signal gantries, and stations.
+   - Multi-attribute operational state encoding: Available, Active Maintenance, Planned Possession, Frozen Week 1, Fixed Block, Multi-Department Shadow Block, High-Risk Asset, and Active Conflict.
+   - Dynamic simulation timeline with play/pause, scrub, 0.5x–5x speed, and horizon presets (24h, 48h, 7d, 28d).
+   - Multi-angle camera controls: Fit to Network, Reset Angle, Overhead Top-Down, and Side Elevation.
+   - Accessible 2D SVG Schematic fallback with tabular operational status for low-power or non-WebGL environments.
+   - Planning Detail Inspector with job TCI component breakdown, AI explainability, and train protection notes.
+
+3. **Block Planner (`/planner`)**:
    - 3-pane scheduling workspace: Left filter rail, Center horizontal 24h/48h Gantt timeline, Right task inspector drawer.
    - Interactive timeline displaying track blocks B1 to B8, maintenance possessions, train movements, fixed/immovable blocks (`FB1`, `FB2`), and multi-department shadow blocks.
    - Distinct **Frozen Week 1** visual treatment with locked boundary badges and diagonal striping.

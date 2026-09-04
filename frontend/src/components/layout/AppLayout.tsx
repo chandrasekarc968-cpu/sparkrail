@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Box,
   CalendarDays,
   Wrench,
   Activity,
@@ -21,10 +22,13 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { isDemoMode } = useAppContext();
+  const location = useLocation();
+  const is3DPage = location.pathname === '/3d';
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const navItems = [
     { name: 'Overview', to: '/overview', icon: LayoutDashboard },
+    { name: '3D Network', to: '/3d', icon: Box },
     { name: 'Block Planner', to: '/planner', icon: CalendarDays },
     { name: 'Maintenance Jobs', to: '/jobs', icon: Wrench },
     { name: 'Live Operations', to: '/live', icon: Activity },
@@ -119,7 +123,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <GlobalHeader onToggleMobileNav={() => setIsMobileNavOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 focus:outline-none">
+        <main className={is3DPage ? "flex-1 overflow-hidden focus:outline-none" : "flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 focus:outline-none"}>
           {children}
         </main>
       </div>

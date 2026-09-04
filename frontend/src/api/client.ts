@@ -5,6 +5,8 @@ import type {
   KPIReport,
   SystemEvent,
   AssetHealthRecord,
+  NetworkGeometryResponse,
+  PlanningCapabilitiesResponse
 } from './types';
 import {
   mockScenario,
@@ -12,7 +14,9 @@ import {
   mockScoredJobs,
   mockKPIReport,
   mockEvents,
-  mockAssetHealth
+  mockAssetHealth,
+  mockNetworkGeometry,
+  mockPlanningCapabilities
 } from './mockData';
 
 export class ApiError extends Error {
@@ -219,6 +223,32 @@ export const ApiClient = {
     const data = await res.json();
     if (!Array.isArray(data)) {
       throw new ApiError(502, "Invalid events list response from backend", data);
+    }
+    return data;
+  },
+
+  async getNetworkGeometry(signal?: AbortSignal): Promise<NetworkGeometryResponse> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 180));
+      return mockNetworkGeometry;
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/network/geometry`, { signal });
+    const data = await res.json();
+    if (!data || !Array.isArray(data.tracks) || !Array.isArray(data.nodes)) {
+      throw new ApiError(502, "Invalid 3D network geometry response from backend", data);
+    }
+    return data;
+  },
+
+  async getPlanningCapabilities(signal?: AbortSignal): Promise<PlanningCapabilitiesResponse> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 100));
+      return mockPlanningCapabilities;
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/planning/capabilities`, { signal });
+    const data = await res.json();
+    if (!data || typeof data.solver_name !== 'string') {
+      throw new ApiError(502, "Invalid planning capabilities response from backend", data);
     }
     return data;
   }

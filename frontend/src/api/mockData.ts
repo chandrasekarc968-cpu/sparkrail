@@ -5,7 +5,10 @@ import type {
   KPIReport,
   SystemEvent,
   AssetHealthRecord,
-  DivisionInfo
+  DivisionInfo,
+  NetworkGeometryResponse,
+  PlanningCapabilitiesResponse,
+  ConflictItem
 } from './types';
 
 export const mockDivisions: DivisionInfo[] = [
@@ -551,3 +554,306 @@ export const mockAssetHealth: AssetHealthRecord[] = [
     associated_job_id: "J3"
   },
 ];
+
+export const mockConflicts: ConflictItem[] = [
+  {
+    id: "CONF-FIXED-FB1",
+    conflict_type: "fixed_block_collision",
+    severity: "CRITICAL",
+    block_id: "B1",
+    title: "Mega Block Lock on B1",
+    description: "Pre-scheduled immutable block FB1 occupies section B1 from T+2.0h to T+6.0h. All routine traffic and conflicting jobs barred.",
+    affected_jobs: ["J15", "J17"],
+    affected_trains: ["T6", "T8"],
+    time_window: { start: 2.0, end: 6.0 },
+    suggested_resolution: "Consolidate compatible routine jobs into shadow window or re-route express trains via loop line.",
+    position: { x: -350.0, y: 1.0, z: 0.0 }
+  },
+  {
+    id: "CONF-DEPT-J1-J7",
+    conflict_type: "incompatible_department",
+    severity: "MAJOR",
+    block_id: "B4",
+    title: "Cross-Department Safety Hazard on B4",
+    description: "OHE 25kV power isolation on J1 conflicts with live circuit testing on J7 in section B4.",
+    affected_jobs: ["J1", "J7"],
+    affected_trains: [],
+    time_window: { start: 10.0, end: 12.0 },
+    suggested_resolution: "Sequence S&T point motor testing after 25kV traction re-energization or enforce joint permit-to-work.",
+    position: { x: -50.0, y: 1.8, z: 2.0 }
+  },
+  {
+    id: "CONF-OVERDUE-AST-TRK-B2-01",
+    conflict_type: "overdue_critical_maintenance",
+    severity: "CRITICAL",
+    block_id: "B2",
+    title: "Critical Defect: Switch Point Machine 104A (B2)",
+    description: "Health score 42%, overdue by 14 days. Observed motor current surge during throw. High derailment probability.",
+    affected_jobs: ["J2"],
+    affected_trains: ["T6", "T8"],
+    time_window: { start: 0.0, end: 24.0 },
+    suggested_resolution: "Grant immediate emergency maintenance possession or impose 30 km/h caution order.",
+    position: { x: -250.0, y: 1.2, z: 6.0 }
+  },
+  {
+    id: "CONF-PREMIUM-T3",
+    conflict_type: "premium_train_risk",
+    severity: "WARNING",
+    block_id: "B5",
+    title: "Punctuality Risk: 22436 Vande Bharat Express (T3)",
+    description: "Priority passenger service T3 scheduled window [2.0h - 5.0h] traverses corridor during heavy track possession. Risk of punctuality index degradation.",
+    affected_jobs: [],
+    affected_trains: ["T3"],
+    time_window: { start: 2.0, end: 5.0 },
+    suggested_resolution: "Lock green wave signal priority corridor; prohibit maintenance possession within 60 minutes of ETA.",
+    position: { x: 50.0, y: 0.5, z: -2.0 }
+  }
+];
+
+export const mockNetworkGeometry: NetworkGeometryResponse = {
+  division: "Prayagraj (PRYJ)",
+  line_name: "Subedarganj - Mirzapur Mainline Corridor",
+  total_length_km: 80.0,
+  is_synthetic: true,
+  nodes: [
+    { id: "NODE_SFG", name: "Subedarganj", code: "SFG", position: { x: -400.0, y: 0.0, z: 0.0 }, chainage_km: 0.0, node_type: "terminal", platforms: 4, connected_blocks: ["B1"] },
+    { id: "NODE_PRYJ", name: "Prayagraj Jn", code: "PRYJ", position: { x: -300.0, y: 0.0, z: 2.0 }, chainage_km: 10.0, node_type: "junction", platforms: 8, connected_blocks: ["B1", "B2"] },
+    { id: "NODE_NYN", name: "Naini Jn", code: "NYN", position: { x: -200.0, y: 1.5, z: 8.0 }, chainage_km: 20.0, node_type: "junction", platforms: 4, connected_blocks: ["B2", "B3"] },
+    { id: "NODE_KCN", name: "Karchana", code: "KCN", position: { x: -100.0, y: 2.0, z: 4.0 }, chainage_km: 30.0, node_type: "station", platforms: 2, connected_blocks: ["B3", "B4"] },
+    { id: "NODE_BEP", name: "Bheepur", code: "BEP", position: { x: 0.0, y: 0.5, z: -2.0 }, chainage_km: 40.0, node_type: "station", platforms: 2, connected_blocks: ["B4", "B5"] },
+    { id: "NODE_MJA", name: "Meja Road", code: "MJA", position: { x: 100.0, y: -1.0, z: 5.0 }, chainage_km: 50.0, node_type: "station", platforms: 2, connected_blocks: ["B5", "B6"] },
+    { id: "NODE_UND", name: "Unchdih", code: "UND", position: { x: 200.0, y: 1.0, z: 12.0 }, chainage_km: 60.0, node_type: "station", platforms: 2, connected_blocks: ["B6", "B7"] },
+    { id: "NODE_MNF", name: "Manda Road", code: "MNF", position: { x: 300.0, y: 2.5, z: 6.0 }, chainage_km: 70.0, node_type: "station", platforms: 2, connected_blocks: ["B7", "B8"] },
+    { id: "NODE_MZP", name: "Mirzapur", code: "MZP", position: { x: 400.0, y: 0.0, z: 0.0 }, chainage_km: 80.0, node_type: "junction", platforms: 4, connected_blocks: ["B8"] }
+  ],
+  tracks: [
+    {
+      block_id: "B1",
+      name: "Subedarganj to Prayagraj (B1)",
+      start_coord: { x: -400.0, y: 0.0, z: 0.0 },
+      end_coord: { x: -300.0, y: 0.0, z: 2.0 },
+      path_points: [
+        { x: -400.0, y: 0.0, z: 0.0 },
+        { x: -380.0, y: 0.2, z: 0.5 },
+        { x: -360.0, y: 0.4, z: 1.0 },
+        { x: -340.0, y: 0.3, z: 1.5 },
+        { x: -320.0, y: 0.1, z: 1.8 },
+        { x: -300.0, y: 0.0, z: 2.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 0.0,
+      chainage_end: 10.0,
+      elevation_profile: [0.0, 0.2, 0.4, 0.3, 0.1, 0.0],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 110.0
+    },
+    {
+      block_id: "B2",
+      name: "Prayagraj to Naini (B2)",
+      start_coord: { x: -300.0, y: 0.0, z: 2.0 },
+      end_coord: { x: -200.0, y: 1.5, z: 8.0 },
+      path_points: [
+        { x: -300.0, y: 0.0, z: 2.0 },
+        { x: -280.0, y: 0.5, z: 3.5 },
+        { x: -260.0, y: 1.0, z: 5.0 },
+        { x: -240.0, y: 1.2, z: 6.5 },
+        { x: -220.0, y: 1.4, z: 7.5 },
+        { x: -200.0, y: 1.5, z: 8.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 10.0,
+      chainage_end: 20.0,
+      elevation_profile: [0.0, 0.5, 1.0, 1.2, 1.4, 1.5],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 80.0
+    },
+    {
+      block_id: "B3",
+      name: "Naini to Karchana (B3)",
+      start_coord: { x: -200.0, y: 1.5, z: 8.0 },
+      end_coord: { x: -100.0, y: 2.0, z: 4.0 },
+      path_points: [
+        { x: -200.0, y: 1.5, z: 8.0 },
+        { x: -180.0, y: 1.7, z: 7.2 },
+        { x: -160.0, y: 1.9, z: 6.0 },
+        { x: -140.0, y: 2.0, z: 5.0 },
+        { x: -120.0, y: 2.0, z: 4.4 },
+        { x: -100.0, y: 2.0, z: 4.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 20.0,
+      chainage_end: 30.0,
+      elevation_profile: [1.5, 1.7, 1.9, 2.0, 2.0, 2.0],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 120.0
+    },
+    {
+      block_id: "B4",
+      name: "Karchana to Bheepur (B4)",
+      start_coord: { x: -100.0, y: 2.0, z: 4.0 },
+      end_coord: { x: 0.0, y: 0.5, z: -2.0 },
+      path_points: [
+        { x: -100.0, y: 2.0, z: 4.0 },
+        { x: -80.0, y: 1.6, z: 2.5 },
+        { x: -60.0, y: 1.2, z: 1.0 },
+        { x: -40.0, y: 0.9, z: -0.2 },
+        { x: -20.0, y: 0.7, z: -1.2 },
+        { x: 0.0, y: 0.5, z: -2.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 30.0,
+      chainage_end: 40.0,
+      elevation_profile: [2.0, 1.6, 1.2, 0.9, 0.7, 0.5],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 75.0
+    },
+    {
+      block_id: "B5",
+      name: "Bheepur to Meja Road (B5)",
+      start_coord: { x: 0.0, y: 0.5, z: -2.0 },
+      end_coord: { x: 100.0, y: -1.0, z: 5.0 },
+      path_points: [
+        { x: 0.0, y: 0.5, z: -2.0 },
+        { x: 20.0, y: 0.1, z: -0.5 },
+        { x: 40.0, y: -0.3, z: 1.0 },
+        { x: 60.0, y: -0.7, z: 2.8 },
+        { x: 80.0, y: -0.9, z: 4.1 },
+        { x: 100.0, y: -1.0, z: 5.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 40.0,
+      chainage_end: 50.0,
+      elevation_profile: [0.5, 0.1, -0.3, -0.7, -0.9, -1.0],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 130.0
+    },
+    {
+      block_id: "B6",
+      name: "Meja Road to Unchdih (B6)",
+      start_coord: { x: 100.0, y: -1.0, z: 5.0 },
+      end_coord: { x: 200.0, y: 1.0, z: 12.0 },
+      path_points: [
+        { x: 100.0, y: -1.0, z: 5.0 },
+        { x: 120.0, y: -0.5, z: 6.8 },
+        { x: 140.0, y: 0.0, z: 8.5 },
+        { x: 160.0, y: 0.4, z: 10.0 },
+        { x: 180.0, y: 0.7, z: 11.2 },
+        { x: 200.0, y: 1.0, z: 12.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 50.0,
+      chainage_end: 60.0,
+      elevation_profile: [-1.0, -0.5, 0.0, 0.4, 0.7, 1.0],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 90.0
+    },
+    {
+      block_id: "B7",
+      name: "Unchdih to Manda Road (B7)",
+      start_coord: { x: 200.0, y: 1.0, z: 12.0 },
+      end_coord: { x: 300.0, y: 2.5, z: 6.0 },
+      path_points: [
+        { x: 200.0, y: 1.0, z: 12.0 },
+        { x: 220.0, y: 1.4, z: 10.8 },
+        { x: 240.0, y: 1.8, z: 9.2 },
+        { x: 260.0, y: 2.1, z: 8.0 },
+        { x: 280.0, y: 2.3, z: 7.0 },
+        { x: 300.0, y: 2.5, z: 6.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 60.0,
+      chainage_end: 70.0,
+      elevation_profile: [1.0, 1.4, 1.8, 2.1, 2.3, 2.5],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 120.0
+    },
+    {
+      block_id: "B8",
+      name: "Manda Road to Mirzapur (B8)",
+      start_coord: { x: 300.0, y: 2.5, z: 6.0 },
+      end_coord: { x: 400.0, y: 0.0, z: 0.0 },
+      path_points: [
+        { x: 300.0, y: 2.5, z: 6.0 },
+        { x: 320.0, y: 2.0, z: 4.8 },
+        { x: 340.0, y: 1.5, z: 3.4 },
+        { x: 360.0, y: 1.0, z: 2.0 },
+        { x: 380.0, y: 0.5, z: 0.8 },
+        { x: 400.0, y: 0.0, z: 0.0 }
+      ],
+      length_km: 10.0,
+      chainage_start: 70.0,
+      chainage_end: 80.0,
+      elevation_profile: [2.5, 2.0, 1.5, 1.0, 0.5, 0.0],
+      track_type: "Mainline",
+      electrification: "25kV AC",
+      speed_limit_kmh: 130.0
+    }
+  ],
+  signals: [
+    { id: "SIG_B1_UP", block_id: "B1", chainage_km: 0.5, position: { x: -396.0, y: 0.0, z: 1.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B1_DN", block_id: "B1", chainage_km: 9.5, position: { x: -304.0, y: 0.0, z: -1.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B2_UP", block_id: "B2", chainage_km: 10.5, position: { x: -296.0, y: 0.1, z: 3.5 }, aspect: "caution", direction: "UP" },
+    { id: "SIG_B2_DN", block_id: "B2", chainage_km: 19.5, position: { x: -204.0, y: 1.4, z: 6.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B3_UP", block_id: "B3", chainage_km: 20.5, position: { x: -196.0, y: 1.5, z: 9.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B3_DN", block_id: "B3", chainage_km: 29.5, position: { x: -104.0, y: 2.0, z: 2.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B4_UP", block_id: "B4", chainage_km: 30.5, position: { x: -96.0, y: 1.9, z: 5.5 }, aspect: "danger", direction: "UP" },
+    { id: "SIG_B4_DN", block_id: "B4", chainage_km: 39.5, position: { x: -4.0, y: 0.5, z: -3.5 }, aspect: "danger", direction: "DOWN" },
+    { id: "SIG_B5_UP", block_id: "B5", chainage_km: 40.5, position: { x: 4.0, y: 0.5, z: -0.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B5_DN", block_id: "B5", chainage_km: 49.5, position: { x: 96.0, y: -0.9, z: 6.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B6_UP", block_id: "B6", chainage_km: 50.5, position: { x: 104.0, y: -1.0, z: 6.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B6_DN", block_id: "B6", chainage_km: 59.5, position: { x: 196.0, y: 0.9, z: 10.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B7_UP", block_id: "B7", chainage_km: 60.5, position: { x: 204.0, y: 1.0, z: 13.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B7_DN", block_id: "B7", chainage_km: 69.5, position: { x: 296.0, y: 2.4, z: 4.5 }, aspect: "clear", direction: "DOWN" },
+    { id: "SIG_B8_UP", block_id: "B8", chainage_km: 70.5, position: { x: 304.0, y: 2.5, z: 7.5 }, aspect: "clear", direction: "UP" },
+    { id: "SIG_B8_DN", block_id: "B8", chainage_km: 79.5, position: { x: 396.0, y: 0.0, z: -1.5 }, aspect: "clear", direction: "DOWN" }
+  ],
+  ohe_masts: [
+    { id: "OHE_B1_M1", block_id: "B1", position: { x: -380.0, y: 0.2, z: 2.2 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B1_M2", block_id: "B1", position: { x: -350.0, y: 0.3, z: 3.2 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B1_M3", block_id: "B1", position: { x: -320.0, y: 0.1, z: 4.0 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B2_M1", block_id: "B2", position: { x: -280.0, y: 0.5, z: 5.7 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B2_M2", block_id: "B2", position: { x: -250.0, y: 1.1, z: 8.2 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B2_M3", block_id: "B2", position: { x: -220.0, y: 1.4, z: 9.7 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B3_M1", block_id: "B3", position: { x: -180.0, y: 1.7, z: 9.4 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B3_M2", block_id: "B3", position: { x: -150.0, y: 1.95, z: 7.7 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B3_M3", block_id: "B3", position: { x: -120.0, y: 2.0, z: 6.6 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B4_M1", block_id: "B4", position: { x: -80.0, y: 1.6, z: 4.7 }, catenary_height_m: 5.5, is_isolated: true },
+    { id: "OHE_B4_M2", block_id: "B4", position: { x: -50.0, y: 1.05, z: 2.6 }, catenary_height_m: 5.5, is_isolated: true },
+    { id: "OHE_B4_M3", block_id: "B4", position: { x: -20.0, y: 0.7, z: 1.0 }, catenary_height_m: 5.5, is_isolated: true },
+    { id: "OHE_B5_M1", block_id: "B5", position: { x: 20.0, y: 0.1, z: 1.7 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B5_M2", block_id: "B5", position: { x: 50.0, y: -0.5, z: 4.1 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B5_M3", block_id: "B5", position: { x: 80.0, y: -0.9, z: 6.3 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B6_M1", block_id: "B6", position: { x: 120.0, y: -0.5, z: 9.0 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B6_M2", block_id: "B6", position: { x: 150.0, y: 0.2, z: 11.5 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B6_M3", block_id: "B6", position: { x: 180.0, y: 0.7, z: 13.4 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B7_M1", block_id: "B7", position: { x: 220.0, y: 1.4, z: 13.0 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B7_M2", block_id: "B7", position: { x: 250.0, y: 1.95, z: 10.8 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B7_M3", block_id: "B7", position: { x: 280.0, y: 2.3, z: 9.2 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B8_M1", block_id: "B8", position: { x: 320.0, y: 2.0, z: 7.0 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B8_M2", block_id: "B8", position: { x: 350.0, y: 1.25, z: 4.9 }, catenary_height_m: 5.5, is_isolated: false },
+    { id: "OHE_B8_M3", block_id: "B8", position: { x: 380.0, y: 0.5, z: 3.0 }, catenary_height_m: 5.5, is_isolated: false }
+  ],
+  blocks: mockScenario.blocks,
+  conflicts: mockConflicts
+};
+
+export const mockPlanningCapabilities: PlanningCapabilitiesResponse = {
+  solver_available: true,
+  solver_name: "PySCIPOpt (MIP Solver)",
+  fallback_active: false,
+  model_mode: "rule_based",
+  model_version: "1.0.0",
+  supports_3d_geometry: true,
+  demo_mode: true,
+  supported_horizons_days: [7, 14, 28],
+  routes_available: ["Subedarganj - Mirzapur Mainline", "Naini Jn - Chheoki Bypass", "Prayagraj West Freight Loop"],
+  max_blocks_capacity: 100,
+  max_trains_capacity: 200
+};

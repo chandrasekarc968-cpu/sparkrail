@@ -128,6 +128,74 @@ class UnscheduledJobReason(BaseModel):
     conflict_with: Optional[str] = None
     potential_window: Optional[str] = None
 
+# 3D Geometry and Spatial Representations
+class Vector3D(BaseModel):
+    x: float
+    y: float
+    z: float
+
+class TrackGeometry(BaseModel):
+    block_id: str
+    name: str = ""
+    start_coord: Vector3D
+    end_coord: Vector3D
+    path_points: List[Vector3D] = []
+    length_km: float
+    chainage_start: float
+    chainage_end: float
+    elevation_profile: List[float] = []
+    track_type: str = "Mainline"
+    electrification: str = "25kV AC"
+    gauge: str = "Broad Gauge 1676mm"
+    speed_limit_kmh: float = 130.0
+
+class StationNode(BaseModel):
+    id: str
+    name: str
+    code: str
+    position: Vector3D
+    chainage_km: float
+    node_type: str = "station"  # "station", "junction", "terminal"
+    platforms: int = 2
+    connected_blocks: List[str] = []
+
+class SignalMarker(BaseModel):
+    id: str
+    block_id: str
+    chainage_km: float
+    position: Vector3D
+    aspect: str = "clear"  # "clear", "caution", "danger"
+    direction: str = "UP"  # "UP", "DOWN"
+
+class OHEMast(BaseModel):
+    id: str
+    block_id: str
+    position: Vector3D
+    catenary_height_m: float = 5.5
+    is_isolated: bool = False
+
+class ConflictType(str, Enum):
+    TRAIN_BLOCK = "train_vs_block"
+    PREMIUM_TRAIN = "premium_train_risk"
+    DEPT_INCOMPATIBLE = "incompatible_department"
+    RESOURCE_OVERALLOCATION = "resource_overallocation"
+    FIXED_BLOCK_COLLISION = "fixed_block_collision"
+    SAFETY_CLEARANCE = "insufficient_safety_clearance"
+    OVERDUE_CRITICAL = "overdue_critical_maintenance"
+
+class ConflictItem(BaseModel):
+    id: str
+    conflict_type: ConflictType
+    severity: str  # "CRITICAL", "MAJOR", "WARNING", "INFO"
+    block_id: str
+    title: str
+    description: str
+    affected_jobs: List[str] = []
+    affected_trains: List[str] = []
+    time_window: Optional[Dict[str, float]] = None
+    suggested_resolution: str = ""
+    position: Optional[Vector3D] = None
+
 class KPIReport(BaseModel):
     bue_percent: float
     bue_baseline_percent: float
@@ -152,6 +220,10 @@ class OptimizedSchedule(BaseModel):
     runtime_seconds: Optional[float] = None
     objective_components: Optional[Dict[str, float]] = None
     kpi_metrics: Optional[KPIReport] = None
+    conflicts: List[ConflictItem] = []
+    shadow_block_groups: List[Dict[str, Any]] = []
+    is_fallback: bool = False
+    explainability: Dict[str, Any] = {}
 
 class AssetHealthRecord(BaseModel):
     asset_id: str
@@ -217,3 +289,28 @@ class OptimizeRequest(BaseModel):
 
 class EvaluateRequest(BaseModel):
     schedule_id: Optional[str] = "latest"
+
+class NetworkGeometryResponse(BaseModel):
+    division: str = "Prayagraj (PRYJ)"
+    line_name: str = "Subedarganj - Mirzapur Mainline Corridor"
+    total_length_km: float
+    is_synthetic: bool = True
+    nodes: List[StationNode]
+    tracks: List[TrackGeometry]
+    signals: List[SignalMarker]
+    ohe_masts: List[OHEMast]
+    blocks: List[TrackBlock]
+    conflicts: List[ConflictItem] = []
+
+class PlanningCapabilitiesResponse(BaseModel):
+    solver_available: bool
+    solver_name: str
+    fallback_active: bool
+    model_mode: str
+    model_version: str
+    supports_3d_geometry: bool = True
+    demo_mode: bool = True
+    supported_horizons_days: List[int] = [7, 14, 28]
+    routes_available: List[str] = []
+    max_blocks_capacity: int = 100
+    max_trains_capacity: int = 200
