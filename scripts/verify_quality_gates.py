@@ -207,7 +207,7 @@ def run_all_quality_gates():
             assert block["lifecycle_state"] != "IN_PROGRESS"
         print("  -> Recommended blocks locked from GRANTED/IN_PROGRESS states [OK]")
 
-        # Progress CTPC and Sr. DOM approvals
+        # Progress through all four mandatory roles (CTPC, SR_DOM, SECTION_CONTROLLER, STATION_MASTER)
         prop_id = prop["optimization_run_id"]
         client.post(f"/advisory/proposals/{prop_id}/approve", json={
             "role": "CTPC", "approver_id": "CTPC-01", "approver_name": "Chief Traffic Planner", "decision": "APPROVED"
@@ -216,8 +216,19 @@ def run_all_quality_gates():
             "role": "SR_DOM", "approver_id": "SRDOM-01", "approver_name": "Sr. DOM PRYJ", "decision": "APPROVED"
         })
         assert srdom_resp.status_code == 200
-        assert srdom_resp.json()["approval_status"] == "SANCTIONED"
-        print("  -> Progressed to SANCTIONED only after full supervisory sign-offs [OK]")
+        # Crucial safety rule: 2 approvals are NOT sufficient to sanction
+        assert srdom_resp.json()["approval_status"] != "SANCTIONED"
+        assert srdom_resp.json()["approval_status"] == "PENDING_SECTION_CONTROLLER_REVIEW"
+
+        client.post(f"/advisory/proposals/{prop_id}/approve", json={
+            "role": "SECTION_CONTROLLER", "approver_id": "SC-01", "approver_name": "Section Controller", "decision": "APPROVED"
+        })
+        sm_resp = client.post(f"/advisory/proposals/{prop_id}/approve", json={
+            "role": "STATION_MASTER", "approver_id": "SM-01", "approver_name": "Station Master", "decision": "APPROVED"
+        })
+        assert sm_resp.status_code == 200
+        assert sm_resp.json()["approval_status"] == "SANCTIONED"
+        print("  -> Progressed to SANCTIONED only after all 4 statutory supervisory sign-offs [OK]")
         print(">>> GATE 7: PASSED")
     except Exception as e:
         print(f">>> GATE 7: FAILED - {e}")

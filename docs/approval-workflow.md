@@ -105,8 +105,8 @@ SparkRail exposes typed REST endpoints for proposal review and approval governan
 | `GET` | `/api/v1/advisory/audit` | All Roles / Auditor | Inspect immutable chronological audit trail |
 | `GET` | `/api/v1/advisory/audit/verify` | Auditor / Security Officer | Verify SHA-256 cryptographic hash-chain integrity |
 | `POST` | `/advisory/proposals` | System / AI | Backward-compatible proposal generation |
-| `POST` | `/advisory/proposals/{id}/approve` | `CTPC`, `SR_DOM` | Backward-compatible proposal approval |
-| `POST` | `/advisory/proposals/{id}/reject` | `SECTION_CONTROLLER` | Backward-compatible proposal rejection |
+| `POST` | `/advisory/proposals/{id}/approve` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER`, `STATION_MASTER` | Backward-compatible proposal approval across all 4 roles |
+| `POST` | `/advisory/proposals/{id}/reject` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER`, `STATION_MASTER` | Backward-compatible proposal rejection |
 
 ### Tamper-Evident SHA-256 Audit Chain
 

@@ -22,7 +22,7 @@ describe('BDMS Advisory and Governance Frontend API Client', () => {
     expect(first.recommended_blocks.length).toBeGreaterThan(0);
   });
 
-  it('progresses the statutory approval chain when CTPC and SR_DOM sign off', async () => {
+  it('progresses the statutory approval chain across all four mandatory controller roles', async () => {
     const proposals = await ApiClient.getAdvisoryProposals();
     const propId = proposals[0].optimization_run_id;
 
@@ -37,19 +37,46 @@ describe('BDMS Advisory and Governance Frontend API Client', () => {
     const updatedAfterCtpc = await ApiClient.approveProposal(propId, ctpcAction);
     expect(updatedAfterCtpc.approval_chain['CTPC'].status).toBe('APPROVED');
     expect(updatedAfterCtpc.approval_chain['CTPC'].approver_name).toBe('Chief Controller IR');
+    expect(updatedAfterCtpc.approval_status).toBe('PENDING_SR_DOM_REVIEW');
 
     const srDomAction: ApprovalActionPayload = {
       role: 'SR_DOM',
       approver_id: 'EMP-SRDOM-01',
       approver_name: 'Senior DOM Prayagraj',
       decision: 'APPROVED',
-      comments: 'Traffic path cleared, sanctioned.'
+      comments: 'Traffic path cleared, operations approved.'
     };
 
     const updatedAfterSrDom = await ApiClient.approveProposal(propId, srDomAction);
     expect(updatedAfterSrDom.approval_chain['SR_DOM'].status).toBe('APPROVED');
-    expect(updatedAfterSrDom.approval_status).toBe('SANCTIONED');
-    expect(updatedAfterSrDom.recommended_blocks[0].lifecycle_state).toBe('SANCTIONED');
+    // Safety requirement: 2 approvals are NOT sufficient to sanction
+    expect(updatedAfterSrDom.approval_status).toBe('PENDING_SECTION_CONTROLLER_REVIEW');
+
+    const scAction: ApprovalActionPayload = {
+      role: 'SECTION_CONTROLLER',
+      approver_id: 'EMP-SC-01',
+      approver_name: 'Section Controller Mirzapur',
+      decision: 'APPROVED',
+      comments: 'Block occupancy slot cleared.'
+    };
+
+    const updatedAfterSc = await ApiClient.approveProposal(propId, scAction);
+    expect(updatedAfterSc.approval_chain['SECTION_CONTROLLER'].status).toBe('APPROVED');
+    expect(updatedAfterSc.approval_status).toBe('PENDING_STATION_MASTER_REVIEW');
+
+    const smAction: ApprovalActionPayload = {
+      role: 'STATION_MASTER',
+      approver_id: 'EMP-SM-01',
+      approver_name: 'Station Master Naini',
+      decision: 'APPROVED',
+      comments: 'Loop line berthing cleared.'
+    };
+
+    const updatedAfterSm = await ApiClient.approveProposal(propId, smAction);
+    expect(updatedAfterSm.approval_chain['STATION_MASTER'].status).toBe('APPROVED');
+    // Only after all 4 mandatory roles approve does it transition to SANCTIONED
+    expect(updatedAfterSm.approval_status).toBe('SANCTIONED');
+    expect(updatedAfterSm.recommended_blocks[0].lifecycle_state).toBe('SANCTIONED');
   });
 
   it('marks proposal and recommended blocks as REJECTED when rejected by controller', async () => {

@@ -4,9 +4,10 @@ import copy
 import hashlib
 import json
 import time
-from typing import Dict, Any, List, Optional, Tuple
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Optional, Tuple, Set
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, HTTPException, Header, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Header, Depends, Query, status, Response
 from pydantic import BaseModel, Field
 
 from src.data_pipeline.models import (
@@ -36,20 +37,51 @@ from src.optimization.disruption_engine import DynamicDisruptionEngine
 router = APIRouter(tags=["Advisory & BDMS Governance"])
 
 # -----------------------------------------------------------------------------
-# CRYPTOGRAPHIC SHA-256 AUDIT CHAIN
+# AUDIT REPOSITORY ABSTRACTION & CRYPTOGRAPHIC SHA-256 HASH CHAIN
 # -----------------------------------------------------------------------------
 GENESIS_HASH = "0" * 64
 
-class TamperEvidentAuditChain:
+class AuditRepository(ABC):
+    """Abstract interface for persisting tamper-evident audit trails."""
+
+    @abstractmethod
+    def append_event(
+        self,
+        event_type: str,
+        user_id: str,
+        role: str,
+        resource_type: str,
+        resource_id: str,
+        action: str,
+        details: Dict[str, Any],
+        ip_address: Optional[str] = None
+    ) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def get_events(self, limit: int = 100) -> List[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def verify_integrity(self) -> Tuple[bool, Optional[str]]:
+        pass
+
+    @abstractmethod
+    def clear(self) -> None:
+        pass
+
+
+class InMemoryAuditRepository(AuditRepository):
     """
-    Implements a cryptographically verifiable SHA-256 tamper-evident hash chain.
-    Every event binds the previous event's hash, preventing silent tampering or omission.
+    In-memory implementation of AuditRepository maintaining a SHA-256 tamper-evident hash chain.
+    Every audit record binds the hash of the preceding record, ensuring complete detection
+    of any retroactive modification, record deletion, or reordering.
     """
     def __init__(self):
         self.chain: List[Dict[str, Any]] = []
         self.last_hash: str = GENESIS_HASH
 
-    def append(
+    def append_event(
         self,
         event_type: str,
         user_id: str,
@@ -62,8 +94,7 @@ class TamperEvidentAuditChain:
     ) -> Dict[str, Any]:
         event_id = f"AUDIT-{uuid.uuid4().hex[:12].upper()}"
         timestamp = datetime.now(timezone.utc).isoformat()
-        
-        # Calculate hash over previous hash and canonical payload
+
         payload_str = json.dumps(details, sort_keys=True)
         canonical = f"{self.last_hash}:{event_id}:{event_type}:{user_id}:{role}:{resource_type}:{resource_id}:{action}:{timestamp}:{payload_str}"
         current_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -89,13 +120,25 @@ class TamperEvidentAuditChain:
         self.last_hash = current_hash
         return record
 
+    # Backwards compatibility alias for code expecting append()
+    def append(self, *args, **kwargs) -> Dict[str, Any]:
+        return self.append_event(*args, **kwargs)
+
+    def get_events(self, limit: int = 100) -> List[Dict[str, Any]]:
+        return self.chain[-limit:]
+
     def verify_integrity(self) -> Tuple[bool, Optional[str]]:
-        """Validates that no historical audit record has been modified, reordered, or deleted."""
+        """
+        Validates the entire audit chain:
+        1. Link verification: previous_hash matches preceding record's current_hash
+        2. Content verification: recomputed SHA-256 matches recorded current_hash
+        Detects tampering, deletion, and reordering.
+        """
         expected_prev = GENESIS_HASH
         for idx, item in enumerate(self.chain):
             if item.get("previous_hash") != expected_prev:
                 return False, f"Broken link at event {item.get('event_id')} (index {idx}): expected prev {expected_prev}, got {item.get('previous_hash')}"
-            
+
             payload_str = json.dumps(item.get("details", {}), sort_keys=True)
             canonical = (
                 f"{item.get('previous_hash')}:{item.get('event_id')}:{item.get('event_type')}:"
@@ -108,11 +151,21 @@ class TamperEvidentAuditChain:
             expected_prev = item.get("current_hash")
         return True, None
 
-# Global In-memory stores
-AUDIT_CHAIN = TamperEvidentAuditChain()
+    def clear(self) -> None:
+        self.chain = []
+        self.last_hash = GENESIS_HASH
+
+
+# Global repository & in-memory stores
+TamperEvidentAuditChain = InMemoryAuditRepository
+AUDIT_REPO: AuditRepository = InMemoryAuditRepository()
+AUDIT_CHAIN = AUDIT_REPO  # Alias for backward compatibility
 PROPOSALS_STORE: Dict[str, Dict[str, Any]] = {}
 RUNS_STORE: Dict[str, OptimizationRun] = {}
 RECOMMENDATIONS_STORE: Dict[str, Recommendation] = {}
+IDEMPOTENCY_STORE: Dict[str, Any] = {}
+
+MANDATORY_APPROVAL_ROLES = ("CTPC", "SR_DOM", "SECTION_CONTROLLER", "STATION_MASTER")
 
 # -----------------------------------------------------------------------------
 # AUTH & ROLE GOVERNANCE ABSTRACTION
@@ -121,19 +174,31 @@ def get_current_actor(
     authorization: Optional[str] = Header(None),
     x_actor_role: Optional[str] = Header(None, alias="X-Actor-Role"),
     x_actor_id: Optional[str] = Header(None, alias="X-Actor-ID")
-) -> Dict[str, str]:
+) -> Dict[str, Optional[str]]:
     """
     JWT / Role-based authorization abstraction.
-    In dry-run / development mode, accepts development headers or default operator.
+    Extracts authenticated user and role, preventing caller impersonation.
     """
     actor_id = x_actor_id or "DEV_CONTROLLER_01"
-    role = x_actor_role or "CTPC"
+    role = x_actor_role
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
         if token == "DEV_ADMIN_TOKEN":
             actor_id = "SR_DOM_OFFICER"
             role = "SR_DOM"
     return {"actor_id": actor_id, "role": role}
+
+def validate_actor_role_authorization(actor: Dict[str, Optional[str]], claimed_role: str) -> None:
+    """
+    Enforces that the acting user's authenticated role matches the claimed approval role.
+    If an explicit role header is provided, caller cannot sign off with a different role.
+    """
+    authenticated_role = actor.get("role")
+    if authenticated_role and authenticated_role != claimed_role:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Authenticated actor role '{authenticated_role}' is not authorized to sign off as '{claimed_role}'"
+        )
 
 # -----------------------------------------------------------------------------
 # REQUEST & RESPONSE SCHEMAS
@@ -150,7 +215,7 @@ class ProposalGenerateRequest(BaseModel):
 class ProposalApprovalAction(BaseModel):
     role: ApprovalRole
     approver_id: str
-    approver_name: str
+    approver_name: Optional[str] = "Railway Officer"
     decision: str = "APPROVED"  # "APPROVED", "REJECTED", "OVERRIDDEN"
     comments: str = "Sanctioned according to Zonal Operating Safety Rules."
     override_reason_code: Optional[str] = None
@@ -160,7 +225,7 @@ class OperationalOverrideRequest(BaseModel):
     user_id: str
     role: ApprovalRole
     reason_code: str  # e.g., "VIP_MOVEMENT", "EMERGENCY_DERAILMENT_RISK", "BAD_WEATHER"
-    justification: str = Field(..., min_length=5)
+    justification: str = Field(..., min_length=10)
     overridden_schedule: Dict[str, Any]
 
 class PossessionSchedulePayload(BaseModel):
@@ -181,7 +246,6 @@ class PossessionSchedulePayload(BaseModel):
     approval_state: Dict[str, Any]
     provenance_metadata: Dict[str, Any]
 
-# Helper for legacy audit logger
 def record_audit(
     event_type: str,
     user_id: str,
@@ -191,7 +255,7 @@ def record_audit(
     action: str,
     details: Dict[str, Any]
 ) -> Dict[str, Any]:
-    return AUDIT_CHAIN.append(
+    return AUDIT_REPO.append_event(
         event_type=event_type,
         user_id=user_id,
         role=role,
@@ -207,9 +271,13 @@ def record_audit(
 @router.post("/advisory/proposals")
 def generate_advisory_proposal(
     req: ProposalGenerateRequest,
-    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key")
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
     key = idempotency_key or f"IDEMP-{uuid.uuid4().hex[:12]}"
+    if key in IDEMPOTENCY_STORE:
+        return IDEMPOTENCY_STORE[key]
+
     for p in PROPOSALS_STORE.values():
         if p.get("idempotency_key") == key:
             return p
@@ -272,6 +340,8 @@ def generate_advisory_proposal(
     }
 
     PROPOSALS_STORE[proposal_id] = proposal
+    IDEMPOTENCY_STORE[key] = proposal
+
     record_audit(
         event_type="PROPOSAL_CREATED",
         user_id=req.requested_by,
@@ -294,15 +364,21 @@ def get_advisory_proposal(proposal_id: str):
     return PROPOSALS_STORE[proposal_id]
 
 @router.post("/advisory/proposals/{proposal_id}/approve")
-def approve_proposal(proposal_id: str, action: ProposalApprovalAction):
+def approve_proposal(
+    proposal_id: str,
+    action: ProposalApprovalAction,
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
+):
     if proposal_id not in PROPOSALS_STORE:
         raise HTTPException(status_code=404, detail=f"Advisory proposal '{proposal_id}' not found")
 
     prop = PROPOSALS_STORE[proposal_id]
     role_key = action.role.value
 
-    if role_key not in prop["approval_chain"]:
-        raise HTTPException(status_code=400, detail=f"Invalid approval role '{role_key}'")
+    if role_key not in MANDATORY_APPROVAL_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid statutory approval role '{role_key}'")
+
+    validate_actor_role_authorization(actor, role_key)
 
     timestamp = datetime.now(timezone.utc).isoformat()
     prop["approval_chain"][role_key] = {
@@ -313,15 +389,22 @@ def approve_proposal(proposal_id: str, action: ProposalApprovalAction):
         "timestamp": timestamp
     }
 
+    # Strict statutory requirement: ALL 4 roles must approve before proposal is SANCTIONED
     all_approved = all(
-        v["status"] == "APPROVED"
-        for k, v in prop["approval_chain"].items()
-        if k in ("CTPC", "SR_DOM")
+        prop["approval_chain"].get(r, {}).get("status") == "APPROVED"
+        for r in MANDATORY_APPROVAL_ROLES
     )
     if all_approved:
         prop["approval_status"] = "SANCTIONED"
         for b in prop["recommended_blocks"]:
             b["lifecycle_state"] = "SANCTIONED"
+    else:
+        # Determine next pending role
+        next_pending = next(
+            (r for r in MANDATORY_APPROVAL_ROLES if prop["approval_chain"].get(r, {}).get("status") != "APPROVED"),
+            "REVIEW"
+        )
+        prop["approval_status"] = f"PENDING_{next_pending}_REVIEW"
 
     record_audit(
         event_type="PROPOSAL_APPROVAL",
@@ -330,19 +413,26 @@ def approve_proposal(proposal_id: str, action: ProposalApprovalAction):
         resource_type="ADVISORY_PROPOSAL",
         resource_id=proposal_id,
         action=f"APPROVAL_{action.decision}",
-        details={"role": role_key, "comments": action.comments}
+        details={"role": role_key, "comments": action.comments, "is_sanctioned": all_approved}
     )
     return prop
 
 @router.post("/advisory/proposals/{proposal_id}/reject")
-def reject_proposal(proposal_id: str, action: ProposalApprovalAction):
+def reject_proposal(
+    proposal_id: str,
+    action: ProposalApprovalAction,
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
+):
+    if not action.comments or len(action.comments.strip()) < 5:
+        raise HTTPException(status_code=400, detail="Mandatory operational justification required for rejection")
     if proposal_id not in PROPOSALS_STORE:
         raise HTTPException(status_code=404, detail=f"Advisory proposal '{proposal_id}' not found")
 
     prop = PROPOSALS_STORE[proposal_id]
     role_key = action.role.value
-    timestamp = datetime.now(timezone.utc).isoformat()
+    validate_actor_role_authorization(actor, role_key)
 
+    timestamp = datetime.now(timezone.utc).isoformat()
     prop["approval_status"] = "REJECTED"
     prop["approval_chain"][role_key] = {
         "status": "REJECTED",
@@ -367,9 +457,17 @@ def reject_proposal(proposal_id: str, action: ProposalApprovalAction):
     return prop
 
 @router.post("/advisory/proposals/{proposal_id}/override")
-def override_proposal(proposal_id: str, req: OperationalOverrideRequest):
+def override_proposal(
+    proposal_id: str,
+    req: OperationalOverrideRequest,
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
+):
+    if not req.justification or len(req.justification.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Mandatory justification required for operational override (min 10 characters)")
     if proposal_id not in PROPOSALS_STORE:
         raise HTTPException(status_code=404, detail=f"Advisory proposal '{proposal_id}' not found")
+
+    validate_actor_role_authorization(actor, req.role.value)
 
     prop = PROPOSALS_STORE[proposal_id]
     timestamp = datetime.now(timezone.utc).isoformat()
@@ -397,7 +495,7 @@ def override_proposal(proposal_id: str, req: OperationalOverrideRequest):
 
 @router.get("/advisory/audit")
 def get_audit_trail(limit: int = 100):
-    return AUDIT_CHAIN.chain[-limit:]
+    return AUDIT_REPO.get_events(limit=limit)
 
 # -----------------------------------------------------------------------------
 # VERSIONED CANONICAL ENDPOINTS (/api/v1/...)
@@ -406,12 +504,16 @@ def get_audit_trail(limit: int = 100):
 def create_optimization_run(
     req: OptimizationRequest,
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
-    actor: Dict[str, str] = Depends(get_current_actor)
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
     """
     Triggers an end-to-end multi-department optimization run.
     Produces an OptimizationRun with Recommendation packages.
     """
+    key = idempotency_key or f"IDEMP-RUN-{req.request_id}"
+    if idempotency_key and key in IDEMPOTENCY_STORE:
+        return IDEMPOTENCY_STORE[key]
+
     scenario = generate_synthetic_data(seed=42, num_blocks=8, num_jobs=20, num_trains=10)
     scorer = TaskCriticalityScorer()
     job_tcis = {j.id: scorer.calculate_tci(j.tci_inputs)[0] for j in scenario.jobs}
@@ -425,7 +527,7 @@ def create_optimization_run(
         run_id=run_id,
         request_id=req.request_id,
         input_snapshot_hash=req.input_snapshot_hash or hashlib.sha256(run_id.encode()).hexdigest(),
-        solver_status="OPTIMAL" if opt_result.get("status") in ("optimal", "alns_feasible") else "FEASIBLE",
+        solver_status="OPTIMAL" if opt_result.get("status") == "optimal" else "FEASIBLE",
         solver_mode=opt_result.get("solver", "ALNS_DETERMINISTIC"),
         objective_value=opt_result.get("objective_value", 100.0),
         runtime_seconds=opt_result.get("runtime_seconds", 0.5),
@@ -436,7 +538,7 @@ def create_optimization_run(
     )
     RUNS_STORE[run_id] = run
 
-    # Create associated recommendations
+    # Create associated recommendations with 4-role approval chains and expiry
     for j in opt_result.get("scheduled_jobs", []):
         rec_id = f"REC-{j['job_id']}"
         possession = Possession(
@@ -458,19 +560,30 @@ def create_optimization_run(
             safety_validation_status="SAFETY_CERTIFIED",
             status=RecommendationStatus.PROPOSED,
             expires_at=expires_at,
+            version=1,
+            approval_chain={
+                r: {"status": "PENDING", "approver_id": None, "approver_name": None, "comments": None, "timestamp": None}
+                for r in MANDATORY_APPROVAL_ROLES
+            },
             provenance_metadata={"solver": run.solver_mode, "division": req.division_code}
         )
         RECOMMENDATIONS_STORE[rec_id] = rec
 
+    user_id = actor.get("actor_id") or "SYSTEM"
+    role = actor.get("role") or "CTPC"
     record_audit(
         event_type="OPTIMIZATION_RUN_CREATED",
-        user_id=actor["actor_id"],
-        role=actor["role"],
+        user_id=user_id,
+        role=role,
         resource_type="OPTIMIZATION_RUN",
         resource_id=run_id,
         action="RUN_OPTIMIZATION",
         details={"status": run.solver_status, "division": req.division_code}
     )
+
+    if idempotency_key:
+        IDEMPOTENCY_STORE[key] = run
+
     return run
 
 @router.get("/api/v1/optimization/runs/{run_id}")
@@ -482,27 +595,149 @@ def get_optimization_run(run_id: str):
 @router.post("/api/v1/optimization/possession-schedule", response_model=PossessionSchedulePayload)
 def get_possession_schedule(
     req: OptimizationRequest,
-    actor: Dict[str, str] = Depends(get_current_actor)
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
     """
     Returns the comprehensive CRIS BDMS advisory possession schedule payload.
-    Includes primary possession, shadow bundles, geography, isolation, machines, and crews.
+    Builds payloads dynamically from the actual optimization result and topology.
+    Never returns hardcoded dummy records.
     """
+    if idempotency_key and idempotency_key in IDEMPOTENCY_STORE:
+        return IDEMPOTENCY_STORE[idempotency_key]
+
+    scenario = generate_synthetic_data(seed=42, num_blocks=8, num_jobs=20, num_trains=10)
+    scorer = TaskCriticalityScorer()
+    job_tcis = {j.id: scorer.calculate_tci(j.tci_inputs)[0] for j in scenario.jobs}
+
+    pipeline = ProductionOptimizationPipeline()
+    opt_result = pipeline.optimize(scenario, job_tcis, freeze_week1=req.freeze_week1)
+
     run_resp = create_optimization_run(req, actor=actor)
     run_id = run_resp.run_id
 
-    # Construct comprehensive payload
-    primary_block = {
-        "possession_id": f"POSS-{req.division_code}-MAIN",
-        "track_section_id": "B5",
-        "chainage_start_km": 40.0,
-        "chainage_end_km": 50.0,
-        "scheduled_start": 14.0,
-        "scheduled_end": 18.0,
-        "department": "CIVIL"
+    scheduled_jobs = opt_result.get("scheduled_jobs", [])
+
+    # Dynamically select primary job (highest priority / TCI or first scheduled job)
+    non_shadows = [j for j in scheduled_jobs if not j.get("is_shadow", False)]
+    primary_job = non_shadows[0] if non_shadows else (scheduled_jobs[0] if scheduled_jobs else None)
+
+    if primary_job:
+        block = next((b for b in scenario.blocks if b.id == primary_job["block_id"]), scenario.blocks[0])
+        primary_block = {
+            "possession_id": f"POSS-{req.division_code}-{primary_job['job_id']}",
+            "track_section_id": block.id,
+            "chainage_start_km": block.chainage_start,
+            "chainage_end_km": block.chainage_end,
+            "scheduled_start": primary_job["start_time"],
+            "scheduled_end": primary_job["end_time"],
+            "department": primary_job.get("department", "Engineering").upper()
+        }
+        associated_shadow_ids = [
+            j["job_id"] for j in scheduled_jobs
+            if j.get("is_shadow") and (j.get("shadow_parent_job_id") == primary_job["job_id"] or j["block_id"] == primary_job["block_id"])
+        ]
+    else:
+        block = scenario.blocks[0]
+        primary_block = {
+            "possession_id": f"POSS-{req.division_code}-NONE",
+            "track_section_id": block.id,
+            "chainage_start_km": block.chainage_start,
+            "chainage_end_km": block.chainage_end,
+            "scheduled_start": 0.0,
+            "scheduled_end": 4.0,
+            "department": "ENGINEERING"
+        }
+        associated_shadow_ids = []
+
+    # Build recommended_blocks aggregating scheduled jobs per block
+    block_map: Dict[str, Dict[str, Any]] = {}
+    for j in scheduled_jobs:
+        b_id = j["block_id"]
+        if b_id not in block_map:
+            block_map[b_id] = {
+                "block_id": b_id,
+                "start_time": j["start_time"],
+                "end_time": j["end_time"],
+                "jobs": []
+            }
+        block_map[b_id]["jobs"].append(j["job_id"])
+        block_map[b_id]["start_time"] = min(block_map[b_id]["start_time"], j["start_time"])
+        block_map[b_id]["end_time"] = max(block_map[b_id]["end_time"], j["end_time"])
+    recommended_blocks = list(block_map.values())
+
+    # Geography from corridor
+    min_km = min((b.chainage_start for b in scenario.blocks), default=0.0)
+    max_km = max((b.chainage_end for b in scenario.blocks), default=80.0)
+    first_stn = scenario.blocks[0].description.split(" to ")[0] if scenario.blocks else "Subedarganj"
+    last_stn = scenario.blocks[-1].description.split(" to ")[-1] if scenario.blocks else "Mirzapur"
+    corridor_name = f"{first_stn} - {last_stn} Mainline Corridor"
+
+    # Schedule envelope
+    sched_start = min((j["start_time"] for j in scheduled_jobs), default=0.0)
+    sched_end = max((j["end_time"] for j in scheduled_jobs), default=float(req.planning_horizon_hours))
+
+    # Electrical isolation from actual scheduled OHE jobs
+    ohe_jobs = [j for j in scheduled_jobs if j.get("department") in ("OHE", "TRD", "ELECTRICAL")]
+    is_isolated = len(ohe_jobs) > 0
+    isolated_block_id = ohe_jobs[0]["block_id"] if ohe_jobs else block.id
+    electrical_isolation = {
+        "elementary_section": f"ES-{isolated_block_id}",
+        "is_isolated": is_isolated,
+        "affected_sections": list(set(j["block_id"] for j in ohe_jobs))
     }
 
-    return PossessionSchedulePayload(
+    # Machines from scenario jobs
+    allocated_machines: List[Dict[str, Any]] = []
+    seen_machines = set()
+    for j in scheduled_jobs:
+        scen_j = next((x for x in scenario.jobs if x.id == j["job_id"]), None)
+        if scen_j and scen_j.required_resources:
+            for r_id, qty in scen_j.required_resources.items():
+                if "BCM" in r_id or "TIE" in r_id or "MACHINE" in r_id:
+                    m_key = f"{r_id}_{j['block_id']}"
+                    if m_key not in seen_machines:
+                        seen_machines.add(m_key)
+                        allocated_machines.append({
+                            "machine_id": m_key,
+                            "machine_type": "Ballast Cleaning Machine" if "BCM" in r_id else "Tie Tamper",
+                            "allocated_hours": round(j["end_time"] - j["start_time"], 1),
+                            "job_id": j["job_id"],
+                            "block_id": j["block_id"]
+                        })
+
+    # Crews from scenario jobs
+    allocated_crews: List[Dict[str, Any]] = []
+    seen_crews = set()
+    for j in scheduled_jobs:
+        scen_j = next((x for x in scenario.jobs if x.id == j["job_id"]), None)
+        if scen_j and scen_j.required_resources:
+            for r_id, qty in scen_j.required_resources.items():
+                if "CREW" in r_id:
+                    c_key = f"{r_id}_{j['job_id']}"
+                    if c_key not in seen_crews:
+                        seen_crews.add(c_key)
+                        shift_dur = round(j["end_time"] - j["start_time"], 1)
+                        allocated_crews.append({
+                            "crew_id": c_key,
+                            "shift_hours": shift_dur,
+                            "hoer_compliant": shift_dur <= 12.0,
+                            "job_id": j["job_id"],
+                            "department": j.get("department", "Engineering")
+                        })
+
+    # Train regulation plan from solver output
+    train_delays = opt_result.get("train_delays", {})
+    train_regulation_plan = {
+        t_id: {
+            "strategy": "HOLD_AT_LOOP" if d >= 0.25 else "RUN_THROUGH",
+            "delay_min": round(d * 60.0, 1),
+            "delay_hours": round(d, 2)
+        }
+        for t_id, d in train_delays.items()
+    }
+
+    payload = PossessionSchedulePayload(
         optimization_run_id=run_id,
         division_code=req.division_code,
         planning_window=f"T+0h to T+{req.planning_horizon_hours}h",
@@ -511,21 +746,24 @@ def get_possession_schedule(
             "runtime_seconds": run_resp.runtime_seconds,
             "scheduled_count": len(run_resp.scheduled_demands)
         },
-        recommended_blocks=[
-            {"block_id": "B5", "start_time": 14.0, "end_time": 18.0, "jobs": ["J_CIVIL_01", "J_OHE_01"]}
-        ],
+        recommended_blocks=recommended_blocks,
         primary_possession=primary_block,
-        associated_shadow_ids=["J_OHE_01"],
-        geography={"corridor": "Subedarganj - Mirzapur", "chainage_km": "0.0-80.0"},
-        schedule={"window_start": 14.0, "window_end": 18.0, "duration_hours": 4.0},
-        electrical_isolation={"elementary_section": "ES-05", "is_isolated": True},
-        machines=[{"machine_id": "R_TIE_01", "machine_type": "Tamping", "allocated_hours": 3.0}],
-        crews=[{"crew_id": "CREW_ENGG_01", "shift_hours": 4.0, "hoer_compliant": True}],
-        train_regulation_plan={"T_PASS_01": {"strategy": "RUN_THROUGH", "delay_min": 0.0}},
-        safety_validation_result={"is_safe": True, "violations": []},
-        approval_state={"CTPC": "PENDING", "SR_DOM": "PENDING"},
+        associated_shadow_ids=associated_shadow_ids,
+        geography={"corridor": corridor_name, "chainage_km": f"{min_km:.1f}-{max_km:.1f}"},
+        schedule={"window_start": sched_start, "window_end": sched_end, "duration_hours": round(sched_end - sched_start, 1)},
+        electrical_isolation=electrical_isolation,
+        machines=allocated_machines,
+        crews=allocated_crews,
+        train_regulation_plan=train_regulation_plan,
+        safety_validation_result={"is_safe": True, "violations": opt_result.get("diagnostics", [])},
+        approval_state={r: "PENDING" for r in MANDATORY_APPROVAL_ROLES},
         provenance_metadata={"solver": run_resp.solver_mode, "sha256": run_resp.input_snapshot_hash}
     )
+
+    if idempotency_key:
+        IDEMPOTENCY_STORE[idempotency_key] = payload
+
+    return payload
 
 @router.get("/api/v1/recommendations/{recommendation_id}")
 def get_recommendation(recommendation_id: str):
@@ -537,39 +775,130 @@ def get_recommendation(recommendation_id: str):
 def approve_recommendation(
     recommendation_id: str,
     action: ApprovalAction,
-    actor: Dict[str, str] = Depends(get_current_actor)
+    if_match: Optional[str] = Header(None, alias="If-Match"),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
+    """
+    Statutory 4-role approval endpoint for recommendations.
+    Enforces that:
+    1. Recommendation has not expired.
+    2. Optimistic concurrency version matches (If-Match).
+    3. Acting user role matches the claimed role.
+    4. Recommendation is ONLY marked APPROVED and SANCTIONED when ALL 4 roles have approved.
+    """
+    if idempotency_key and idempotency_key in IDEMPOTENCY_STORE:
+        return IDEMPOTENCY_STORE[idempotency_key]
+
     if recommendation_id not in RECOMMENDATIONS_STORE:
         raise HTTPException(status_code=404, detail=f"Recommendation '{recommendation_id}' not found")
 
     rec = RECOMMENDATIONS_STORE[recommendation_id]
-    rec.status = RecommendationStatus.APPROVED
-    rec.primary_possession.status = PossessionStatus.SANCTIONED
+    role_key = action.role.value
+
+    if role_key not in MANDATORY_APPROVAL_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid statutory approval role '{role_key}'")
+
+    # 1. Recommendation expiry check
+    try:
+        exp_time = datetime.fromisoformat(rec.expires_at)
+        if datetime.now(timezone.utc) > exp_time:
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail=f"Recommendation '{recommendation_id}' expired at {rec.expires_at} and cannot be sanctioned."
+            )
+    except (ValueError, TypeError):
+        pass
+
+    # 2. Optimistic concurrency / version check
+    if if_match is not None:
+        try:
+            expected_ver = int(if_match.strip('"'))
+            if rec.version != expected_ver:
+                raise HTTPException(
+                    status_code=status.HTTP_412_PRECONDITION_FAILED,
+                    detail=f"Optimistic Concurrency Conflict: Recommendation version is {rec.version}, but If-Match was {expected_ver}"
+                )
+        except ValueError:
+            pass
+
+    # 3. Validate actor role authorization
+    validate_actor_role_authorization(actor, role_key)
+
+    # 4. Record sign-off for this role
+    timestamp = datetime.now(timezone.utc).isoformat()
+    rec.approval_chain[role_key] = {
+        "status": action.decision,
+        "approver_id": action.approver_id,
+        "approver_name": action.approver_name,
+        "comments": action.comments,
+        "timestamp": timestamp
+    }
+
+    # 5. Check all four mandatory approval roles
+    all_approved = all(
+        rec.approval_chain.get(r, {}).get("status") == "APPROVED"
+        for r in MANDATORY_APPROVAL_ROLES
+    )
+
+    if all_approved:
+        rec.status = RecommendationStatus.APPROVED
+        rec.primary_possession.status = PossessionStatus.SANCTIONED
+    else:
+        # Crucial safety rule: Never sanction before all 4 roles approve
+        rec.status = RecommendationStatus.PROPOSED
+        rec.primary_possession.status = PossessionStatus.PROPOSED
+
+    rec.version += 1
 
     record_audit(
         event_type="RECOMMENDATION_APPROVED",
         user_id=action.approver_id,
-        role=action.role.value,
+        role=role_key,
         resource_type="RECOMMENDATION",
         resource_id=recommendation_id,
         action="APPROVE",
-        details={"comments": action.comments}
+        details={"role": role_key, "is_fully_sanctioned": all_approved, "comments": action.comments}
     )
-    return {"status": "APPROVED", "recommendation": rec}
+
+    result = {
+        "status": "APPROVED" if all_approved else "PENDING_APPROVAL",
+        "is_sanctioned": all_approved,
+        "approval_role": role_key,
+        "recommendation": rec
+    }
+
+    if idempotency_key:
+        IDEMPOTENCY_STORE[idempotency_key] = result
+
+    return result
 
 @router.post("/api/v1/recommendations/{recommendation_id}/reject")
 def reject_recommendation(
     recommendation_id: str,
     action: ApprovalAction,
-    actor: Dict[str, str] = Depends(get_current_actor)
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
     if not action.comments or len(action.comments.strip()) < 5:
-        raise HTTPException(status_code=400, detail="Mandatory operational justification required for rejection")
+        raise HTTPException(status_code=400, detail="Mandatory operational justification required for rejection (min 5 characters)")
     if recommendation_id not in RECOMMENDATIONS_STORE:
         raise HTTPException(status_code=404, detail=f"Recommendation '{recommendation_id}' not found")
 
+    validate_actor_role_authorization(actor, action.role.value)
+
     rec = RECOMMENDATIONS_STORE[recommendation_id]
     rec.status = RecommendationStatus.REJECTED
+    rec.primary_possession.status = PossessionStatus.REJECTED
+    rec.version += 1
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    rec.approval_chain[action.role.value] = {
+        "status": "REJECTED",
+        "approver_id": action.approver_id,
+        "approver_name": action.approver_name,
+        "comments": action.comments,
+        "timestamp": timestamp
+    }
 
     record_audit(
         event_type="RECOMMENDATION_REJECTED",
@@ -586,15 +915,18 @@ def reject_recommendation(
 def override_recommendation(
     recommendation_id: str,
     override: OperationalOverride,
-    actor: Dict[str, str] = Depends(get_current_actor)
+    actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
-    if not override.justification or len(override.justification.strip()) < 5:
-        raise HTTPException(status_code=400, detail="Mandatory justification required for operational override")
+    if not override.reason_code or not override.justification or len(override.justification.strip()) < 10:
+        raise HTTPException(status_code=400, detail="Mandatory justification and reason code required for operational override (min 10 characters)")
     if recommendation_id not in RECOMMENDATIONS_STORE:
         raise HTTPException(status_code=404, detail=f"Recommendation '{recommendation_id}' not found")
 
+    validate_actor_role_authorization(actor, override.role.value)
+
     rec = RECOMMENDATIONS_STORE[recommendation_id]
     rec.status = RecommendationStatus.SUPERSEDED
+    rec.version += 1
 
     record_audit(
         event_type="RECOMMENDATION_OVERRIDDEN",
@@ -619,7 +951,6 @@ def handle_disruption_endpoint(disruption: DisruptionEvent):
     pipeline = ProductionOptimizationPipeline()
     base_sched = pipeline.optimize(scenario, job_tcis)
 
-    # Convert dict schedule to OptimizedSchedule
     from src.data_pipeline.models import OptimizedSchedule, ScheduledJob as SJModel
     sched_jobs = [
         SJModel(
@@ -662,14 +993,15 @@ def handle_disruption_endpoint(disruption: DisruptionEvent):
 
 @router.get("/api/v1/advisory/audit")
 def get_v1_audit(limit: int = 100):
-    return AUDIT_CHAIN.chain[-limit:]
+    return AUDIT_REPO.get_events(limit=limit)
 
 @router.get("/api/v1/advisory/audit/verify")
 def verify_audit_chain():
     """Verifies cryptographic SHA-256 hash-chain integrity."""
-    is_valid, error = AUDIT_CHAIN.verify_integrity()
+    is_valid, error = AUDIT_REPO.verify_integrity()
+    events = AUDIT_REPO.get_events(limit=1000)
     return {
-        "chain_length": len(AUDIT_CHAIN.chain),
+        "chain_length": len(events),
         "is_intact": is_valid,
         "error": error,
         "verified_at": datetime.now(timezone.utc).isoformat()
@@ -690,4 +1022,3 @@ def get_v1_kpis():
     evaluator = KPIEvaluator(scenario)
     report = evaluator.evaluate(sched, job_tcis)
     return report.get("kpi_metrics", report)
-

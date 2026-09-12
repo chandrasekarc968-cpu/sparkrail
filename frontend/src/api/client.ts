@@ -347,11 +347,16 @@ export const ApiClient = {
       }
       const ctpc = prop.approval_chain["CTPC"]?.status;
       const srDom = prop.approval_chain["SR_DOM"]?.status;
-      if (ctpc === "APPROVED" && srDom === "APPROVED") {
+      const sc = prop.approval_chain["SECTION_CONTROLLER"]?.status;
+      const sm = prop.approval_chain["STATION_MASTER"]?.status;
+      if (ctpc === "APPROVED" && srDom === "APPROVED" && sc === "APPROVED" && sm === "APPROVED") {
         prop.approval_status = "SANCTIONED";
         prop.recommended_blocks.forEach((b) => {
           b.lifecycle_state = "SANCTIONED";
         });
+      } else {
+        const nextRole = !ctpc || ctpc !== "APPROVED" ? "CTPC" : (!srDom || srDom !== "APPROVED" ? "SR_DOM" : (!sc || sc !== "APPROVED" ? "SECTION_CONTROLLER" : "STATION_MASTER"));
+        prop.approval_status = `PENDING_${nextRole}_REVIEW`;
       }
       return { ...prop };
     }

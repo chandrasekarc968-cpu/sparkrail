@@ -450,7 +450,16 @@ export interface AdvisoryProposal {
   advisory_mode: string;
   solver_mode: string;
   safety_status: "SAFETY_CERTIFIED" | "SAFETY_REJECTED";
-  approval_status: "PENDING_CTPC_REVIEW" | "SANCTIONED" | "GRANTED" | "REJECTED" | "OVERRIDDEN";
+  approval_status:
+    | "PENDING_CTPC_REVIEW"
+    | "PENDING_SR_DOM_REVIEW"
+    | "PENDING_SECTION_CONTROLLER_REVIEW"
+    | "PENDING_STATION_MASTER_REVIEW"
+    | "SANCTIONED"
+    | "GRANTED"
+    | "REJECTED"
+    | "OVERRIDDEN"
+    | string;
   statutory_compliance: string;
   created_at: string;
   created_by: string;

@@ -16,7 +16,10 @@ from src.data_pipeline.models import (
     SignalAsset,
     OHEAsset,
     TrainMovement,
-    Coordinate3D
+    Coordinate3D,
+    IsolatorSwitch,
+    Interlocking,
+    DataProvenance
 )
 
 logger = logging.getLogger("SparkRail.Harmonization")
@@ -116,6 +119,10 @@ class RailwayMultiGraph:
         self.signalling_edges: Dict[str, str] = {}
         # Block metadata: block_id -> BlockSection (or TrackSection)
         self.blocks: Dict[str, BlockSection] = {}
+        # Isolator switches: switch_id -> IsolatorSwitch
+        self.isolator_switches: Dict[str, IsolatorSwitch] = {}
+        # Interlockings: interlocking_id -> Interlocking
+        self.interlockings: Dict[str, Interlocking] = {}
         # Underlying NetworkX directed multigraph
         self.nx_graph: nx.MultiDiGraph = nx.MultiDiGraph()
 
@@ -148,6 +155,19 @@ class RailwayMultiGraph:
                 self.nx_graph.nodes[b_id]["elementary_section"] = section.section_id
                 self.nx_graph.nodes[b_id]["catenary_voltage"] = section.catenary_voltage_kv
 
+    def add_isolator_switch(self, switch: IsolatorSwitch) -> None:
+        self.isolator_switches[switch.switch_id] = switch
+        if switch.elementary_section_id in self.electrical_subgraphs:
+            for b_id in self.electrical_subgraphs[switch.elementary_section_id]:
+                if b_id in self.nx_graph:
+                    switches = self.nx_graph.nodes[b_id].get("isolator_switches", [])
+                    switches.append(switch.switch_id)
+                    self.nx_graph.nodes[b_id]["isolator_switches"] = switches
+
+    def add_interlocking(self, ixl: Interlocking) -> None:
+        ixl_id = ixl.interlocking_id or f"IXL-{ixl.station_code}"
+        self.interlockings[ixl_id] = ixl
+
     def add_signal_governance(self, signal_id: str, block_id: str) -> None:
         self.signalling_edges[signal_id] = block_id
         if block_id in self.nx_graph:
@@ -165,6 +185,7 @@ class RailwayMultiGraph:
     def get_affected_blocks_for_isolation(self, section_id: str) -> Set[str]:
         """Returns all block sections affected when an electrical section is isolated."""
         return self.electrical_subgraphs.get(section_id, set())
+
 
 class SpatialHarmonizationPipeline:
     """
@@ -326,10 +347,38 @@ class SpatialHarmonizationPipeline:
         prov.confidence = max(0.1, round(1.0 - abs(u - u_clamped), 3))
         return block, projected_km, prov
 
+    def detect_conflicting_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Detects contradictory or conflicting source records across subsystems.
+        Example: TMS reports severe rail flaw with 30 km/h PSR on block B2,
+        while SMMS/COA records maximum permissible speed 110 km/h without restriction.
+        """
+        conflicts = []
+        block_psrs: Dict[str, float] = {}
+        for r in records:
+            b_id = r.get("track_section_id") or r.get("block_id")
+            if not b_id:
+                continue
+            speed = r.get("speed_limit_kmh") or r.get("speed_restriction_kmh")
+            if speed is not None:
+                if b_id in block_psrs and abs(block_psrs[b_id] - speed) > 20.0:
+                    conflicts.append({
+                        "block_id": b_id,
+                        "conflict_type": "SPEED_RESTRICTION_CONTRADICTION",
+                        "recorded_speed_1": block_psrs[b_id],
+                        "recorded_speed_2": speed,
+                        "description": f"Conflicting speed restrictions on block {b_id}: {block_psrs[b_id]} vs {speed} km/h"
+                    })
+                else:
+                    block_psrs[b_id] = speed
+        return conflicts
+
     def build_multigraph(
         self,
         electrical_sections: List[Union[ElementarySection, ElementaryElectricalSection]],
-        signals: List[SignalAsset]
+        signals: List[SignalAsset],
+        switches: Optional[List[IsolatorSwitch]] = None,
+        interlockings: Optional[List[Interlocking]] = None
     ) -> RailwayMultiGraph:
         """
         Constructs the unified directed railway multigraph.
@@ -349,8 +398,19 @@ class SpatialHarmonizationPipeline:
             self.reconcile_elementary_section(es)
             mg.add_electrical_section(es)
 
+        # Build isolator switch mappings
+        if switches:
+            for sw in switches:
+                mg.add_isolator_switch(sw)
+
+        # Build interlocking routes
+        if interlockings:
+            for ixl in interlockings:
+                mg.add_interlocking(ixl)
+
         # Build signalling governance
         for sig in signals:
             mg.add_signal_governance(sig.signal_id, sig.block_id)
 
         return mg
+

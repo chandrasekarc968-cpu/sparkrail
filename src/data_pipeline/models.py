@@ -569,6 +569,39 @@ def validate_possession_transition(current: PossessionStatus, target: Possession
             f"Allowed transitions: {[s.value for s in allowed]}"
         )
 
+def validate_possession_schedule_immutability(
+    status: PossessionStatus,
+    old_start: float,
+    old_end: float,
+    new_start: float,
+    new_end: float,
+    possession_id: str = "POSSESSION"
+) -> None:
+    """
+    Enforces the non-negotiable safety invariant:
+    GRANTED and IN_PROGRESS possessions are mathematically immutable.
+    They cannot be shifted, cancelled, shortened, or truncated.
+    """
+    norm_status = status.value if hasattr(status, "value") else str(status)
+    if norm_status == PossessionStatus.GRANTED.value:
+        if abs(new_start - old_start) > 1e-4 or abs(new_end - old_end) > 1e-4:
+            raise ValueError(
+                f"Cannot shift, cancel, or alter schedule of active GRANTED possession '{possession_id}'. "
+                f"Active possessions are mathematically immutable."
+            )
+    elif norm_status == PossessionStatus.IN_PROGRESS.value:
+        if (new_end - new_start) < (old_end - old_start) - 1e-4:
+            raise ValueError(
+                f"Cannot shorten or truncate active IN_PROGRESS possession '{possession_id}'. "
+                f"Active possessions are mathematically immutable."
+            )
+        if abs(new_start - old_start) > 1e-4:
+            raise ValueError(
+                f"Cannot shift start time of active IN_PROGRESS possession '{possession_id}'. "
+                f"Active possessions are mathematically immutable."
+            )
+
+
 class ApprovalRole(str, Enum):
     CTPC = "CTPC"
     SR_DOM = "SR_DOM"
@@ -585,20 +618,51 @@ class RecommendationStatus(str, Enum):
     REJECTED = "REJECTED"
     SUPERSEDED = "SUPERSEDED"
 
+class DataProvenance(BaseModel):
+    """Canonical data lineage and provenance metadata."""
+    source_system: str
+    source_record_id: str
+    source_timestamp: str
+    ingestion_timestamp: str
+    schema_version: str = "1.0.0"
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_errors: List[str] = Field(default_factory=list)
+
 class CanonicalEntity(BaseModel):
     id: Optional[str] = None
     schema_version: str = "1.0.0"
     source_system: str = "SPARKRAIL"
     source_record_id: Optional[str] = None
+    source_timestamp: Optional[str] = None
     event_timestamp: Optional[str] = None
     ingestion_timestamp: Optional[str] = None
+    data_freshness: Optional[float] = None
     data_freshness_seconds: Optional[float] = None
+    confidence: float = 1.0
+    validation_errors: List[str] = Field(default_factory=list)
     audit_metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
     @classmethod
-    def auto_populate_id(cls, data: Any) -> Any:
+    def auto_populate_id_and_lineage(cls, data: Any) -> Any:
         if isinstance(data, dict):
+            # Sync source_timestamp and event_timestamp
+            st = data.get("source_timestamp")
+            et = data.get("event_timestamp")
+            if st and not et:
+                data["event_timestamp"] = st
+            elif et and not st:
+                data["source_timestamp"] = et
+
+            # Sync data_freshness and data_freshness_seconds
+            df = data.get("data_freshness")
+            dfs = data.get("data_freshness_seconds")
+            if df is not None and dfs is None:
+                data["data_freshness_seconds"] = df
+            elif dfs is not None and df is None:
+                data["data_freshness"] = dfs
+
             if "id" not in data or not data["id"]:
                 for key in (
                     "run_id", "bundle_id", "demand_id", "event_id", "request_id",
@@ -613,12 +677,25 @@ class CanonicalEntity(BaseModel):
                     data["id"] = f"{cls.__name__.upper()}-{int(time.time()*1000)}"
         return data
 
-    @field_validator("event_timestamp", "ingestion_timestamp", mode="before")
+    @field_validator("event_timestamp", "source_timestamp", "ingestion_timestamp", mode="before")
     @classmethod
     def check_iso(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and v != "":
             return validate_iso8601_timestamp(v)
         return v
+
+    def get_provenance(self) -> DataProvenance:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        return DataProvenance(
+            source_system=self.source_system,
+            source_record_id=self.source_record_id or str(self.id or "UNKNOWN"),
+            source_timestamp=self.source_timestamp or self.event_timestamp or now_iso,
+            ingestion_timestamp=self.ingestion_timestamp or now_iso,
+            schema_version=self.schema_version,
+            data_freshness_seconds=self.data_freshness_seconds or 0.0,
+            confidence=self.confidence,
+            validation_errors=list(self.validation_errors)
+        )
 
 class RailwayZone(CanonicalEntity):
     zone_code: str
@@ -995,6 +1072,13 @@ class Recommendation(CanonicalEntity):
     safety_validation_status: str = "SAFETY_CERTIFIED"
     status: RecommendationStatus = RecommendationStatus.PROPOSED
     expires_at: str
+    version: int = 1
+    approval_chain: Dict[str, Dict[str, Any]] = Field(default_factory=lambda: {
+        "CTPC": {"status": "PENDING", "approver_id": None, "approver_name": None, "comments": None, "timestamp": None},
+        "SR_DOM": {"status": "PENDING", "approver_id": None, "approver_name": None, "comments": None, "timestamp": None},
+        "SECTION_CONTROLLER": {"status": "PENDING", "approver_id": None, "approver_name": None, "comments": None, "timestamp": None},
+        "STATION_MASTER": {"status": "PENDING", "approver_id": None, "approver_name": None, "comments": None, "timestamp": None},
+    })
     provenance_metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("expires_at")

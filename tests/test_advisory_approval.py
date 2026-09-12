@@ -70,9 +70,9 @@ class TestAdvisoryWorkflow:
         assert resp_ctpc.status_code == 200
         data_ctpc = resp_ctpc.json()
         assert data_ctpc["approval_chain"]["CTPC"]["status"] == "APPROVED"
-        assert data_ctpc["approval_status"] == "PENDING_CTPC_REVIEW"  # Requires Sr. DOM to complete sanction
+        assert data_ctpc["approval_status"] == "PENDING_SR_DOM_REVIEW"  # Advances to Sr. DOM review
 
-        # 3. Sr. DOM Approval
+        # 3. Sr. DOM Approval - note: 2 approvals must NOT mark proposal as SANCTIONED
         sr_dom_action = {
             "role": "SR_DOM",
             "approver_id": "EMP-SRDOM-01",
@@ -84,9 +84,38 @@ class TestAdvisoryWorkflow:
         assert resp_sr_dom.status_code == 200
         data_sr_dom = resp_sr_dom.json()
         assert data_sr_dom["approval_chain"]["SR_DOM"]["status"] == "APPROVED"
-        # When both CTPC and Sr. DOM sign off, proposal transitions to SANCTIONED
-        assert data_sr_dom["approval_status"] == "SANCTIONED"
-        assert all(b["lifecycle_state"] == "SANCTIONED" for b in data_sr_dom["recommended_blocks"])
+        assert data_sr_dom["approval_status"] == "PENDING_SECTION_CONTROLLER_REVIEW"
+        assert not all(b["lifecycle_state"] == "SANCTIONED" for b in data_sr_dom["recommended_blocks"])
+
+        # 4. Section Controller Approval
+        sc_action = {
+            "role": "SECTION_CONTROLLER",
+            "approver_id": "EMP-SC-01",
+            "approver_name": "Section Controller",
+            "decision": "APPROVED",
+            "comments": "Corridor headway separation verified."
+        }
+        resp_sc = client.post(f"/advisory/proposals/{prop_id}/approve", json=sc_action)
+        assert resp_sc.status_code == 200
+        data_sc = resp_sc.json()
+        assert data_sc["approval_chain"]["SECTION_CONTROLLER"]["status"] == "APPROVED"
+        assert data_sc["approval_status"] == "PENDING_STATION_MASTER_REVIEW"
+
+        # 5. Station Master Approval - completes all 4 statutory roles
+        sm_action = {
+            "role": "STATION_MASTER",
+            "approver_id": "EMP-SM-01",
+            "approver_name": "Station Master",
+            "decision": "APPROVED",
+            "comments": "Station interlocking and berthing clear."
+        }
+        resp_sm = client.post(f"/advisory/proposals/{prop_id}/approve", json=sm_action)
+        assert resp_sm.status_code == 200
+        data_sm = resp_sm.json()
+        assert data_sm["approval_chain"]["STATION_MASTER"]["status"] == "APPROVED"
+        # Only when ALL FOUR roles sign off does proposal transition to SANCTIONED
+        assert data_sm["approval_status"] == "SANCTIONED"
+        assert all(b["lifecycle_state"] == "SANCTIONED" for b in data_sm["recommended_blocks"])
 
     def test_proposal_rejection(self):
         gen_resp = client.post("/advisory/proposals", json={"division_code": "PRYJ", "dry_run": True})

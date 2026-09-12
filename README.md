@@ -86,7 +86,7 @@ SparkRail is structured into 11 decoupled modular services:
 
 | Module | Classification | Current Readiness Status | Verification Evidence |
 |:---|:---|:---|:---|
-| **Three-Tier Optimizer (T1/T2/T3)** | **Pilot-Ready** | Fully implemented; CP-SAT & heuristic fallback; Benders cuts. | 102 Unit & Integration tests passing. |
+| **Three-Tier Optimizer (T1/T2/T3)** | **Pilot-Ready** | Fully implemented; CP-SAT & heuristic fallback; Benders cuts. | 121 Unit & Integration tests passing. |
 | **TCI Scoring & AHP Weights** | **Pilot-Ready** | Normalized [0, 100]; 6-factor AHP matrix; conservative missing-data bound. | `tests/test_tci.py` (12/12 passing) |
 | **Microscopic Safety Engine** | **Pilot-Ready** | Hard electrical isolation, headway, TSL opposing, crew rest (HOER). | `tests/test_safety_validator.py`, `tests/test_three_tier_optimization.py` |
 | **BDMS Advisory Governance** | **Pilot-Ready** | Outbound proposal schema, role approval, override audit trail, SHA-256 chain. | `tests/test_advisory_approval.py`, `tests/test_v1_api.py` |
@@ -127,7 +127,7 @@ For complete mathematical definitions and hazard logs, see [`docs/safety-case.md
 # Verify syntax across all Python modules
 python -m compileall src
 
-# Run full backend test suite (102 tests, 0 failures)
+# Run full backend test suite (121 tests, 0 failures)
 pytest -v
 
 # Run pilot quality gates verification (all 9 gates)

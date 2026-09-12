@@ -163,6 +163,96 @@ class BaseCRISAdapter:
     def _is_mock_allowed(self, request: SnapshotRequest) -> bool:
         return self.config.mock_mode or getattr(request, "mock_mode", False)
 
+    def process_event(
+        self,
+        event: Dict[str, Any],
+        current_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Idempotent, safe event processing with stale detection, contradiction detection,
+        and dead-letter queue logging.
+        """
+        if not hasattr(self, "_processed_events"):
+            self._processed_events = set()
+        if not hasattr(self, "_last_entity_timestamps"):
+            self._last_entity_timestamps = {}
+
+        event_id = event.get("event_id", f"EVT-{int(time.time()*1000)}")
+        ts_str = event.get("timestamp")
+        payload = event.get("payload", {})
+
+        # 1. Idempotency check
+        if event_id in self._processed_events:
+            return {
+                "status": "STALE_OR_DUPLICATE_REJECTED",
+                "reason": "Duplicate event ID already processed",
+                "event_id": event_id
+            }
+
+        # 2. Timestamp parse & freshness / stale check
+        try:
+            if ts_str:
+                dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                event_epoch = dt.timestamp()
+                
+                # Check entity-level sequence
+                entity_key = payload.get("track_section_id") or payload.get("train_id") or payload.get("asset_id") or event_id
+                last_seen = self._last_entity_timestamps.get(entity_key)
+                if last_seen and event_epoch < last_seen:
+                    self._record_dead_letter({
+                        "event": event,
+                        "reason": f"Out-of-order stale event for {entity_key}: {event_epoch} < {last_seen}"
+                    })
+                    return {
+                        "status": "STALE_OR_DUPLICATE_REJECTED",
+                        "reason": "Out of sequence timestamp",
+                        "event_id": event_id
+                    }
+                self._last_entity_timestamps[entity_key] = event_epoch
+        except Exception as e:
+            self._record_dead_letter({"event": event, "reason": f"Unparseable timestamp: {e}"})
+            return {"status": "REJECTED_FORMAT", "reason": str(e), "event_id": event_id}
+
+        # 3. Contradiction detection against current_context
+        if current_context:
+            contradiction = self._check_contradictions(event, current_context)
+            if contradiction:
+                self._record_dead_letter({"event": event, "reason": contradiction})
+                return {
+                    "status": "CONTRADICTION_REJECTED",
+                    "reason": contradiction,
+                    "event_id": event_id
+                }
+
+        self._processed_events.add(event_id)
+        return {
+            "status": "INGESTED",
+            "event_id": event_id,
+            "source": self.source_name,
+            "processed_at": datetime.now(timezone.utc).isoformat()
+        }
+
+    def _check_contradictions(self, event: Dict[str, Any], context: Dict[str, Any]) -> Optional[str]:
+        event_type = event.get("event_type", "")
+        payload = event.get("payload", {})
+        
+        # Rule 1: Electric train occupying an isolated section
+        if event_type == "TRAIN_MOVEMENT" and payload.get("traction_type") == "ELECTRIC":
+            section_id = payload.get("track_section_id")
+            isolated_sections = context.get("isolated_sections", set())
+            if section_id in isolated_sections:
+                return f"Contradiction: Electric train '{payload.get('train_id')}' occupying electrically isolated section '{section_id}'"
+        
+        # Rule 2: Multiple trains on same block without headway
+        if event_type == "TRAIN_MOVEMENT":
+            section_id = payload.get("track_section_id")
+            occupied_blocks = context.get("occupied_blocks", {})
+            current_occupant = occupied_blocks.get(section_id)
+            if current_occupant and current_occupant != payload.get("train_id"):
+                return f"Contradiction: Block '{section_id}' reported occupied by both '{current_occupant}' and '{payload.get('train_id')}'"
+
+        return None
+
 class TMSAdapter(BaseCRISAdapter):
     """
     Track Management System (TMS) Adapter.
@@ -500,4 +590,100 @@ class BDMSAdapter(BaseCRISAdapter):
             )
             return
         return iter([])
+
+
+class CRISReplayEngine:
+    """
+    Deterministic synthetic event replay generator for the 8 canonical railway event types:
+    1. TRAIN_MOVEMENT (RTIS)
+    2. TRAIN_DELAY (COA)
+    3. POSSESSION_STATUS (BDMS)
+    4. OHE_ISOLATION (TDMS)
+    5. SIGNAL_DISCONNECTION (SMMS)
+    6. MACHINE_FAILURE (TMS)
+    7. WEATHER_RESTRICTION (COA/Operating)
+    8. WORK_COMPLETION (BDMS)
+    """
+    @staticmethod
+    def generate_replay_events(division_code: str = "PRYJ", start_epoch: Optional[float] = None) -> List[Dict[str, Any]]:
+        base_epoch = start_epoch or datetime.now(timezone.utc).timestamp()
+        
+        def ts(offset_min: float) -> str:
+            return datetime.fromtimestamp(base_epoch + offset_min * 60, timezone.utc).isoformat()
+
+        return [
+            # 1. TRAIN_MOVEMENT (RTIS)
+            {
+                "event_id": f"RTIS-MOV-{division_code}-001",
+                "event_type": "TRAIN_MOVEMENT",
+                "source_system": "RTIS",
+                "timestamp": ts(0.0),
+                "division_code": division_code,
+                "payload": {"train_id": "T22436", "loco_id": "WAP7-30201", "track_section_id": "B1", "speed_kmh": 125.0, "traction_type": "ELECTRIC"}
+            },
+            # 2. TRAIN_DELAY (COA)
+            {
+                "event_id": f"COA-DLY-{division_code}-002",
+                "event_type": "TRAIN_DELAY",
+                "source_system": "COA",
+                "timestamp": ts(5.0),
+                "division_code": division_code,
+                "payload": {"train_id": "T12302", "delay_minutes": 18.0, "reason": "Caution Order at KM 45"}
+            },
+            # 3. POSSESSION_STATUS (BDMS)
+            {
+                "event_id": f"BDMS-POS-{division_code}-003",
+                "event_type": "POSSESSION_STATUS",
+                "source_system": "BDMS",
+                "timestamp": ts(10.0),
+                "division_code": division_code,
+                "payload": {"possession_id": "POSS-B3-CIVIL", "track_section_id": "B3", "old_status": "SANCTIONED", "new_status": "GRANTED"}
+            },
+            # 4. OHE_ISOLATION (TDMS)
+            {
+                "event_id": f"TDMS-ISO-{division_code}-004",
+                "event_type": "OHE_ISOLATION",
+                "source_system": "TDMS",
+                "timestamp": ts(12.0),
+                "division_code": division_code,
+                "payload": {"elementary_section_id": "ES-02", "switch_id": "SW-ISO-21", "state": "OPEN", "affected_tracks": ["B3", "B4"]}
+            },
+            # 5. SIGNAL_DISCONNECTION (SMMS)
+            {
+                "event_id": f"SMMS-SIG-{division_code}-005",
+                "event_type": "SIGNAL_DISCONNECTION",
+                "source_system": "SMMS",
+                "timestamp": ts(15.0),
+                "division_code": division_code,
+                "payload": {"signal_id": "SIG-NYN-12", "track_section_id": "B3", "disconnection_notice_number": "DN-2026-88"}
+            },
+            # 6. MACHINE_FAILURE (TMS)
+            {
+                "event_id": f"TMS-MCH-{division_code}-006",
+                "event_type": "MACHINE_FAILURE",
+                "source_system": "TMS",
+                "timestamp": ts(20.0),
+                "division_code": division_code,
+                "payload": {"machine_id": "R_BCM_01", "machine_type": "Ballast Cleaning Machine", "failure_code": "HYDRAULIC_LEAK", "track_section_id": "B3"}
+            },
+            # 7. WEATHER_RESTRICTION (Operating)
+            {
+                "event_id": f"OP-WTH-{division_code}-007",
+                "event_type": "WEATHER_RESTRICTION",
+                "source_system": "COA",
+                "timestamp": ts(25.0),
+                "division_code": division_code,
+                "payload": {"corridor_segment": "SFG-NYN", "speed_restriction_kmh": 60.0, "reason": "HEAVY_FOG_VISIBILITY_POOR"}
+            },
+            # 8. WORK_COMPLETION (BDMS)
+            {
+                "event_id": f"BDMS-CMP-{division_code}-008",
+                "event_type": "WORK_COMPLETION",
+                "source_system": "BDMS",
+                "timestamp": ts(45.0),
+                "division_code": division_code,
+                "payload": {"possession_id": "POSS-B3-CIVIL", "track_section_id": "B3", "track_fit_certified": True, "speed_restored_kmh": 100.0}
+            }
+        ]
+
 

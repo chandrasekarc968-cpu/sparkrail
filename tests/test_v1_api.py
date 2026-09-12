@@ -43,13 +43,52 @@ def test_v1_optimization_runs_and_recommendations():
     assert rec_data["status"] == "PROPOSED"
     assert "expires_at" in rec_data
 
-    # 4. Approve recommendation
-    app_resp = client.post(
+    # 4. Multi-role Statutory Approval: Enforce all 4 roles (CTPC, SR_DOM, SECTION_CONTROLLER, STATION_MASTER)
+    # Step 4a: CTPC approval (must NOT mark recommendation as SANCTIONED after single approval)
+    resp_ctpc = client.post(
         f"/api/v1/recommendations/{rec_id}/approve",
         json={
             "role": "CTPC",
             "approver_id": "CTPC_OFFICER_01",
             "comments": "Approved for corridor execution"
+        }
+    )
+    assert resp_ctpc.status_code == 200
+    assert resp_ctpc.json()["status"] == "PENDING_APPROVAL"
+    assert resp_ctpc.json()["recommendation"]["primary_possession"]["status"] == "PROPOSED"
+
+    # Step 4b: Sr. DOM approval (must NOT mark as SANCTIONED after only two approvals)
+    resp_srdom = client.post(
+        f"/api/v1/recommendations/{rec_id}/approve",
+        json={
+            "role": "SR_DOM",
+            "approver_id": "SR_DOM_OFFICER_01",
+            "comments": "Operations clearance granted"
+        }
+    )
+    assert resp_srdom.status_code == 200
+    assert resp_srdom.json()["status"] == "PENDING_APPROVAL"
+    assert resp_srdom.json()["recommendation"]["primary_possession"]["status"] == "PROPOSED"
+
+    # Step 4c: Section Controller approval (still not sanctioned)
+    resp_sc = client.post(
+        f"/api/v1/recommendations/{rec_id}/approve",
+        json={
+            "role": "SECTION_CONTROLLER",
+            "approver_id": "SC_OFFICER_01",
+            "comments": "Section occupancy verified"
+        }
+    )
+    assert resp_sc.status_code == 200
+    assert resp_sc.json()["status"] == "PENDING_APPROVAL"
+
+    # Step 4d: Station Master approval (completes 4th role -> now becomes APPROVED and SANCTIONED)
+    app_resp = client.post(
+        f"/api/v1/recommendations/{rec_id}/approve",
+        json={
+            "role": "STATION_MASTER",
+            "approver_id": "SM_OFFICER_01",
+            "comments": "Station berthing verified clear"
         }
     )
     assert app_resp.status_code == 200

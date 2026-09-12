@@ -47,11 +47,19 @@ class MacroScheduleOutput(BaseModel):
 
     def to_optimization_run(self, request_id: str = "REQ-SYNTHETIC-01") -> OptimizationRun:
         """Constructs a canonical OptimizationRun domain model."""
+        # Non-negotiable rule: Never label a heuristic result as optimal
+        if not self.is_feasible:
+            status = "INFEASIBLE"
+        elif self.solver_mode in ("ALNS_DETERMINISTIC", "HEURISTIC_FALLBACK"):
+            status = "FEASIBLE"
+        else:
+            status = "OPTIMAL" if (self.optimality_gap is None or self.optimality_gap == 0.0) else "FEASIBLE"
+
         return OptimizationRun(
             run_id=f"RUN-{self.input_snapshot_hash[:8]}-{int(time.time())}",
             request_id=request_id,
             input_snapshot_hash=self.input_snapshot_hash,
-            solver_status="OPTIMAL" if self.is_feasible else "INFEASIBLE",
+            solver_status=status,
             solver_mode=self.solver_mode,
             objective_value=round(self.objective_value, 2),
             optimality_gap=self.optimality_gap,
