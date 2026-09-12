@@ -1,7 +1,7 @@
 # SparkRail Implementation Gap Report
 
 **Audit Date:** 2026-09-12  
-**Commit:** `8a7c895a14d820d3b68a11edfea05f0512f21a27`  
+**Commit:** `a19a36214ffd4d41b1b7a6c6c3957927f22d8e48`  
 **Auditor:** Automated code inspection + reproducible test execution  
 **Methodology:** Full `git ls-tree`, `python -m compileall src`, `pytest -q`, `npm test -- --run`, `npm run build`
 
@@ -213,6 +213,6 @@ All tests run without live CRIS, Kafka, PostgreSQL, SUMO, Gurobi, or private cre
 
 ---
 
-**Audited Commit:** `8a7c895a14d820d3b68a11edfea05f0512f21a27`  
+**Audited Commit:** `a19a36214ffd4d41b1b7a6c6c3957927f22d8e48`  
 **Remaining Gaps:** Station loop capacity modeling (partial), SUMO co-simulation (out of scope), Kafka consumer (config-gated)  
 **Pilot-Ready Status:** ✅ Advisory-only synthetic MVP verified
