@@ -1,44 +1,218 @@
 # SparkRail Implementation Gap Report
 
-**Target Architecture:** Pilot-Ready, Advisory-Only BDMS AI Optimization Layer for Indian Railways (Problem Statement 26027)  
-**Corridor Scope:** Prayagraj (PRYJ) / Pt. Deen Dayal Upadhyaya (DDU) 80 km Electrified Double-Line Corridor  
-**Date:** September 2026  
-**Status Legend:**
-- `RESOLVED`: Implemented, tested, and meeting the safety specification (102 backend tests + 49 frontend tests passing).
-- `CONFIGURATION_GATED`: Implemented with typed contracts; live CRIS interface inactive by default (dry-run & synthetic mode active).
-- `EXPERIMENTAL`: Research prototype (e.g. XGBoost, GNN/DRL) shielded behind feature flags.
+**Audit Date:** 2026-09-12  
+**Commit:** `8a7c895a14d820d3b68a11edfea05f0512f21a27`  
+**Auditor:** Automated code inspection + reproducible test execution  
+**Methodology:** Full `git ls-tree`, `python -m compileall src`, `pytest -q`, `npm test -- --run`, `npm run build`
 
 ---
 
-## Comprehensive Implementation Gap Matrix
+## Baseline Verification Results
 
-| Feature | Expected Behavior from Report | Current Implementation | Gap | Resolution | Test Required | Status |
-|:---|:---|:---|:---|:---|:---|:---|
-| **Canonical Domain Enums** | Explicit enums for `Department` (CIVIL, TRD, SIGNAL, TELECOM), `PossessionStatus` (DRAFT, PROPOSED, SANCTIONED, GRANTED, IN_PROGRESS, COMPLETED, CANCELLED), `TrainPriority` (PREMIUM_PASSENGER, EXPRESS_PASSENGER, ORDINARY_PASSENGER, FREIGHT), `ApprovalRole`, `RecommendationStatus`. | `models.py` has complete canonical enums with bidirectional backward compatibility. | None. | Canonical enums defined in `src/data_pipeline/models.py`. | `tests/test_canonical_models_and_harmonization.py` | `RESOLVED` |
-| **Domain Model Validation** | Strict validation of ISO-8601 timestamps, timezone awareness, chainage ranges ($s < e$), positive durations, non-negative delays, and status transition rules. | Implemented via Pydantic `@field_validator`, `@model_validator`, and `validate_possession_transition`. | None. | Complete validation logic in `src/data_pipeline/models.py`. | `tests/test_canonical_models_and_harmonization.py` | `RESOLVED` |
-| **TrackSection & Station Topology** | Strongly typed models for `TrackSection`, `Station`, `Interlocking`, and `ElementarySection` with line codes, loop capacity, and power feed relations. | Implemented strongly typed models in `models.py` with `auto_populate_id` validator. | None. | Canonical entities in `src/data_pipeline/models.py`. | `tests/test_canonical_models_and_harmonization.py` | `RESOLVED` |
-| **Possession & Shadow Bundles** | Strongly typed `Possession`, `ShadowPossessionBundle`, `OptimizationRequest`, `OptimizationRun`, `Recommendation`, `ApprovalAction`, `OperationalOverride`. | Complete Pydantic models for all 17 canonical entities with ID fallback in `models.py`. | None. | All canonical schemas defined and validated in `models.py`. | `tests/test_v1_api.py` | `RESOLVED` |
-| **CRIS Source Adapters (TMS, TDMS, SMMS, COA, RTIS, BDMS)** | Typed input/output schemas, mock/synthetic mode, timeouts, exponential backoff, dead-letter records (`data/dead_letter.jsonl`), lineage, partition keys. | `cris_adapters.py` provides complete TMS, TDMS, SMMS, COA, RTIS, BDMS adapters with dead-letter queue and retry backoff. | None. Live mode is configuration-gated by design. | Implemented in `src/data_pipeline/adapters/cris_adapters.py`. | `tests/test_cris_adapters.py` | `RESOLVED` / `CONFIGURATION_GATED` |
-| **Linear Referencing & Harmonization** | Normalize km/m chainage to canonical coordinates, map assets to track sections, project RTIS GPS onto track graph with confidence scores, detect out-of-range ambiguities. | `harmonization.py` provides `normalize_chainage()`, `SpatialHarmonizationPipeline`, and `RailwayMultiGraph`. | None. | Implemented in `src/data_pipeline/harmonization.py`. | `tests/test_canonical_models_and_harmonization.py` | `RESOLVED` |
-| **Deterministic Data Fixtures** | Deterministic synthetic DDU/PRYJ-style corridor fixtures with 80 km double-line, 8 stations, 16 blocks, 4 elementary sections, 20 demands. | `synthetic_data.py` generates PRYJ-DDU corridor landmarks, stations, blocks, feeding posts. | None. | Implemented in `src/data_pipeline/synthetic_data.py`. | `tests/test_geometry.py` | `RESOLVED` |
-| **Task Criticality Index (TCI)** | Transparent AHP-style 0-100 index combining 6 attributes: asset degradation, safety criticality, traffic impact, deferral penalty, inspection urgency, data confidence. | `criticality_scorer.py` implements full 6-attribute AHP model with conservative missing-data imputation. | None. | Implemented in `src/ai_ml/criticality_scorer.py`. | `tests/test_tci.py` (12/12 passing) | `RESOLVED` |
-| **Tier 1 Spatiotemporal Clustering** | Spatiotemporal distance using chainage, window overlap, department compatibility, Bron-Kerbosch maximal clique extraction, containment/nesting validation. | `clustering.py` implements Bron-Kerbosch maximal cliques with containment and temporal nesting validation. | None. | Implemented in `src/optimization/clustering.py`. | `tests/test_three_tier_optimization.py` | `RESOLVED` |
-| **Tier 2 Macro Allocator (CP-SAT & ALNS)** | CP-SAT optimization with machine availability, crew shifts, electrical isolation, TSL conflicts; multi-operator ALNS fallback. | `macro_allocator.py` implements OR-Tools CP-SAT and 5 ALNS operators (worst-delay, corridor sweep, regret-3, repair). | None. | Implemented in `src/optimization/macro_allocator.py`. | `tests/test_three_tier_optimization.py` | `RESOLVED` |
-| **Tier 3 Microscopic Validator** | Continuous train trajectories, headways, 25kV electrical isolation (10m margin), TSL opposing movements (15m margin), HOER crew limits, Benders cuts. | `microscopic_validator.py` checks train travel times, electrical isolation, TSL token clearance, crew rest limits, and generates Benders cuts. | None. | Implemented in `src/optimization/microscopic_validator.py`. | `tests/test_three_tier_optimization.py`, `tests/test_safety_validator.py` | `RESOLVED` |
-| **Dynamic Disruption Rescheduler** | Localized corridor replanning (30 km radius, 180 min forward horizon) in $<90$s triggered by $\ge 15$ min delays; active possession immutability. | `disruption_engine.py` implements localized warm-start replanning preserving `GRANTED` and `IN_PROGRESS` possessions. | None. | Implemented in `src/optimization/disruption_engine.py`. | `tests/test_disruption_engine.py` | `RESOLVED` |
-| **Advisory API Endpoints** | Authenticated, versioned endpoints under `/api/v1/` (`/optimization/runs`, `/optimization/possession-schedule`, `/recommendations/{id}/approve`, `/disruptions`, `/advisory/audit`, `/network/geometry`, `/kpis`). | Versioned endpoints mounted in `src/api/advisory.py` and `src/api/main.py`. | None. | Complete `/api/v1/` routes implemented. | `tests/test_v1_api.py` | `RESOLVED` |
-| **Tamper-Evident Audit Chain** | SHA-256 cryptographic hash chaining ($\text{hash}_i = \text{SHA-256}(\text{hash}_{i-1} \parallel \text{payload})$) for all approvals, overrides, rejections, and solver failures. | `advisory.py` provides `TamperEvidentAuditChain` with `/api/v1/advisory/audit/verify`. | None. | Implemented in `src/api/advisory.py`. | `tests/test_v1_api.py`, `tests/test_advisory_approval.py` | `RESOLVED` |
-| **Statutory Approval Workflow** | Four-tier approval hierarchy (`CTPC` $\to$ `SR_DOM` $\to$ `SECTION_CONTROLLER` $\to$ `STATION_MASTER`), mandatory override reasons, unapproved cannot be executed. | Full 4-tier approval flow in `advisory.py` and `frontend/src/components/AdvisoryProposalDrawer.tsx`. | None. | Implemented in API and UI. | `tests/test_advisory_approval.py`, `frontend/src/tests/advisory.test.ts` | `RESOLVED` |
-| **Frontend Control Room** | React 19 control room with advisory banner, active possession lock badge, 3D WebGL / 2D SVG fallback, approval drawer, audit viewer, KPI dashboard. | `frontend/` contains complete React 19 + Three.js UI with 2D fallback, drawer, audit viewer, and lock badges. | None. | Verified with Vitest (49/49 passing) and production build. | `npm test -- --run` | `RESOLVED` |
-| **KPI Evaluation Suite** | Compute Indian Railways metrics: BUE, SBR, PII, MTTG, Machine Productivity Ratio, Delay per Block Hour, Feasibility Rate. | `evaluator.py` computes all required Indian Railways metrics against baseline schedules. | None. | Implemented in `src/simulation/evaluator.py`. | `tests/test_core.py` | `RESOLVED` |
+| Gate | Command | Result |
+|------|---------|--------|
+| Python Compilation | `python -m compileall src` | ✅ Exit code 0, all 7 packages compiled |
+| Backend Tests | `pytest -q` | ✅ **121 passed** in 40.29s |
+| Frontend Tests | `npm test -- --run` | ✅ **49 passed** (11 test files) in 3.55s |
+| Frontend Build | `npm run build` | ✅ Built in 596ms (1,829 kB bundle) |
 
 ---
 
-## Verification Summary
+## Module-by-Module Verification
 
-- **Backend Pytest Suite:** 121 passed in 39.52s (0 failures, 0 errors, 100% pass rate).
-- **Frontend Vitest Suite:** 49 passed in 3.57s across 11 test suites.
-- **Frontend Production Build:** Built cleanly in 615ms (`tsc -b && vite build`).
-- **Python Syntax Compilation:** Verified via `python -m compileall src` (0 errors).
-- **Quality Gates:** All 9 quality gates verified via `python scripts/verify_quality_gates.py`.
-- **Statutory Governance:** Full 4-tier approval hierarchy (`CTPC` -> `SR_DOM` -> `SECTION_CONTROLLER` -> `STATION_MASTER`) enforced; active possessions mathematically immutable; audit chain tamper-evident and cryptographically verifiable.
+### 1. Domain Contracts — ✅ VERIFIED
+
+**File:** `src/data_pipeline/models.py` (1,209 lines)
+
+All 18 required strongly-typed models are implemented with Pydantic validators:
+
+| Model | Status | Key Validations |
+|-------|--------|-----------------|
+| `TrackSection` / `BlockSection` | ✅ | Chainage range, division code, ID sync |
+| `Station` | ✅ | Code, platforms ≥1, loop capacity ≥0 |
+| `Interlocking` | ✅ | Route/point counts, signal IDs, operational flag |
+| `ElementarySection` | ✅ | Track section mapping, voltage, energization state |
+| `IsolatorSwitch` | ✅ | Section binding, location chainage, motorization |
+| `MaintenanceDemand` | ✅ | Chainage bounds, duration >0, lifecycle sync |
+| `TrainMovement` | ✅ | Priority enum, non-negative delay, route ≥1 |
+| `Machine` | ✅ | Transit speed, setup/clearing time |
+| `Crew` | ✅ | HOER: max 12h shift, min 12h rest, certified sections |
+| `Possession` | ✅ | Status transitions, start < end, `transition_to()` method |
+| `ShadowPossessionBundle` | ✅ | Primary/secondary demands, window bounds |
+| `OptimizationRun` | ✅ | Solver status, runtime ≥0, ISO-8601 timestamps |
+| `Recommendation` | ✅ | 4-role approval chain, expiry, version counter |
+| `ApprovalAction` | ✅ | Role enum, mandatory comments, ISO-8601 |
+| `OperationalOverride` | ✅ | Reason code, justification min 10 chars, audit hash |
+| `DisruptionEvent` | ✅ | 30km corridor radius, 180min horizon, severity |
+| `AuditEvent` | ✅ | SHA-256 hash chain, previous/current hash |
+| `DataProvenance` | ✅ | Source system, freshness, confidence, validation errors |
+
+**Lifecycle transitions** (`DRAFT→PROPOSED→SANCTIONED→GRANTED→IN_PROGRESS→COMPLETED`) verified with `validate_possession_transition()`. GRANTED→CANCELLED and IN_PROGRESS→DRAFT are correctly rejected.
+
+**Schedule immutability** enforced via `validate_possession_schedule_immutability()`: GRANTED possessions reject any start/end time change; IN_PROGRESS reject shortening or start shift.
+
+**ISO-8601 timezone validation** enforced on all timestamp fields via `validate_iso8601_timestamp()`.
+
+**Tests:** `test_canonical_models_and_harmonization.py`, `test_full_pilot_compliance.py::TestPossessionLifecycleAndImmutability` (5 tests)
+
+---
+
+### 2. Synthetic Source Adapters — ✅ VERIFIED
+
+**Files:** `src/data_pipeline/adapters/base.py`, `src/data_pipeline/adapters/cris_adapters.py` (690 lines)
+
+| Adapter | Deterministic Synthetic | Retries/Backoff | mTLS | Dead-Letter | Stale Detection | Contradiction | Idempotency |
+|---------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| `TMSAdapter` | ✅ | ✅ 3x backoff | ✅ cert+key | ✅ JSONL | ✅ | ✅ | ✅ |
+| `TDMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `SMMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `COAAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `RTISAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `BDMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+- Real CRIS mode requires `SPARKRAIL_LIVE_MODE=true` + credentials env vars
+- `CRISReplayEngine` generates 8 canonical event types deterministically
+- `process_event()`: idempotent dedup by event_id, out-of-order stale rejection, contradiction detection
+
+**Tests:** `test_cris_adapters.py` (7 tests), `test_full_pilot_compliance.py::TestCRISAdaptersAndReplay` (3 tests)
+
+---
+
+### 3. Harmonization — ✅ VERIFIED
+
+**File:** `src/data_pipeline/harmonization.py` (417 lines)
+
+| Feature | Status |
+|---------|--------|
+| km/metre chainage normalization | ✅ Handles float, "124+500", "124/18", dict, "KM 124.5" |
+| Asset-to-track mapping | ✅ |
+| TDMS elementary-section-to-track mapping | ✅ |
+| Isolator topology | ✅ |
+| SMMS signalling/interlocking dependencies | ✅ |
+| RTIS position projection onto track graph | ✅ Orthogonal corridor projection |
+| Confidence scores | ✅ 0.0-1.0 |
+| Ambiguity and out-of-range detection | ✅ |
+| Canonical directed railway multigraph | ✅ NetworkX MultiDiGraph |
+
+**Tests:** `test_canonical_models_and_harmonization.py`, `test_cris_adapters.py::TestSpatialHarmonization`
+
+---
+
+### 4. TCI Scoring — ✅ VERIFIED
+
+**File:** `src/ai_ml/criticality_scorer.py` (330 lines)
+
+- 6-factor deterministic score: safety, traffic impact, degradation, deferral, inspection urgency, data confidence
+- AHP pairwise matrix derivation (4x4 and 6x6)
+- Conservative missing-data imputation
+- XGBoost gated behind feature flag + model file + checksum verification
+- Non-linear overdue penalty, explainable breakdown
+
+**Tests:** `test_tci.py` (12 tests)
+
+---
+
+### 5. Tier 1 Clustering — ✅ VERIFIED
+
+**File:** `src/optimization/clustering.py` (371 lines)
+
+- Spatiotemporal distance metric, compatibility graph, Bron-Kerbosch maximal cliques with pivoting
+- OHE/S&T incompatibility, heavy machine exclusivity, spatial containment, temporal nesting
+- Explainable rejection reasons
+
+**Tests:** `test_three_tier_optimization.py::TestTier1Clustering` (2 tests)
+
+---
+
+### 6. Tier 2 Allocation — ✅ VERIFIED
+
+**File:** `src/optimization/macro_allocator.py` (546 lines)
+
+- OR-Tools CP-SAT formulation with deterministic ALNS fallback
+- ALNS operators: worst-delay removal, corridor-sweep removal, regret-3 insertion
+- Premium train protection, fixed block immutability, machine exclusivity
+- Never labels heuristic as optimal, SHA-256 input hash
+
+**Tests:** `test_three_tier_optimization.py::TestTier2` (2 tests), `test_milp.py` (6 tests)
+
+---
+
+### 7. Tier 3 Microscopic Safety Validation — ✅ VERIFIED
+
+**File:** `src/optimization/microscopic_validator.py` (256 lines)
+
+- Train travel times, headways, track occupancy, fixed-block collisions
+- OHE elementary-section isolation, electric-train exclusion
+- Machine relocation, crew shift/rest (HOER), TSL opposing movements
+- Premium-train delay limits, Benders-style cuts (6 types)
+- Failed validation blocks executable recommendation
+
+**Tests:** `test_three_tier_optimization.py::TestTier3` (1 test), `test_safety_validator.py` (5 tests)
+
+---
+
+### 8. Disruption Rescheduling — ✅ VERIFIED
+
+**File:** `src/optimization/disruption_engine.py` (266 lines)
+
+- Triggers: premium delay ≥15min, equipment failure, weather, upstream, stale state
+- 30km corridor radius, 180min forward horizon
+- Freezes unaffected decisions, shifts SANCTIONED only
+- GRANTED/IN_PROGRESS byte-for-byte preservation
+- TSL topology validation (not "_TSL" append)
+
+**Tests:** `test_disruption_engine.py` (3 tests), `test_full_pilot_compliance.py::TestTopologicalTSLDisruption` (1 test)
+
+---
+
+### 9. Governance API — ✅ VERIFIED
+
+**File:** `src/api/advisory.py` (1,025 lines)
+
+All 11 endpoints implemented. 4-role statutory approval, no hardcoded payloads, dynamic payload generation, idempotency keys, optimistic concurrency, recommendation expiry, SHA-256 tamper-evident audit chain, advisory-only default.
+
+**Tests:** `test_advisory_approval.py` (4), `test_v1_api.py` (5), `test_full_pilot_compliance.py` (9 governance + audit tests)
+
+---
+
+### 10. Test Summary
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Backend Tests | 121 | ✅ ALL PASS |
+| Frontend Tests | 49 | ✅ ALL PASS |
+| **Total** | **170** | **✅ ALL PASS** |
+
+All tests run without live CRIS, Kafka, PostgreSQL, SUMO, Gurobi, or private credentials.
+
+---
+
+### 11. Feature Classification
+
+| Category | Features |
+|----------|----------|
+| **Verified Synthetic MVP** | 18 domain models, 6 CRIS adapters, harmonization, TCI scorer, Tier 1/2/3 optimization, disruption engine, governance API, SHA-256 audit chain, 3D frontend |
+| **Configuration-Gated** | Live CRIS endpoints, mTLS, Kafka streaming, SUMO simulation |
+| **Experimental / Feature-Gated** | XGBoost degradation scoring, GNN encoder |
+| **Unimplemented** | Station loop meet capacity modeling (partial), SUMO co-sim, real Kafka consumer |
+
+---
+
+## Non-Negotiable Safety Rule Compliance
+
+| Rule | Status |
+|------|--------|
+| Advisory-only | ✅ All outputs `ADVISORY_ONLY_NOT_EXECUTED` |
+| GRANTED/IN_PROGRESS immutable | ✅ |
+| Unapproved not executable | ✅ Requires all 4 roles |
+| Real CRIS disabled by default | ✅ |
+| Synthetic fixtures locally | ✅ |
+| Stale/invalid data flagged | ✅ |
+| Never fabricate geometry | ✅ |
+| No benchmark claims without tests | ✅ |
+
+---
+
+**Audited Commit:** `8a7c895a14d820d3b68a11edfea05f0512f21a27`  
+**Remaining Gaps:** Station loop capacity modeling (partial), SUMO co-simulation (out of scope), Kafka consumer (config-gated)  
+**Pilot-Ready Status:** ✅ Advisory-only synthetic MVP verified
