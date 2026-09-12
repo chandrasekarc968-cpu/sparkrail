@@ -1,12 +1,17 @@
 import math
+import re
 import logging
-from typing import Dict, Any, List, Optional, Tuple, Set
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional, Tuple, Set, Union
 from pydantic import BaseModel, Field
+import networkx as nx
 
 from src.data_pipeline.models import (
+    TrackSection,
     BlockSection,
     TrackSegment,
     Station,
+    ElementarySection,
     ElementaryElectricalSection,
     SignalAsset,
     OHEAsset,
@@ -20,6 +25,65 @@ class HarmonizationError(ValueError):
     """Raised when railway geometry or telemetry cannot be reconciled safely."""
     pass
 
+def normalize_chainage(chainage: Any) -> float:
+    """
+    Normalizes diverse Indian Railways chainage representations into canonical float kilometers.
+    Supported formats:
+    - float/int: 124.5 -> 124.5
+    - string decimal: "124.500" -> 124.5
+    - string km+meter: "124+500" -> 124.5
+    - string telegraph/mast: "124/18" (km 124 + mast 18 * ~50m) -> 124.9
+    - dict: {"km": 124, "meter": 500} -> 124.5
+    """
+    if chainage is None:
+        raise HarmonizationError("Chainage value cannot be None")
+
+    if isinstance(chainage, (int, float)):
+        val = float(chainage)
+        if val < 0:
+            raise HarmonizationError(f"Chainage cannot be negative: {val}")
+        return round(val, 4)
+
+    if isinstance(chainage, dict):
+        km = float(chainage.get("km", 0.0))
+        meter = float(chainage.get("meter", chainage.get("m", 0.0)))
+        total = km + (meter / 1000.0)
+        if total < 0:
+            raise HarmonizationError(f"Chainage cannot be negative: {total}")
+        return round(total, 4)
+
+    if isinstance(chainage, str):
+        cleaned = chainage.strip()
+        # Format 1: standard decimal "124.5"
+        try:
+            val = float(cleaned)
+            if val < 0:
+                raise HarmonizationError(f"Chainage cannot be negative: {val}")
+            return round(val, 4)
+        except ValueError:
+            pass
+
+        # Format 2: "124+500" (km + meters)
+        match_plus = re.match(r"^(\d+(?:\.\d+)?)\s*\+\s*(\d+(?:\.\d+)?)$", cleaned)
+        if match_plus:
+            km = float(match_plus.group(1))
+            m = float(match_plus.group(2))
+            return round(km + (m / 1000.0), 4)
+
+        # Format 3: "124/18" (km / mast post, where standard mast spacing is ~50m)
+        match_slash = re.match(r"^(\d+(?:\.\d+)?)\s*/\s*(\d+)$", cleaned)
+        if match_slash:
+            km = float(match_slash.group(1))
+            mast = int(match_slash.group(2))
+            return round(km + (mast * 0.050), 4)
+
+        # Format 4: "KM 124.5" or "124 KM"
+        match_km_word = re.search(r"(\d+(?:\.\d+)?)", cleaned)
+        if match_km_word:
+            return round(float(match_km_word.group(1)), 4)
+
+    raise HarmonizationError(f"Unparseable chainage format: '{chainage}'")
+
 class MappingProvenance(BaseModel):
     source_system: str
     source_id: str
@@ -28,7 +92,7 @@ class MappingProvenance(BaseModel):
     confidence: float = 1.0  # 0.0 to 1.0
     ambiguity_flag: bool = False
     reconciliation_rule: str = "DIRECT_MATCH"
-    reconciled_timestamp: str = ""
+    reconciled_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class HarmonizationResult(BaseModel):
     is_valid: bool
@@ -41,7 +105,7 @@ class HarmonizationResult(BaseModel):
 class RailwayMultiGraph:
     """
     Directed railway multigraph tracking physical adjacency, electrical
-    dependencies, and signalling route locking.
+    dependencies, and signalling route locking. Backed by NetworkX MultiDiGraph.
     """
     def __init__(self):
         # Physical adjacency: block_id -> set of connected next block_ids
@@ -50,24 +114,57 @@ class RailwayMultiGraph:
         self.electrical_subgraphs: Dict[str, Set[str]] = {}
         # Signalling dependencies: signal_id -> governed block_id
         self.signalling_edges: Dict[str, str] = {}
-        # Block metadata: block_id -> BlockSection
+        # Block metadata: block_id -> BlockSection (or TrackSection)
         self.blocks: Dict[str, BlockSection] = {}
+        # Underlying NetworkX directed multigraph
+        self.nx_graph: nx.MultiDiGraph = nx.MultiDiGraph()
 
     def add_block(self, block: BlockSection) -> None:
         self.blocks[block.block_id] = block
         if block.block_id not in self.physical_edges:
             self.physical_edges[block.block_id] = set()
+        self.nx_graph.add_node(
+            block.block_id,
+            start_km=block.chainage_start_km,
+            end_km=block.chainage_end_km,
+            speed_limit=block.speed_limit_kmh,
+            electrification=block.electrification_type,
+            line=getattr(block, "line_id", "MAIN_LINE")
+        )
 
-    def add_physical_connection(self, from_block: str, to_block: str) -> None:
+    def add_physical_connection(self, from_block: str, to_block: str, length_km: Optional[float] = None) -> None:
         if from_block not in self.physical_edges:
             self.physical_edges[from_block] = set()
         self.physical_edges[from_block].add(to_block)
+        
+        weight = length_km if length_km is not None else 1.0
+        self.nx_graph.add_edge(from_block, to_block, key="physical", weight=weight, layer="track")
 
-    def add_electrical_section(self, section: ElementaryElectricalSection) -> None:
-        self.electrical_subgraphs[section.section_id] = set(section.block_ids)
+    def add_electrical_section(self, section: Union[ElementarySection, ElementaryElectricalSection]) -> None:
+        b_ids = section.track_section_ids if getattr(section, "track_section_ids", None) else section.block_ids
+        self.electrical_subgraphs[section.section_id] = set(b_ids)
+        for b_id in b_ids:
+            if b_id in self.nx_graph:
+                self.nx_graph.nodes[b_id]["elementary_section"] = section.section_id
+                self.nx_graph.nodes[b_id]["catenary_voltage"] = section.catenary_voltage_kv
 
     def add_signal_governance(self, signal_id: str, block_id: str) -> None:
         self.signalling_edges[signal_id] = block_id
+        if block_id in self.nx_graph:
+            signals = self.nx_graph.nodes[block_id].get("signals", [])
+            signals.append(signal_id)
+            self.nx_graph.nodes[block_id]["signals"] = signals
+
+    def find_shortest_path(self, from_block: str, to_block: str) -> List[str]:
+        """Finds shortest route between two block sections using physical adjacency."""
+        try:
+            return nx.shortest_path(self.nx_graph, source=from_block, target=to_block, weight="weight")
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return []
+
+    def get_affected_blocks_for_isolation(self, section_id: str) -> Set[str]:
+        """Returns all block sections affected when an electrical section is isolated."""
+        return self.electrical_subgraphs.get(section_id, set())
 
 class SpatialHarmonizationPipeline:
     """
@@ -99,15 +196,29 @@ class SpatialHarmonizationPipeline:
                         f"Overlapping block sections detected between '{prev.block_id}' and '{b.block_id}'"
                     )
 
-    def map_tms_chainage_to_block(self, chainage_km: float, source_id: str) -> Tuple[Optional[BlockSection], MappingProvenance]:
+    def map_tms_chainage_to_block(self, chainage: Any, source_id: str) -> Tuple[Optional[BlockSection], MappingProvenance]:
         """
         Maps continuous TMS asset chainage to a discrete block section.
+        Supports normalized chainage inputs (float, km+meter string, telegraph post).
         Detects boundary ambiguities (e.g. exactly on an insulated block joint).
         """
+        try:
+            chainage_km = normalize_chainage(chainage)
+        except HarmonizationError as he:
+            prov = MappingProvenance(
+                source_system="TMS",
+                source_id=source_id,
+                confidence=0.0,
+                ambiguity_flag=True,
+                reconciliation_rule=f"INVALID_CHAINAGE_FORMAT: {he}"
+            )
+            return None, prov
+
         if chainage_km < self.blocks[0].chainage_start_km or chainage_km > self.blocks[-1].chainage_end_km:
             prov = MappingProvenance(
                 source_system="TMS",
                 source_id=source_id,
+                target_chainage_km=chainage_km,
                 confidence=0.0,
                 ambiguity_flag=True,
                 reconciliation_rule="OUT_OF_BOUNDS_REJECTION"
@@ -148,23 +259,30 @@ class SpatialHarmonizationPipeline:
         prov = MappingProvenance(
             source_system="TMS",
             source_id=source_id,
+            target_chainage_km=chainage_km,
             confidence=0.0,
             ambiguity_flag=True,
             reconciliation_rule="DISCONTINUITY_GAP_REJECTION"
         )
         return None, prov
 
-    def reconcile_elementary_section(self, section: ElementaryElectricalSection) -> List[str]:
+    def map_asset_to_track_section(self, chainage: Any, source_id: str, asset_type: str = "TRACK") -> Tuple[Optional[BlockSection], MappingProvenance]:
+        block, prov = self.map_tms_chainage_to_block(chainage, source_id)
+        prov.source_system = f"ASSET_{asset_type.upper()}"
+        return block, prov
+
+    def reconcile_elementary_section(self, section: Union[ElementarySection, ElementaryElectricalSection]) -> List[str]:
         """
         Verifies that every block referenced by an electrical elementary section exists
         in the physical block network and is contiguous.
         """
-        missing = [b_id for b_id in section.block_ids if b_id not in self.block_map]
+        b_ids = section.track_section_ids if getattr(section, "track_section_ids", None) else section.block_ids
+        missing = [b_id for b_id in b_ids if b_id not in self.block_map]
         if missing:
             raise HarmonizationError(
                 f"Elementary Section '{section.section_id}' references unknown blocks: {missing}"
             )
-        return section.block_ids
+        return b_ids
 
     def project_rtis_gps_to_block(
         self,
@@ -205,12 +323,12 @@ class SpatialHarmonizationPipeline:
         block, prov = self.map_tms_chainage_to_block(projected_km, train_id)
         prov.source_system = "RTIS"
         prov.reconciliation_rule = "ORTHOGONAL_CORRIDOR_PROJECTION"
-        prov.confidence = max(0.1, 1.0 - abs(u - u_clamped))
+        prov.confidence = max(0.1, round(1.0 - abs(u - u_clamped), 3))
         return block, projected_km, prov
 
     def build_multigraph(
         self,
-        electrical_sections: List[ElementaryElectricalSection],
+        electrical_sections: List[Union[ElementarySection, ElementaryElectricalSection]],
         signals: List[SignalAsset]
     ) -> RailwayMultiGraph:
         """
@@ -222,8 +340,9 @@ class SpatialHarmonizationPipeline:
 
         # Build physical adjacency sequence
         for i in range(len(self.blocks) - 1):
-            mg.add_physical_connection(self.blocks[i].block_id, self.blocks[i + 1].block_id)
-            mg.add_physical_connection(self.blocks[i + 1].block_id, self.blocks[i].block_id)
+            len_km = self.blocks[i].chainage_end_km - self.blocks[i].chainage_start_km
+            mg.add_physical_connection(self.blocks[i].block_id, self.blocks[i + 1].block_id, length_km=len_km)
+            mg.add_physical_connection(self.blocks[i + 1].block_id, self.blocks[i].block_id, length_km=len_km)
 
         # Build electrical subgraphs
         for es in electrical_sections:

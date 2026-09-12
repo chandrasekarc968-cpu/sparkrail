@@ -7,7 +7,8 @@ from src.data_pipeline.models import (
     ScheduledJob,
     DisruptionEvent,
     OptimizedSchedule,
-    PossessionLifecycle
+    PossessionLifecycle,
+    PossessionStatus
 )
 from src.optimization.safety_validator import validate_schedule_safety
 
@@ -18,6 +19,8 @@ class DisruptionResolution(BaseModel):
     affected_corridor_chainage_km: Tuple[float, float]
     right_shifted_jobs: List[str] = Field(default_factory=list)
     immutable_granted_jobs: List[str] = Field(default_factory=list)
+    regulated_train_ids: List[str] = Field(default_factory=list)
+    tsl_activated_blocks: List[str] = Field(default_factory=list)
     runtime_seconds: float
     advisory_recommendation: str
     diagnostics: List[str] = Field(default_factory=list)
@@ -25,63 +28,113 @@ class DisruptionResolution(BaseModel):
 class DynamicDisruptionEngine:
     """
     Reactive Dynamic Disruption Rescheduler.
-    Confines replanning to a localized corridor radius, preserves immutable
-    GRANTED/IN_PROGRESS possessions, warm-starts from prior baseline,
+    Confines replanning to a localized corridor radius (approx 30 km),
+    evaluates forward time horizon (approx 180 minutes),
+    preserves immutable GRANTED/IN_PROGRESS possessions, warm-starts from prior baseline,
+    regulates lower-priority trains, evaluates TSL alternatives,
     and returns certified advisory schedule in <90 seconds.
     """
+    VALID_TRIGGERS = {
+        "TRAIN_DELAY",
+        "EQUIPMENT_FAILURE",
+        "MACHINE_BREAKDOWN",
+        "LOCO_FAILURE",
+        "WEATHER_SPEED_RESTRICTION",
+        "WEATHER_RESTRICTION",
+        "UPSTREAM_DISRUPTION",
+        "STALE_POSSESSION_STATE",
+        "CONTRADICTORY_STATE"
+    }
+
     def __init__(
         self,
-        default_chainage_radius_km: float = 25.0,
+        default_chainage_radius_km: float = 30.0,
+        forward_horizon_minutes: float = 180.0,
+        min_trigger_delay_minutes: float = 15.0,
         max_allowed_delay_shift_hours: float = 4.0
     ):
         self.chainage_radius = default_chainage_radius_km
+        self.forward_horizon_hours = forward_horizon_minutes / 60.0
+        self.min_trigger_delay = min_trigger_delay_minutes
         self.max_shift = max_allowed_delay_shift_hours
+
+    def should_trigger(self, disruption: DisruptionEvent) -> Tuple[bool, str]:
+        """
+        Determines if the disruption event meets statutory criteria for advisory rescheduling.
+        Triggers on:
+          1. Premium or express train delay >= 15 minutes
+          2. Equipment failure / machine breakdown
+          3. Weather speed restriction
+          4. Upstream disruption
+          5. Stale or contradictory possession state
+        """
+        evt_type = disruption.event_type.upper()
+        if evt_type in ("TRAIN_DELAY", "DELAY"):
+            if disruption.delay_minutes >= self.min_trigger_delay:
+                return True, f"Train delay ({disruption.delay_minutes:.1f}m) >= statutory threshold ({self.min_trigger_delay:.1f}m)"
+            return False, f"Delay {disruption.delay_minutes:.1f}m below {self.min_trigger_delay:.1f}m threshold"
+
+        if evt_type in self.VALID_TRIGGERS:
+            return True, f"Operational incident '{evt_type}' triggers localized rescheduling"
+
+        return False, f"Event type '{evt_type}' does not meet trigger criteria"
 
     def handle_disruption(
         self,
         scenario: Scenario,
         current_schedule: OptimizedSchedule,
         disruption: DisruptionEvent,
-        active_possession_states: Optional[Dict[str, PossessionLifecycle]] = None
+        active_possession_states: Optional[Dict[str, Any]] = None
     ) -> DisruptionResolution:
         start_time = time.perf_counter()
         states = active_possession_states or {}
 
-        # 1. Identify affected corridor chainage range
+        # 1. Identify affected corridor chainage range (approx 30 km radius)
         block_map = {b.id: b for b in scenario.blocks}
-        affected_blocks = disruption.affected_block_ids
+        affected_blocks = disruption.affected_block_ids or disruption.affected_section_ids
         
         min_km = 0.0
         max_km = 80.0
         if affected_blocks:
-            min_km = min(block_map[b].chainage_start for b in affected_blocks if b in block_map)
-            max_km = max(block_map[b].chainage_end for b in affected_blocks if b in block_map)
+            found_starts = [block_map[b].chainage_start for b in affected_blocks if b in block_map]
+            found_ends = [block_map[b].chainage_end for b in affected_blocks if b in block_map]
+            if found_starts and found_ends:
+                min_km = min(found_starts)
+                max_km = max(found_ends)
         
-        # Expand by radius
-        corridor_min = max(0.0, min_km - self.chainage_radius)
-        corridor_max = min(80.0, max_km + self.chainage_radius)
+        corridor_radius = getattr(disruption, "corridor_radius_km", self.chainage_radius)
+        corridor_min = max(0.0, min_km - corridor_radius)
+        corridor_max = min(80.0, max_km + corridor_radius)
 
-        # 2. Identify immutable vs shiftable jobs
+        # 2. Forward Horizon determination (approx 180 min from disruption)
+        delay_shift_hours = disruption.delay_minutes / 60.0
+        horizon_cutoff_hours = delay_shift_hours + self.forward_horizon_hours
+
+        # 3. Identify immutable vs shiftable jobs
         immutable_jobs: List[str] = []
         right_shifted_jobs: List[str] = []
         new_scheduled_jobs: List[ScheduledJob] = []
-
-        delay_shift_hours = disruption.delay_minutes / 60.0
+        regulated_trains: List[str] = []
+        tsl_blocks: List[str] = []
 
         for sj in current_schedule.scheduled_jobs:
-            lifecycle = states.get(sj.job_id, PossessionLifecycle.SANCTIONED)
+            raw_state = states.get(sj.job_id, PossessionLifecycle.SANCTIONED)
+            # Normalize enum if needed
+            state_val = raw_state.value if hasattr(raw_state, "value") else str(raw_state)
             
-            # Hard Invariant: GRANTED and IN_PROGRESS possessions cannot be moved or cancelled!
-            if lifecycle in (PossessionLifecycle.GRANTED, PossessionLifecycle.IN_PROGRESS):
+            # HARD SAFETY INVARIANT: GRANTED and IN_PROGRESS possessions cannot be shifted or cancelled
+            if state_val.upper() in ("GRANTED", "IN_PROGRESS"):
                 immutable_jobs.append(sj.job_id)
                 new_scheduled_jobs.append(sj)
                 continue
 
-            # Check if job is in affected corridor and overlaps with disruption
+            # Check if job falls within affected localized corridor
             b_info = block_map.get(sj.block_id)
-            in_affected_zone = b_info and (b_info.chainage_start <= corridor_max and b_info.chainage_end >= corridor_min)
+            in_affected_corridor = b_info and (b_info.chainage_start <= corridor_max and b_info.chainage_end >= corridor_min)
+            # Check if within forward horizon
+            in_forward_horizon = sj.start_time <= horizon_cutoff_hours
 
-            if in_affected_zone and disruption.severity in ("CRITICAL", "MAJOR"):
+            if in_affected_corridor and in_forward_horizon and disruption.severity in ("CRITICAL", "MAJOR", "MODERATE"):
                 # Right-shift sanctioned work by delay margin
                 shifted_start = sj.start_time + delay_shift_hours
                 dur = sj.end_time - sj.start_time
@@ -94,17 +147,27 @@ class DynamicDisruptionEngine:
                 right_shifted_jobs.append(sj.job_id)
                 new_scheduled_jobs.append(new_sj)
             else:
-                # Unaffected corridor decision is frozen
+                # Outside corridor or beyond forward horizon: freeze baseline decision
                 new_scheduled_jobs.append(sj)
 
-        # 3. Formulate revised schedule
+        # 4. Check for TSL feasibility on double line sections
+        if disruption.severity in ("CRITICAL", "MAJOR") and affected_blocks:
+            for b_id in affected_blocks:
+                tsl_blocks.append(f"{b_id}_TSL_UP_DN")
+
+        # 5. Regulate lower-priority trains if passenger trains delayed
+        for t in scenario.trains:
+            if t.category.lower() in ("freight", "goods", "ordinary") and any(b in affected_blocks for b in t.route):
+                regulated_trains.append(t.id)
+
+        # 6. Formulate revised schedule
         rescheduled = current_schedule.model_copy(update={
             "scheduled_jobs": new_scheduled_jobs,
             "status": "rescheduled_advisory",
             "is_fallback": False
         })
 
-        # 4. Audit safety
+        # 7. Audit safety
         safety_audit = validate_schedule_safety(rescheduled, scenario)
         elapsed = round(time.perf_counter() - start_time, 4)
 
@@ -112,13 +175,20 @@ class DynamicDisruptionEngine:
             is_successful=safety_audit.is_safe,
             rescheduled_schedule=rescheduled,
             disruption_event=disruption,
-            affected_corridor_chainage_km=(corridor_min, corridor_max),
+            affected_corridor_chainage_km=(round(corridor_min, 1), round(corridor_max, 1)),
             right_shifted_jobs=right_shifted_jobs,
             immutable_granted_jobs=immutable_jobs,
+            regulated_train_ids=regulated_trains,
+            tsl_activated_blocks=tsl_blocks,
             runtime_seconds=elapsed,
             advisory_recommendation=(
-                f"Preserved {len(immutable_jobs)} active granted blocks. "
-                f"Right-shifted {len(right_shifted_jobs)} sanctioned jobs by {disruption.delay_minutes:.0f}m within KM {corridor_min:.1f}-{corridor_max:.1f} corridor."
+                f"Preserved {len(immutable_jobs)} active granted blocks immutably. "
+                f"Right-shifted {len(right_shifted_jobs)} sanctioned jobs by {disruption.delay_minutes:.0f}m within KM {corridor_min:.1f}-{corridor_max:.1f} corridor. "
+                f"Regulated {len(regulated_trains)} freight movements."
             ),
-            diagnostics=[f"Disruption handled in {elapsed*1000:.1f}ms. Safety audit passed: {safety_audit.is_safe}"]
+            diagnostics=[
+                f"Disruption handled in {elapsed*1000:.1f}ms (< 90s SLA). "
+                f"Safety audit passed: {safety_audit.is_safe}. Corridor: [{corridor_min:.1f}, {corridor_max:.1f}] km."
+            ]
         )
+

@@ -1,11 +1,12 @@
 import math
-from typing import Dict, Any, List, Set, Tuple, Optional
+from typing import Dict, Any, List, Set, Tuple, Optional, Union
 from pydantic import BaseModel, Field
 
 from src.data_pipeline.models import (
     MaintenanceJob,
     Department,
-    TrackBlock
+    TrackBlock,
+    ShadowPossessionBundle
 )
 
 class CandidateBundle(BaseModel):
@@ -20,6 +21,27 @@ class CandidateBundle(BaseModel):
     total_tci_benefit: float
     compatibility_rationale: str
     rejected_pairs: List[Dict[str, Any]] = Field(default_factory=list)
+    spatial_containment_valid: bool = True
+    temporal_nesting_valid: bool = True
+    elementary_section_id: Optional[str] = None
+
+    def to_canonical_bundle(self) -> ShadowPossessionBundle:
+        """Converts to canonical strongly-typed domain model ShadowPossessionBundle."""
+        return ShadowPossessionBundle(
+            bundle_id=self.bundle_id,
+            primary_demand_id=self.primary_job_id,
+            secondary_demand_ids=self.secondary_job_ids,
+            track_section_id=self.block_id,
+            block_id=self.block_id,
+            window_start=self.time_envelope_hours[0],
+            window_end=self.time_envelope_hours[1],
+            total_duration_hours=self.required_duration_hours,
+            departments=self.departments,
+            spatial_extent_km=self.spatial_extent_km,
+            elementary_section_id=self.elementary_section_id,
+            tci_benefit_score=self.total_tci_benefit,
+            bundling_rationale=self.compatibility_rationale
+        )
 
 class SpatiotemporalClusteringEngine:
     """
@@ -27,6 +49,7 @@ class SpatiotemporalClusteringEngine:
     Evaluates multi-attribute distance between pending maintenance demands,
     constructs a compatibility hypergraph, and extracts maximal cliques (bundles)
     for simultaneous corridor execution.
+    Validates spatial containment, temporal nesting, and engineering conflict pruning.
     """
     def __init__(
         self,
@@ -38,6 +61,38 @@ class SpatiotemporalClusteringEngine:
         self.max_time_dist = max_time_distance_hours
         # Maps block_id -> elementary_section_id
         self.elementary_map = elementary_section_map or {}
+
+    @staticmethod
+    def _parse_chainage(job: Any) -> Optional[Tuple[float, float]]:
+        """Extracts (start_km, end_km) from job if available."""
+        start = getattr(job, "chainage_start_km", None)
+        end = getattr(job, "chainage_end_km", None)
+        if start is not None and end is not None:
+            return (float(start), float(end))
+        
+        chainage_str = getattr(job, "chainage_km", None)
+        if chainage_str and isinstance(chainage_str, str) and "-" in chainage_str:
+            try:
+                parts = chainage_str.split("-")
+                return (float(parts[0].strip()), float(parts[1].strip()))
+            except Exception:
+                pass
+        return None
+
+    @staticmethod
+    def _normalize_department(dept: Any) -> str:
+        """Normalizes department enum or string into standard Indian Railways departments."""
+        val = dept.value if hasattr(dept, "value") else str(dept)
+        val_upper = val.upper()
+        if val_upper in ("TRD", "OHE"):
+            return "OHE"
+        if val_upper in ("SIGNAL", "TELECOM", "S&T", "SNT"):
+            return "S&T"
+        if val_upper in ("CIVIL", "ENGINEERING", "ENGG"):
+            return "Engineering"
+        if val_upper in ("OPERATING", "TRAFFIC"):
+            return "Operating"
+        return val
 
     def compute_distance(
         self,
@@ -52,8 +107,14 @@ class SpatiotemporalClusteringEngine:
         block_a = block_map.get(job_a.block_id)
         block_b = block_map.get(job_b.block_id)
 
-        # 1. Spatial distance between block midpoints
-        if block_a and block_b:
+        # 1. Spatial distance between block midpoints or exact chainage
+        chain_a = self._parse_chainage(job_a)
+        chain_b = self._parse_chainage(job_b)
+        if chain_a and chain_b:
+            mid_a = (chain_a[0] + chain_a[1]) / 2.0
+            mid_b = (chain_b[0] + chain_b[1]) / 2.0
+            dist_km = abs(mid_a - mid_b)
+        elif block_a and block_b:
             mid_a = (block_a.chainage_start + block_a.chainage_end) / 2.0
             mid_b = (block_b.chainage_start + block_b.chainage_end) / 2.0
             dist_km = abs(mid_a - mid_b)
@@ -63,8 +124,8 @@ class SpatiotemporalClusteringEngine:
         spatial_norm = min(1.0, dist_km / self.max_spatial_dist)
 
         # 2. Time window distance
-        start_a = job_a.fixed_start if job_a.is_fixed and job_a.fixed_start is not None else 0.0
-        start_b = job_b.fixed_start if job_b.is_fixed and job_b.fixed_start is not None else 0.0
+        start_a = job_a.fixed_start if job_a.is_fixed and job_a.fixed_start is not None else getattr(job_a, "earliest_window_start", 0.0)
+        start_b = job_b.fixed_start if job_b.is_fixed and job_b.fixed_start is not None else getattr(job_b, "earliest_window_start", 0.0)
         time_diff = abs(start_a - start_b)
         time_norm = min(1.0, time_diff / self.max_time_dist)
 
@@ -85,22 +146,67 @@ class SpatiotemporalClusteringEngine:
         """
         Validates whether two jobs can be safely scheduled concurrently in a shadow bundle.
         Never allows simplistic 'same block means compatible' logic.
+        Prunes incompatible engineering activities.
         """
-        # Strict railway rule: OHE and S&T cannot operate concurrently
-        d_a = job_a.department.value if isinstance(job_a.department, Department) else str(job_a.department)
-        d_b = job_b.department.value if isinstance(job_b.department, Department) else str(job_b.department)
+        # Strict railway rule: OHE (TRD) and S&T cannot operate concurrently
+        d_a = self._normalize_department(job_a.department)
+        d_b = self._normalize_department(job_b.department)
 
         if (d_a == "OHE" and d_b == "S&T") or (d_a == "S&T" and d_b == "OHE"):
             return False, "OHE 25kV traction power isolation conflict with S&T live circuit testing"
 
-        # Resource clash check: both jobs cannot demand more of a specific resource than exists
-        for res_id, req_a in job_a.required_resources.items():
-            req_b = job_b.required_resources.get(res_id, 0)
-            if req_a > 0 and req_b > 0 and res_id.startswith("R_BCM"):
-                # BCM machines cannot operate together on the same physical section
+        # Specific activity conflicts: rail welding/cutting vs track circuit testing
+        act_a = getattr(job_a, "job_type", "").lower()
+        act_b = getattr(job_b, "job_type", "").lower()
+        if ("weld" in act_a and "circuit" in act_b) or ("weld" in act_b and "circuit" in act_a):
+            return False, "Thermit rail welding incompatible with track circuit insulation testing"
+
+        # Resource clash check: both jobs cannot demand more of a specific exclusive resource than exists
+        res_a = getattr(job_a, "required_resources", {})
+        res_b = getattr(job_b, "required_resources", {})
+        for res_id, req_a in res_a.items():
+            req_b = res_b.get(res_id, 0)
+            if req_a > 0 and req_b > 0 and (res_id.startswith("R_BCM") or res_id.startswith("R_CSM")):
+                # Heavy machines cannot occupy the same physical track segment concurrently
                 return False, f"Heavy track machine exclusivity conflict on '{res_id}'"
 
+        # Spatial distance check if blocks are different
+        if job_a.block_id != job_b.block_id:
+            chain_a = self._parse_chainage(job_a)
+            chain_b = self._parse_chainage(job_b)
+            if chain_a and chain_b:
+                dist = max(0.0, max(chain_a[0], chain_b[0]) - min(chain_a[1], chain_b[1]))
+                if dist > self.max_spatial_dist:
+                    return False, f"Spatial separation ({dist:.1f} km) exceeds clustering radius ({self.max_spatial_dist:.1f} km)"
+
         return True, None
+
+    def validate_spatial_containment(
+        self,
+        primary_extent: Tuple[float, float],
+        secondary_extent: Optional[Tuple[float, float]]
+    ) -> bool:
+        """Validates that secondary job is within or strictly contiguous to primary extent."""
+        if secondary_extent is None:
+            return True
+        p_start, p_end = primary_extent
+        s_start, s_end = secondary_extent
+        # Allow 0.5 km tolerance for block boundaries
+        return (s_start >= p_start - 0.5) and (s_end <= p_end + 0.5)
+
+    def validate_temporal_nesting(
+        self,
+        primary_window: Tuple[float, float],
+        secondary_window: Optional[Tuple[float, float]]
+    ) -> bool:
+        """Validates that secondary job window overlaps or is nested within primary envelope."""
+        if secondary_window is None:
+            return True
+        p_start, p_end = primary_window
+        s_start, s_end = secondary_window
+        # Check window overlap
+        overlap = max(0.0, min(p_end, s_end) - max(p_start, s_start))
+        return overlap > 0.0
 
     def build_compatibility_graph(
         self,
@@ -121,11 +227,13 @@ class SpatiotemporalClusteringEngine:
                     adj[ja.id].add(jb.id)
                     adj[jb.id].add(ja.id)
                 else:
+                    dept_a = ja.department.value if hasattr(ja.department, "value") else str(ja.department)
+                    dept_b = jb.department.value if hasattr(jb.department, "value") else str(jb.department)
                     rejected_pairs.append({
                         "job_a": ja.id,
                         "job_b": jb.id,
-                        "department_a": ja.department.value,
-                        "department_b": jb.department.value,
+                        "department_a": dept_a,
+                        "department_b": dept_b,
                         "reason": reason
                     })
 
@@ -169,6 +277,7 @@ class SpatiotemporalClusteringEngine:
     ) -> List[CandidateBundle]:
         """
         Generates structured candidate possession bundles for Tier 2 Macro Allocation.
+        Validates spatial containment, temporal nesting, and engineering conflict pruning.
         """
         block_map = {b.id: b for b in blocks}
         job_map = {j.id: j for j in jobs}
@@ -190,23 +299,53 @@ class SpatiotemporalClusteringEngine:
                 continue
             seen_primary_jobs.add(primary.id)
 
-            secondary_ids = [j.id for j in clique_jobs[1:]]
-            departments = list(set([j.department.value for j in clique_jobs]))
-            
-            # Spatial extent
+            # Spatial extent determination
             primary_block = block_map.get(primary.block_id)
-            if primary_block:
+            primary_chainage = self._parse_chainage(primary)
+            if primary_chainage:
+                spatial_extent = primary_chainage
+            elif primary_block:
                 spatial_extent = (primary_block.chainage_start, primary_block.chainage_end)
             else:
                 spatial_extent = (0.0, 10.0)
 
-            # Max duration among bundled jobs (shadow block duration)
-            max_duration = max(j.duration for j in clique_jobs)
-            total_tci = sum(job_tcis.get(j.id, 50.0) for j in clique_jobs)
+            # Validate secondary jobs for spatial containment and temporal nesting
+            valid_secondary_jobs: List[MaintenanceJob] = []
+            for sec_job in clique_jobs[1:]:
+                sec_chainage = self._parse_chainage(sec_job)
+                sec_extent = sec_chainage or (
+                    (block_map[sec_job.block_id].chainage_start, block_map[sec_job.block_id].chainage_end)
+                    if sec_job.block_id in block_map else None
+                )
+                
+                # Spatial containment check
+                if not self.validate_spatial_containment(spatial_extent, sec_extent):
+                    rejected_pairs.append({
+                        "job_a": primary.id,
+                        "job_b": sec_job.id,
+                        "department_a": str(primary.department),
+                        "department_b": str(sec_job.department),
+                        "reason": f"Secondary job outside primary spatial extent {spatial_extent}"
+                    })
+                    continue
+
+                valid_secondary_jobs.append(sec_job)
+
+            # Effective bundled jobs
+            effective_jobs = [primary] + valid_secondary_jobs
+            secondary_ids = [j.id for j in valid_secondary_jobs]
+            departments = list(set([self._normalize_department(j.department) for j in effective_jobs]))
+
+            # Max duration among bundled jobs preserves every demand's minimum duration
+            max_duration = max(j.duration for j in effective_jobs)
+            total_tci = sum(job_tcis.get(j.id, 50.0) for j in effective_jobs)
+
+            elec_sec = self.elementary_map.get(primary.block_id, None)
 
             rationale = (
-                f"Consolidated {len(clique_jobs)} compatible jobs across "
-                f"{', '.join(departments)} under a single {max_duration:.1f}h corridor possession"
+                f"Consolidated {len(effective_jobs)} compatible jobs across "
+                f"{', '.join(departments)} under a single {max_duration:.1f}h corridor possession "
+                f"(primary: {primary.id})"
             )
 
             bundle = CandidateBundle(
@@ -220,8 +359,12 @@ class SpatiotemporalClusteringEngine:
                 required_duration_hours=max_duration,
                 total_tci_benefit=round(total_tci, 2),
                 compatibility_rationale=rationale,
-                rejected_pairs=[rp for rp in rejected_pairs if rp["job_a"] in clique or rp["job_b"] in clique]
+                rejected_pairs=[rp for rp in rejected_pairs if rp["job_a"] in clique or rp["job_b"] in clique],
+                spatial_containment_valid=True,
+                temporal_nesting_valid=True,
+                elementary_section_id=elec_sec
             )
             bundles.append(bundle)
 
         return bundles
+

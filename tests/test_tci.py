@@ -105,3 +105,86 @@ def test_tci_untrained_xgboost_guard():
     inputs = TCIInputs(safety_severity=0.5, traffic_impact=0.5, degradation_indicator=0.5, overdue_days=0)
     with pytest.raises(NotImplementedError, match="Untrained XGBoost inference prevented"):
         scorer.calculate_tci(inputs)
+
+def test_tci_6_factor_ahp_matrix():
+    """Valid 6x6 AHP comparison matrix derives normalized 6 weights summing to 1.0."""
+    # 6 criteria: safety, delay, degradation, overdue, urgency, confidence
+    matrix = [
+        [1.0, 1.5, 2.0, 3.0, 3.0, 3.0],
+        [1/1.5, 1.0, 1.5, 2.0, 2.5, 2.5],
+        [1/2.0, 1/1.5, 1.0, 1.5, 2.0, 2.0],
+        [1/3.0, 1/2.0, 1/1.5, 1.0, 1.5, 1.5],
+        [1/3.0, 1/2.5, 1/2.0, 1/1.5, 1.0, 1.0],
+        [1/3.0, 1/2.5, 1/2.0, 1/1.5, 1.0, 1.0],
+    ]
+    scorer = TaskCriticalityScorer({"tci": {"ahp_matrix": matrix}})
+    assert scorer.w_urgency > 0.0
+    assert scorer.w_confidence > 0.0
+    total_w = (
+        scorer.w_safety + scorer.w_delay + scorer.w_degrad +
+        scorer.w_overdue + scorer.w_urgency + scorer.w_confidence
+    )
+    assert abs(total_w - 1.0) < 1e-4
+
+    inputs = TCIInputs(
+        safety_severity=0.8,
+        traffic_impact=0.6,
+        degradation_indicator=0.5,
+        overdue_days=10,
+        inspection_urgency=0.9,
+        data_confidence=0.7
+    )
+    score, expl = scorer.calculate_tci(inputs)
+    assert 0.0 <= score <= 100.0
+    assert expl.inspection_urgency_component > 0.0
+    assert expl.data_confidence_penalty > 0.0
+
+def test_tci_conservative_imputation_missing_data():
+    """Missing USFD flaw depth and traffic metrics must trigger conservative upper-bound imputation."""
+    scorer = TaskCriticalityScorer()
+    
+    # Evidence with USFD flaw but missing flaw_depth_percent and missing traffic
+    evidence_missing = {
+        "is_usfd_flaw": True,
+        "is_mainline": True,
+        # flaw_depth_percent is omitted
+        # trains_per_day is omitted
+        "cumulative_gmt": 40.0,
+        "days_overdue": 5
+    }
+    score, expl = scorer.calculate_tci_from_evidence(evidence_missing)
+    
+    # Missing flaw depth must conservatively be imputed to at least 0.85
+    assert expl.raw_inputs.safety_severity >= 0.85
+    # Missing traffic on mainline conservatively imputed to at least 0.60
+    assert expl.raw_inputs.traffic_impact >= 0.60
+    # Data confidence must be degraded due to missing fields
+    assert expl.raw_inputs.data_confidence < 1.0
+    # Overall score must reflect high priority
+    assert score >= 55.0
+
+def test_tci_extreme_risk_imr_defect():
+    """Immediate Removal (IMR) defect must receive maximum safety severity (1.0)."""
+    scorer = TaskCriticalityScorer()
+    evidence_imr = {
+        "is_imr_defect": True,
+        "trains_per_day": 80,
+        "cumulative_gmt": 35.0,
+        "days_overdue": 0
+    }
+    score, expl = scorer.calculate_tci_from_evidence(evidence_imr)
+    assert expl.raw_inputs.safety_severity == 1.0
+    # With safety weight 0.40, safety component alone must be 40.0
+    assert expl.safety_component == 40.0
+
+def test_tci_statutory_inspection_urgency():
+    """Statutory inspection due sets inspection_urgency to 1.0."""
+    scorer = TaskCriticalityScorer()
+    evidence = {
+        "is_statutory_inspection_due": True,
+        "is_mainline": True,
+        "days_overdue": 3
+    }
+    _, expl = scorer.calculate_tci_from_evidence(evidence)
+    assert expl.raw_inputs.inspection_urgency == 1.0
+

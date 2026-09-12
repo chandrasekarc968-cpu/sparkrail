@@ -32,7 +32,8 @@ class CRISAdapterConfig:
         kafka_brokers: Optional[str] = None,
         topic_name: Optional[str] = None,
         dead_letter_file: str = "data/dead_letter.jsonl",
-        is_live_enabled: bool = False
+        is_live_enabled: bool = False,
+        mock_mode: bool = False
     ):
         self.source_name = source_name
         self.base_url = base_url or os.getenv(f"CRIS_{source_name}_URL", "https://cris.indianrailways.gov.in/api/v1")
@@ -46,6 +47,7 @@ class CRISAdapterConfig:
         self.topic_name = topic_name or os.getenv(f"CRIS_{source_name}_TOPIC", f"cris.{source_name.lower()}.events")
         self.dead_letter_file = dead_letter_file
         self.is_live_enabled = is_live_enabled or (os.getenv("SPARKRAIL_LIVE_MODE", "false").lower() == "true")
+        self.mock_mode = mock_mode or (os.getenv("SPARKRAIL_MOCK_MODE", "false").lower() == "true")
 
 class BaseCRISAdapter:
     """
@@ -105,7 +107,14 @@ class BaseCRISAdapter:
                     time.sleep(sleep_time)
 
         # All retries exhausted
-        self._record_dead_letter({"url": url, "method": method, "error": str(last_exception)})
+        self._record_dead_letter({
+            "url": url,
+            "method": method,
+            "error_type": type(last_exception).__name__,
+            "error_message": str(last_exception),
+            "attempts": self.config.max_retries,
+            "kwargs_keys": list(kwargs.keys())
+        })
         raise RuntimeError(f"[{self.source_name}] Request failed after {self.config.max_retries} attempts: {last_exception}")
 
     def _record_dead_letter(self, payload: Dict[str, Any]) -> None:
@@ -151,6 +160,9 @@ class BaseCRISAdapter:
                 details={"error": str(e)}
             )
 
+    def _is_mock_allowed(self, request: SnapshotRequest) -> bool:
+        return self.config.mock_mode or getattr(request, "mock_mode", False)
+
 class TMSAdapter(BaseCRISAdapter):
     """
     Track Management System (TMS) Adapter.
@@ -161,6 +173,22 @@ class TMSAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                # Deterministic synthetic TMS dataset for division
+                mock_items = [
+                    {"asset_id": f"TMS-{request.division_code}-RAIL-01", "track_section_id": "B1", "usfd_defect_depth": 35.0, "is_imr": False, "speed_restriction_kmh": 100.0},
+                    {"asset_id": f"TMS-{request.division_code}-JOINT-02", "track_section_id": "B3", "usfd_defect_depth": 85.0, "is_imr": True, "speed_restriction_kmh": 30.0},
+                    {"asset_id": f"TMS-{request.division_code}-TURNOUT-03", "track_section_id": "B5", "usfd_defect_depth": 15.0, "is_imr": False, "speed_restriction_kmh": 120.0},
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_items, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="TMS",
+                    division_code=request.division_code,
+                    records_count=len(mock_items),
+                    data=mock_items,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(
                 f"[{self.source_name}] Live CRIS integration disabled. Never return synthetic data silently in live mode."
             )
@@ -182,7 +210,18 @@ class TMSAdapter(BaseCRISAdapter):
         )
 
     def consume_events(self, request: EventSubscription) -> Iterator[SourceEvent]:
-        # Connect to Kafka or polling stream
+        if self.config.mock_mode:
+            div = request.division_partition_key or "PRYJ"
+            for i in range(3):
+                yield SourceEvent(
+                    event_id=f"TMS-EVT-{div}-{i+1}",
+                    event_type="USFD_DEFECT_DETECTED",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    source_system="TMS",
+                    division_code=div,
+                    payload={"asset_id": f"AST-{div}-{i+1}", "defect_severity": "IMR" if i == 0 else "OBSERVED"}
+                )
+            return
         return iter([])
 
 class TDMSAdapter(BaseCRISAdapter):
@@ -195,6 +234,21 @@ class TDMSAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                mock_sections = [
+                    {"section_id": f"ES-{request.division_code}-01", "feeding_post_id": "FP_SUBEDARGANJ", "voltage_kv": 25.0, "track_sections": ["B1", "B2"], "is_energized": True},
+                    {"section_id": f"ES-{request.division_code}-02", "feeding_post_id": "FP_NAINI", "voltage_kv": 25.0, "track_sections": ["B3", "B4"], "is_energized": True},
+                    {"section_id": f"ES-{request.division_code}-03", "feeding_post_id": "FP_MIRZAPUR", "voltage_kv": 25.0, "track_sections": ["B5", "B6", "B7", "B8"], "is_energized": True}
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_sections, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="TDMS",
+                    division_code=request.division_code,
+                    records_count=len(mock_sections),
+                    data=mock_sections,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(f"[{self.source_name}] Live CRIS integration disabled.")
         
         resp = self._execute_with_retry("GET", f"/divisions/{request.division_code}/electrical-sections")
@@ -210,6 +264,17 @@ class TDMSAdapter(BaseCRISAdapter):
         )
 
     def consume_events(self, request: EventSubscription) -> Iterator[SourceEvent]:
+        if self.config.mock_mode:
+            div = request.division_partition_key or "PRYJ"
+            yield SourceEvent(
+                event_id=f"TDMS-EVT-{div}-01",
+                event_type="ISOLATOR_STATE_CHANGED",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                source_system="TDMS",
+                division_code=div,
+                payload={"switch_id": "ISO-01", "state": "OPEN"}
+            )
+            return
         return iter([])
 
 class SMMSAdapter(BaseCRISAdapter):
@@ -222,6 +287,20 @@ class SMMSAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                mock_assets = [
+                    {"signal_id": f"SIG-{request.division_code}-01", "track_section_id": "B1", "aspect": "CLEAR", "is_operational": True},
+                    {"point_id": f"PT-{request.division_code}-101", "station": "PRYJ", "route": "MAIN_DOWN", "is_locked": True}
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_assets, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="SMMS",
+                    division_code=request.division_code,
+                    records_count=len(mock_assets),
+                    data=mock_assets,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(f"[{self.source_name}] Live CRIS integration disabled.")
         
         resp = self._execute_with_retry("GET", f"/divisions/{request.division_code}/signaling-inventory")
@@ -249,6 +328,21 @@ class COAAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                mock_trains = [
+                    {"train_id": "22436", "name": "Vande Bharat Exp", "priority": "PREMIUM_PASSENGER", "delay_min": 0.0, "route": ["B1", "B2", "B3", "B4"]},
+                    {"train_id": "12302", "name": "Howrah Rajdhani", "priority": "PREMIUM_PASSENGER", "delay_min": 5.0, "route": ["B1", "B2", "B3", "B4", "B5"]},
+                    {"train_id": "12428", "name": "Rewa Express", "priority": "EXPRESS_PASSENGER", "delay_min": 12.0, "route": ["B3", "B4", "B5", "B6"]},
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_trains, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="COA",
+                    division_code=request.division_code,
+                    records_count=len(mock_trains),
+                    data=mock_trains,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(f"[{self.source_name}] Live CRIS integration disabled.")
         
         resp = self._execute_with_retry("GET", f"/divisions/{request.division_code}/train-graph")
@@ -264,6 +358,17 @@ class COAAdapter(BaseCRISAdapter):
         )
 
     def consume_events(self, request: EventSubscription) -> Iterator[SourceEvent]:
+        if self.config.mock_mode:
+            div = request.division_partition_key or "PRYJ"
+            yield SourceEvent(
+                event_id=f"COA-EVT-{div}-01",
+                event_type="TRAIN_DELAY_REPORTED",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                source_system="COA",
+                division_code=div,
+                payload={"train_id": "22436", "delay_minutes": 18.0}
+            )
+            return
         return iter([])
 
 class RTISAdapter(BaseCRISAdapter):
@@ -276,6 +381,20 @@ class RTISAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                mock_telemetry = [
+                    {"loco_id": "WAP7-30201", "train_id": "22436", "lat": 25.435, "lon": 81.846, "speed_kmh": 125.0, "timestamp": datetime.now(timezone.utc).isoformat()},
+                    {"loco_id": "WAP7-30455", "train_id": "12302", "lat": 25.350, "lon": 82.020, "speed_kmh": 110.0, "timestamp": datetime.now(timezone.utc).isoformat()}
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_telemetry, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="RTIS",
+                    division_code=request.division_code,
+                    records_count=len(mock_telemetry),
+                    data=mock_telemetry,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(f"[{self.source_name}] Live CRIS integration disabled.")
         
         resp = self._execute_with_retry("GET", f"/divisions/{request.division_code}/loco-telemetry")
@@ -291,6 +410,18 @@ class RTISAdapter(BaseCRISAdapter):
         )
 
     def consume_events(self, request: EventSubscription) -> Iterator[SourceEvent]:
+        if self.config.mock_mode:
+            div = request.division_partition_key or "PRYJ"
+            for step in range(3):
+                yield SourceEvent(
+                    event_id=f"RTIS-EVT-{div}-{step+1}",
+                    event_type="LOCO_GPS_PULSE",
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    source_system="RTIS",
+                    division_code=div,
+                    payload={"loco_id": "WAP7-30201", "speed_kmh": 120.0 + step * 2, "chainage_km": 15.0 + step * 1.5}
+                )
+            return
         return iter([])
 
 class BDMSAdapter(BaseCRISAdapter):
@@ -303,6 +434,20 @@ class BDMSAdapter(BaseCRISAdapter):
 
     def fetch_snapshot(self, request: SnapshotRequest) -> SnapshotResponse:
         if not self.config.is_live_enabled:
+            if self._is_mock_allowed(request):
+                mock_reqs = [
+                    {"requisition_id": f"BDMS-{request.division_code}-REQ-01", "track_section_id": "B5", "department": "CIVIL", "duration_hours": 3.0, "status": "SANCTIONED"},
+                    {"requisition_id": f"BDMS-{request.division_code}-REQ-02", "track_section_id": "B5", "department": "TRD", "duration_hours": 2.5, "status": "SANCTIONED"}
+                ]
+                checksum = hashlib.sha256(json.dumps(mock_reqs, sort_keys=True).encode()).hexdigest()
+                return SnapshotResponse(
+                    source_system="BDMS",
+                    division_code=request.division_code,
+                    records_count=len(mock_reqs),
+                    data=mock_reqs,
+                    checksum=checksum,
+                    is_synthetic=True
+                )
             raise RuntimeError(f"[{self.source_name}] Live CRIS integration disabled.")
         
         resp = self._execute_with_retry("GET", f"/divisions/{request.division_code}/possession-requisitions")
@@ -343,4 +488,16 @@ class BDMSAdapter(BaseCRISAdapter):
         return resp.json()
 
     def consume_events(self, request: EventSubscription) -> Iterator[SourceEvent]:
+        if self.config.mock_mode:
+            div = request.division_partition_key or "PRYJ"
+            yield SourceEvent(
+                event_id=f"BDMS-EVT-{div}-01",
+                event_type="POSSESSION_SANCTION_UPDATED",
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                source_system="BDMS",
+                division_code=div,
+                payload={"requisition_id": f"BDMS-{div}-REQ-01", "new_status": "SANCTIONED"}
+            )
+            return
         return iter([])
+

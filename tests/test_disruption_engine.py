@@ -150,3 +150,41 @@ class TestDisruptionEngine:
         far_job = next((j for j in result.rescheduled_schedule.scheduled_jobs if j.job_id == "J_FAR_AWAY"), None)
         assert far_job is not None
         assert far_job.start_time == 10.0
+
+    def test_disruption_trigger_thresholds(self):
+        """Verifies statutory trigger requirements for advisory rescheduling."""
+        rescheduler = DynamicDisruptionEngine(min_trigger_delay_minutes=15.0)
+
+        # 1. 10 min delay should not trigger
+        d_minor = DisruptionEvent(
+            id="DIS-01", event_id="DIS-01", event_type="TRAIN_DELAY",
+            delay_minutes=10.0, affected_block_ids=["B1"]
+        )
+        trig, reason = rescheduler.should_trigger(d_minor)
+        assert trig is False
+
+        # 2. 20 min delay on passenger train should trigger
+        d_major = DisruptionEvent(
+            id="DIS-02", event_id="DIS-02", event_type="TRAIN_DELAY",
+            delay_minutes=20.0, affected_block_ids=["B1"]
+        )
+        trig, reason = rescheduler.should_trigger(d_major)
+        assert trig is True
+        assert ">= statutory threshold" in reason
+
+        # 3. Equipment failure should trigger regardless of delay
+        d_equip = DisruptionEvent(
+            id="DIS-03", event_id="DIS-03", event_type="EQUIPMENT_FAILURE",
+            delay_minutes=5.0, affected_block_ids=["B2"]
+        )
+        trig, reason = rescheduler.should_trigger(d_equip)
+        assert trig is True
+
+        # 4. Weather speed restriction should trigger
+        d_weather = DisruptionEvent(
+            id="DIS-04", event_id="DIS-04", event_type="WEATHER_SPEED_RESTRICTION",
+            delay_minutes=0.0, affected_block_ids=["B3"]
+        )
+        trig, reason = rescheduler.should_trigger(d_weather)
+        assert trig is True
+

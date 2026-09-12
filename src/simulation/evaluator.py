@@ -99,6 +99,14 @@ class KPIEvaluator:
         )
         class1_impact = round((premium_delay_sum / max(1.0, total_premium_scheduled_time)) * 100.0, 2)
 
+        # 8. Observability & Quality Gate KPIs
+        feasibility_rate = 100.0 if schedule.get("status") in ("optimal", "alns_feasible", "feasible", "rescheduled_advisory") else 0.0
+        deferred_count = max(0, len(self.scenario.jobs) - len(scheduled_jobs))
+        data_quality_failures = sum(
+            1 for j in self.scenario.jobs
+            if getattr(getattr(j, "tci_inputs", None), "data_confidence", 1.0) < 0.70
+        )
+
         measured_metrics = {
             "bue_percent": round(bue, 2),
             "bue_baseline_percent": round(base_bue, 2),
@@ -119,6 +127,11 @@ class KPIEvaluator:
             "high_crit_completion_percent": 100.0,
             "asset_downtime_reduction_percent": downtime_reduction,
             "solver_runtime_seconds": solver_runtime,
+            "feasibility_rate_percent": feasibility_rate,
+            "deferred_demand_count": deferred_count,
+            "data_quality_failure_count": data_quality_failures,
+            "approval_rate_percent": 100.0 if schedule.get("approval_status") == "SANCTIONED" else 0.0,
+            "override_rate_percent": 100.0 if schedule.get("approval_status") == "OVERRIDDEN" else 0.0
         }
 
         # Multi-dimensional comparison report
