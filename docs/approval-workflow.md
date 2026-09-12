@@ -96,27 +96,21 @@ SparkRail exposes typed REST endpoints for proposal review and approval governan
 
 | Method | Endpoint | Authorized Roles | Description |
 |:---|:---|:---|:---|
-| `POST` | `/advisory/proposals` | System / AI | Create a new advisory proposal from optimization run |
-| `GET` | `/advisory/proposals/{id}` | All Roles | Retrieve full proposal details, bundles, and diagnostics |
-| `POST` | `/advisory/proposals/{id}/approve` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER` | Formally approve proposal with role sign-off |
-| `POST` | `/advisory/proposals/{id}/reject` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER` | Reject proposal with reason |
-| `POST` | `/advisory/proposals/{id}/override` | `SR_DOM`, `SECTION_CONTROLLER` | Apply human operational override with justification |
-| `GET` | `/advisory/audit` | All Roles / Auditor | Inspect immutable chronological audit trail |
+| `POST` | `/api/v1/optimization/possession-schedule` | System / AI | Submit comprehensive possession schedule package |
+| `GET` | `/api/v1/recommendations/{id}` | All Roles | Retrieve recommendation details, bundle, and approval state |
+| `POST` | `/api/v1/recommendations/{id}/approve` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER`, `STATION_MASTER` | Formally approve recommendation in statutory chain |
+| `POST` | `/api/v1/recommendations/{id}/reject` | `CTPC`, `SR_DOM`, `SECTION_CONTROLLER`, `STATION_MASTER` | Reject recommendation with mandatory reason |
+| `POST` | `/api/v1/recommendations/{id}/override` | `SR_DOM`, `SECTION_CONTROLLER` | Apply human operational override with mandatory justification |
+| `POST` | `/api/v1/disruptions` | `SECTION_CONTROLLER`, `SR_DOM` | Submit localized operational disruption event (<90s replanning) |
+| `GET` | `/api/v1/advisory/audit` | All Roles / Auditor | Inspect immutable chronological audit trail |
+| `GET` | `/api/v1/advisory/audit/verify` | Auditor / Security Officer | Verify SHA-256 cryptographic hash-chain integrity |
+| `POST` | `/advisory/proposals` | System / AI | Backward-compatible proposal generation |
+| `POST` | `/advisory/proposals/{id}/approve` | `CTPC`, `SR_DOM` | Backward-compatible proposal approval |
+| `POST` | `/advisory/proposals/{id}/reject` | `SECTION_CONTROLLER` | Backward-compatible proposal rejection |
 
-### Example Override Request Payload
+### Tamper-Evident SHA-256 Audit Chain
 
-```http
-POST /advisory/proposals/prop-20260904-001/override HTTP/1.1
-Content-Type: application/json
-Authorization: Bearer <jwt_token>
+Every approval, override, rejection, and solver execution is appended to a cryptographic hash chain:
+$$\text{Hash}_i = \text{SHA-256}(\text{Hash}_{i-1} \parallel \text{EventID} \parallel \text{EventType} \parallel \text{UserID} \parallel \text{Role} \parallel \text{ResourceType} \parallel \text{ResourceID} \parallel \text{Action} \parallel \text{Timestamp} \parallel \text{Payload})$$
+The chain can be verified at any time via `GET /api/v1/advisory/audit/verify`. Any retroactive tampering breaks the hash link immediately.
 
-{
-  "block_id": "B3",
-  "override_type": "SHIFT_WINDOW",
-  "modified_start_time": "2026-09-05T03:30:00Z",
-  "modified_end_time": "2026-09-05T07:30:00Z",
-  "justification": "Accommodate unannounced late-running Vande Bharat Express 22436",
-  "overridden_by": "USR_SR_DOM_PRYJ",
-  "role": "SR_DOM"
-}
-```

@@ -86,15 +86,15 @@ SparkRail is structured into 11 decoupled modular services:
 
 | Module | Classification | Current Readiness Status | Verification Evidence |
 |:---|:---|:---|:---|
-| **Three-Tier Optimizer (T1/T2/T3)** | **Pilot-Ready** | Fully implemented; CP-SAT & heuristic fallback; Benders cuts. | 87 Unit & Integration tests passing. |
-| **TCI Scoring & AHP Weights** | **Pilot-Ready** | Normalized [0, 100]; 4x4 pairwise matrix; safe missing-data bound. | `test_criticality.py` |
-| **Microscopic Safety Engine** | **Pilot-Ready** | Hard electrical isolation, headway, TSL opposing, crew rest (HOER). | `test_safety_constraints.py` |
-| **BDMS Advisory Governance** | **Pilot-Ready** | Outbound proposal schema, role approval, override audit trail. | `test_advisory_api.py` |
-| **Linear Referencing & Graphs** | **Pilot-Ready** | Canonical graph, TMS chainage, RTIS projection, confidence lineage. | `test_harmonization.py` |
-| **3D Corridor Digital Twin** | **Pilot-Ready** | Three.js WebGL, 2D fallback, canonical geometry contract v1.0.0. | `npm test -- --run` (49 tests) |
+| **Three-Tier Optimizer (T1/T2/T3)** | **Pilot-Ready** | Fully implemented; CP-SAT & heuristic fallback; Benders cuts. | 102 Unit & Integration tests passing. |
+| **TCI Scoring & AHP Weights** | **Pilot-Ready** | Normalized [0, 100]; 6-factor AHP matrix; conservative missing-data bound. | `tests/test_tci.py` (12/12 passing) |
+| **Microscopic Safety Engine** | **Pilot-Ready** | Hard electrical isolation, headway, TSL opposing, crew rest (HOER). | `tests/test_safety_validator.py`, `tests/test_three_tier_optimization.py` |
+| **BDMS Advisory Governance** | **Pilot-Ready** | Outbound proposal schema, role approval, override audit trail, SHA-256 chain. | `tests/test_advisory_approval.py`, `tests/test_v1_api.py` |
+| **Linear Referencing & Graphs** | **Pilot-Ready** | Canonical graph, TMS chainage, RTIS projection, confidence lineage. | `tests/test_canonical_models_and_harmonization.py` |
+| **3D Corridor Digital Twin** | **Pilot-Ready** | Three.js WebGL, 2D fallback, canonical geometry contract v1.0.0. | `frontend/src/tests/` (49/49 passing) |
 | **CRIS Production Adapters** | **Configuration-Gated** | TMS, TDMS, SMMS, COA, RTIS, BDMS typed contracts with mTLS & DLQ. | Dry-run enabled; activates with real credentials. |
-| **Synthetic & Replay Engine** | **Production MVP** | Deterministic division simulator & historical timeline replay. | `test_adapters.py` |
-| **XGBoost Degradation Model** | **Experimental** | Trained artifact interface; guarded against untrained inferences. | Requires offline GMT track data. |
+| **Synthetic & Replay Engine** | **Production MVP** | Deterministic division simulator & historical timeline replay. | `tests/test_cris_adapters.py` |
+| **XGBoost Degradation Model** | **Experimental** | Trained artifact interface; guarded against untrained inferences. | Feature flag gated (`ENABLE_XGBOOST_TCI=false`). |
 | **GNN & DRL Tactical Agents** | **Experimental** | PyTorch Geometric & SUMO prototypes for tactical conflict avoidance. | Research prototype in `src/ai_ml/`. |
 | **National Scale Deployment** | **Disclaimed** | Out of scope without multi-datacenter Kubernetes infrastructure. | Bounded division pilot (PRYJ/DDU) only. |
 
@@ -127,8 +127,11 @@ For complete mathematical definitions and hazard logs, see [`docs/safety-case.md
 # Verify syntax across all Python modules
 python -m compileall src
 
-# Run full backend test suite (87 tests)
-pytest -q
+# Run full backend test suite (102 tests, 0 failures)
+pytest -v
+
+# Run pilot quality gates verification (all 9 gates)
+python scripts/verify_quality_gates.py
 
 # Run end-to-end demonstration CLI
 python -m src.cli demo
