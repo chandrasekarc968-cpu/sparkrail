@@ -85,9 +85,9 @@ describe('3D Railway Network & Planning Capabilities', () => {
     fireEvent.click(playBtn);
     expect(onTogglePlay).toHaveBeenCalledOnce();
 
-    const speedBtn = screen.getByRole('button', { name: '2x' });
+    const speedBtn = screen.getByRole('button', { name: '5x' });
     fireEvent.click(speedBtn);
-    expect(onSpeedChange).toHaveBeenCalledWith(2);
+    expect(onSpeedChange).toHaveBeenCalledWith(5);
 
     const weekPresetBtn = screen.getByRole('button', { name: /Week \(7d\)/i });
     fireEvent.click(weekPresetBtn);

@@ -17,16 +17,18 @@ const coreMaterial = new THREE.MeshBasicMaterial({ color: '#ffffff' });
 
 export const ConflictMarker: React.FC<ConflictMarkerProps> = React.memo(({
   conflict,
-  isSelected = false,
+    isSelected = false,
   onSelect,
   showLabel = true
 }) => {
   const pos = conflict.position || conflict.coordinates;
   if (!pos) return null;
   const isCritical = conflict.severity === 'CRITICAL';
-  const color = isCritical ? '#ef4444' : '#f59e0b';
+  const isMajor = conflict.severity === 'MAJOR';
+  const blocksApproval = conflict.blocks_approval ?? (isCritical || isMajor);
+  const color = isCritical ? '#ef4444' : isMajor ? '#f97316' : '#f59e0b';
   // Never hide critical or selected conflict labels
-  const shouldRenderLabel = isCritical || isSelected || showLabel;
+  const shouldRenderLabel = isCritical || isMajor || isSelected || showLabel;
 
   return (
     <group
@@ -39,7 +41,7 @@ export const ConflictMarker: React.FC<ConflictMarkerProps> = React.memo(({
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={0.6}
+          emissiveIntensity={isCritical ? 0.9 : 0.5}
           roughness={0.2}
           wireframe={!isSelected}
         />
@@ -54,44 +56,65 @@ export const ConflictMarker: React.FC<ConflictMarkerProps> = React.memo(({
       {/* 3. Hazard Base Projection Ring */}
       <mesh position={[0, -4.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <primitive object={ringGeometry} attach="geometry" />
-        <meshBasicMaterial color={color} transparent opacity={0.6} />
+        <meshBasicMaterial color={color} transparent opacity={0.7} />
       </mesh>
 
-      {/* 4. Conflict Label Tag */}
+      {/* 4. Conflict Label Tag with Explicit Approval-Blocking Banner */}
       {shouldRenderLabel && (
         <Html position={[0, 2.5, 0]} center distanceFactor={140}>
           <div
             style={{
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              gap: '6px',
-              padding: '3px 8px',
+              gap: '3px',
+              padding: '4px 9px',
               backgroundColor: '#0f172a',
               color: '#ffffff',
               borderRadius: '4px',
               border: `2px solid ${color}`,
-              boxShadow: '0 3px 12px rgba(239, 68, 68, 0.4)',
-              fontSize: '9.5px',
+              boxShadow: isCritical ? '0 4px 16px rgba(239, 68, 68, 0.6)' : '0 3px 12px rgba(249, 115, 22, 0.4)',
+              fontSize: '10px',
               fontFamily: 'monospace',
               whiteSpace: 'nowrap',
               cursor: 'pointer',
               userSelect: 'none'
             }}
-            title={`${conflict.title} - ${conflict.description}`}
+            title={`${conflict.title} - ${conflict.description}\nSuggested: ${conflict.suggested_resolution || 'Review in BDMS'}`}
+            role="alert"
+            aria-label={`Safety Conflict: ${conflict.title}, Severity ${conflict.severity}${blocksApproval ? ', Blocks Approval' : ''}`}
           >
-            <span
-              style={{
-                padding: '1px 4px',
-                borderRadius: '2px',
-                backgroundColor: color,
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '8px'
-              }}
-            >
-              {conflict.severity}
-            </span>
-            <span style={{ fontWeight: 700 }}>{conflict.title}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span
+                style={{
+                  padding: '1px 5px',
+                  borderRadius: '2px',
+                  backgroundColor: color,
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '8.5px'
+                }}
+              >
+                {conflict.severity}
+              </span>
+              <span style={{ fontWeight: 700 }}>{conflict.title}</span>
+            </div>
+
+            {blocksApproval && (
+              <div
+                style={{
+                  fontSize: '8px',
+                  fontWeight: 800,
+                  color: '#fca5a5',
+                  backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                  padding: '1px 6px',
+                  borderRadius: '2px',
+                  border: '1px solid #ef4444'
+                }}
+              >
+                🚫 APPROVAL BLOCKED
+              </div>
+            )}
           </div>
         </Html>
       )}

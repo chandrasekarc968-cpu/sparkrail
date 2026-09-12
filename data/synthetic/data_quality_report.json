@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-09-12T14:15:23.183065+00:00",
+  "seed": 42,
+  "mode": "SYNTHETIC",
+  "corridor": "Subedarganj (SFG) - Mirzapur (MZP)",
+  "corridor_length_km": 80.0,
+  "blocks_count": 8,
+  "maintenance_jobs_count": 20,
+  "trains_count": 10,
+  "track_sections_count": 16,
+  "signals_count": 16,
+  "ohe_masts_count": 24,
+  "replay_events_count": 3,
+  "schema_version": "1.0.0",
+  "advisory_notice": "ADVISORY ONLY: HUMAN APPROVAL REQUIRED. SYNTHETIC BENCHMARK DATA."
+}

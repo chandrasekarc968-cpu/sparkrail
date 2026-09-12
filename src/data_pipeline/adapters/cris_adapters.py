@@ -16,6 +16,8 @@ from src.data_pipeline.adapters.base import (
     SourceEvent
 )
 
+from src.config import PluginConfig, SparkRailMode
+
 logger = logging.getLogger("SparkRail.CRISAdapters")
 
 class CRISAdapterConfig:
@@ -32,10 +34,11 @@ class CRISAdapterConfig:
         kafka_brokers: Optional[str] = None,
         topic_name: Optional[str] = None,
         dead_letter_file: str = "data/dead_letter.jsonl",
-        is_live_enabled: bool = False,
-        mock_mode: bool = False
+        is_live_enabled: Optional[bool] = None,
+        mock_mode: Optional[bool] = None
     ):
         self.source_name = source_name
+        self.mode = PluginConfig.get_mode()
         self.base_url = base_url or os.getenv(f"CRIS_{source_name}_URL", "https://cris.indianrailways.gov.in/api/v1")
         self.timeout_seconds = float(os.getenv(f"CRIS_{source_name}_TIMEOUT", timeout_seconds))
         self.max_retries = int(os.getenv(f"CRIS_{source_name}_MAX_RETRIES", max_retries))
@@ -46,8 +49,21 @@ class CRISAdapterConfig:
         self.kafka_brokers = kafka_brokers or os.getenv("CRIS_KAFKA_BROKERS")
         self.topic_name = topic_name or os.getenv(f"CRIS_{source_name}_TOPIC", f"cris.{source_name.lower()}.events")
         self.dead_letter_file = dead_letter_file
-        self.is_live_enabled = is_live_enabled or (os.getenv("SPARKRAIL_LIVE_MODE", "false").lower() == "true")
-        self.mock_mode = mock_mode or (os.getenv("SPARKRAIL_MOCK_MODE", "false").lower() == "true")
+
+        # Operational mode resolution with explicit caller override support
+        if is_live_enabled is not None:
+            self.is_live_enabled = is_live_enabled
+        elif self.mode == SparkRailMode.LIVE:
+            self.is_live_enabled = PluginConfig.is_live_permitted()
+        else:
+            self.is_live_enabled = False
+
+        if mock_mode is not None:
+            self.mock_mode = mock_mode
+        elif self.mode == SparkRailMode.LIVE:
+            self.mock_mode = not self.is_live_enabled
+        else:
+            self.mock_mode = True
 
 class BaseCRISAdapter:
     """

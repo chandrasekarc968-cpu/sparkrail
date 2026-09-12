@@ -27,8 +27,21 @@ from src.data_pipeline.models import (
     NetworkConflict,
     CoordinateSystemContract,
     NetworkGeometryResponse,
-    OptimizedSchedule
+    OptimizedSchedule,
+    ValidationStatus,
+    TrackSection,
+    TrackCenterline,
+    Crossover,
+    InterlockingZone,
+    TrackCircuit,
+    ElementarySection,
+    FeedingPost,
+    IsolatorSwitch,
+    PossessionEntity,
+    ShadowPossessionBundle,
+    SpeedRestrictionZone
 )
+from src.data_pipeline.coordinates import CoordinateTransformer
 
 def generate_synthetic_data(
     seed: int = 42,
@@ -413,7 +426,7 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
     Z: Lateral offset / Curve track curvature
     """
     blocks = scenario.blocks
-    total_km = blocks[-1].chainage_end if blocks else 80.0
+    total_km = max(80.0, blocks[-1].chainage_end if blocks else 80.0)
     
     # Station definitions along the Prayagraj-Mirzapur corridor
     station_templates = [
@@ -435,35 +448,49 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
     def pos_at_km(km: float, lateral_offset: float = 0.0) -> Vector3D:
         return pos_at_corridor_km(km, total_km, lateral_offset)
 
+    transformer = CoordinateTransformer(total_km=total_km, default_crs="LOCAL_CORRIDOR")
+
+    # 1. Nodes (Stations)
     nodes: List[StationNode] = []
     for stn in station_templates:
         if stn["km"] <= total_km + 5.0:
             connected = [b.id for b in blocks if b.chainage_start <= stn["km"] <= b.chainage_end]
+            stn_pos = transformer.chainage_to_local_corridor(stn["km"], lateral_offset_m=0.0)
             nodes.append(StationNode(
                 id=f"NODE_{stn['code']}",
                 name=stn["name"],
                 code=stn["code"],
-                position=pos_at_km(stn["km"]),
+                coordinates=stn_pos,
+                position=stn_pos,
                 chainage_km=stn["km"],
                 node_type=stn["type"],
                 platforms=4 if stn["type"] == "junction" else 2,
-                connected_blocks=connected
+                connected_blocks=connected,
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"STN-PRYJ-{stn['code']}",
+                coordinate_reference_system="LOCAL_CORRIDOR",
+                validation_status=ValidationStatus.VALIDATED
             ))
 
+    # 2. Legacy TrackGeometry and Canonical TrackSections & TrackCenterlines
     tracks: List[TrackGeometry] = []
+    track_sections: List[TrackSection] = []
+    track_centerlines: List[TrackCenterline] = []
+    track_circuits: List[TrackCircuit] = []
     signals: List[SignalMarker] = []
     ohe_masts: List[OHEMast] = []
 
     for block in blocks:
-        start_pt = pos_at_km(block.chainage_start)
-        end_pt = pos_at_km(block.chainage_end)
+        # Legacy track representation
+        start_pt = transformer.chainage_to_local_corridor(block.chainage_start)
+        end_pt = transformer.chainage_to_local_corridor(block.chainage_end)
         
         steps = 5
         path_points: List[Vector3D] = []
         elevation_profile: List[float] = []
         for s in range(steps + 1):
             curr_km = block.chainage_start + (block.chainage_end - block.chainage_start) * (s / steps)
-            pt = pos_at_km(curr_km)
+            pt = transformer.chainage_to_local_corridor(curr_km)
             path_points.append(pt)
             elevation_profile.append(pt.y)
 
@@ -479,70 +506,481 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
             elevation_profile=elevation_profile,
             track_type=block.track_type or "Mainline",
             electrification=block.electrification_status or "25kV AC",
-            speed_limit_kmh=block.speed_restriction_kmh or 110.0
+            speed_limit_kmh=block.speed_restriction_kmh or 110.0,
+            source_system="SPARKRAIL_GEO",
+            source_record_id=f"TRK-BLK-{block.id}",
+            validation_status=ValidationStatus.VALIDATED
         ))
 
-        # Signals
+        # UP and DOWN Line Canonical TrackSections
+        for direction in ["UP", "DOWN"]:
+            sec_id = f"SEC_{block.id}_{direction}"
+            sec_start = transformer.chainage_to_local_corridor(block.chainage_start, track_direction=direction)
+            sec_end = transformer.chainage_to_local_corridor(block.chainage_end, track_direction=direction)
+            
+            sec_pts: List[Coordinate3D] = []
+            for s in range(steps + 1):
+                curr_km = block.chainage_start + (block.chainage_end - block.chainage_start) * (s / steps)
+                sec_pts.append(transformer.chainage_to_local_corridor(curr_km, track_direction=direction))
+
+            track_sec = TrackSection(
+                id=sec_id,
+                block_id=block.id,
+                line_name=f"Mainline {direction}",
+                track_direction=direction,
+                chainage_start_km=block.chainage_start,
+                chainage_end_km=block.chainage_end,
+                length_km=round(block.chainage_end - block.chainage_start, 2),
+                start_coord=sec_start,
+                end_coord=sec_end,
+                speed_limit_kmh=130.0 if direction == "UP" else 110.0,
+                electrification_status="25kV AC",
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"REC-{sec_id}",
+                referenced_block_id=block.id,
+                validation_status=ValidationStatus.VALIDATED
+            )
+            track_sections.append(track_sec)
+
+            track_centerlines.append(TrackCenterline(
+                id=f"CL_{sec_id}",
+                track_section_id=sec_id,
+                path_points=sec_pts,
+                elevation_profile=[p.y for p in sec_pts],
+                cant_mm=65.0,
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"REC-CL-{sec_id}",
+                referenced_block_id=block.id,
+                validation_status=ValidationStatus.VALIDATED
+            ))
+
+            # Track circuit per direction
+            track_circuits.append(TrackCircuit(
+                id=f"TC_{block.id}_{direction}",
+                track_id=sec_id,
+                block_id=block.id,
+                chainage_start_km=block.chainage_start,
+                chainage_end_km=block.chainage_end,
+                is_occupied=(block.id == "B2" and direction == "UP"),
+                circuit_type="Axle Counter (BPAC)",
+                coordinates=transformer.chainage_to_local_corridor(
+                    (block.chainage_start + block.chainage_end) / 2.0,
+                    track_direction=direction
+                ),
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"REC-TC-{block.id}-{direction}",
+                referenced_block_id=block.id,
+                validation_status=ValidationStatus.VALIDATED
+            ))
+
+        # Signals for UP and DOWN
         signals.append(SignalMarker(
             id=f"SIG_{block.id}_UP",
             block_id=block.id,
+            referenced_block_id=block.id,
+            referenced_track_section_id=f"SEC_{block.id}_UP",
             chainage_km=round(block.chainage_start + 0.5, 2),
-            position=pos_at_km(block.chainage_start + 0.5, lateral_offset=1.5),
+            coordinates=transformer.chainage_to_local_corridor(block.chainage_start + 0.5, track_direction="UP", lateral_offset_m=1.8),
+            position=transformer.chainage_to_local_corridor(block.chainage_start + 0.5, track_direction="UP", lateral_offset_m=1.8),
             aspect="caution" if block.id == "B2" else "clear",
-            direction="UP"
+            direction="UP",
+            signal_type="automatic",
+            source_system="SPARKRAIL_GEO",
+            source_record_id=f"SIG-REC-{block.id}-UP",
+            validation_status=ValidationStatus.VALIDATED
         ))
         signals.append(SignalMarker(
             id=f"SIG_{block.id}_DN",
             block_id=block.id,
+            referenced_block_id=block.id,
+            referenced_track_section_id=f"SEC_{block.id}_DOWN",
             chainage_km=round(block.chainage_end - 0.5, 2),
-            position=pos_at_km(block.chainage_end - 0.5, lateral_offset=-1.5),
+            coordinates=transformer.chainage_to_local_corridor(block.chainage_end - 0.5, track_direction="DOWN", lateral_offset_m=-1.8),
+            position=transformer.chainage_to_local_corridor(block.chainage_end - 0.5, track_direction="DOWN", lateral_offset_m=-1.8),
             aspect="clear",
-            direction="DOWN"
+            direction="DOWN",
+            signal_type="automatic",
+            source_system="SPARKRAIL_GEO",
+            source_record_id=f"SIG-REC-{block.id}-DN",
+            validation_status=ValidationStatus.VALIDATED
         ))
 
-        # OHE masts
+        # OHE masts (3 per block)
         for mast_idx in range(3):
             mast_km = block.chainage_start + (block.chainage_end - block.chainage_start) * ((mast_idx + 0.5) / 3.0)
+            mast_pos = transformer.chainage_to_local_corridor(mast_km, lateral_offset_m=3.2)
             ohe_masts.append(OHEMast(
                 id=f"OHE_{block.id}_M{mast_idx+1}",
                 block_id=block.id,
-                position=pos_at_km(mast_km, lateral_offset=2.2),
+                referenced_block_id=block.id,
+                referenced_track_section_id=f"SEC_{block.id}_UP",
+                coordinates=mast_pos,
+                position=mast_pos,
+                chainage_km=round(mast_km, 2),
                 catenary_height_m=5.5,
-                is_isolated=(block.id == "B4")
+                contact_wire_height_m=5.5,
+                is_isolated=(block.id == "B4"),
+                elementary_section_id=f"ES_SEC_{(int(mast_km)//10)+1}",
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"OHE-REC-{block.id}-{mast_idx+1}",
+                validation_status=ValidationStatus.VALIDATED
             ))
 
+    valid_sec_ids = {s.id for s in track_sections}
+    valid_block_ids = {b.id for b in blocks}
+
+    # 3. Crossovers (Turnouts between UP & DOWN)
+    all_crossovers: List[Crossover] = [
+        Crossover(
+            id="XOVER_PRYJ_1",
+            name="Prayagraj Jn Crossover 101A/B",
+            station_code="PRYJ",
+            from_track_id="SEC_B1_UP",
+            to_track_id="SEC_B1_DOWN",
+            turnout_ratio="1-in-12",
+            points_number="101A/B",
+            speed_limit_kmh=30.0,
+            switch_position="NORMAL",
+            chainage_km=10.2,
+            start_coord=transformer.chainage_to_local_corridor(10.2, track_direction="UP"),
+            end_coord=transformer.chainage_to_local_corridor(10.3, track_direction="DOWN"),
+            source_system="SPARKRAIL_GEO",
+            source_record_id="XOVER-PRYJ-1",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        Crossover(
+            id="XOVER_NYN_1",
+            name="Naini Jn Crossover 202A/B",
+            station_code="NYN",
+            from_track_id="SEC_B2_UP",
+            to_track_id="SEC_B2_DOWN",
+            turnout_ratio="1-in-12",
+            points_number="202A/B",
+            speed_limit_kmh=30.0,
+            switch_position="NORMAL",
+            chainage_km=20.2,
+            start_coord=transformer.chainage_to_local_corridor(20.2, track_direction="UP"),
+            end_coord=transformer.chainage_to_local_corridor(20.3, track_direction="DOWN"),
+            source_system="SPARKRAIL_GEO",
+            source_record_id="XOVER-NYN-1",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        Crossover(
+            id="XOVER_MZP_1",
+            name="Mirzapur Jn Crossover 303A/B",
+            station_code="MZP",
+            from_track_id="SEC_B8_UP",
+            to_track_id="SEC_B8_DOWN",
+            turnout_ratio="1-in-12",
+            points_number="303A/B",
+            speed_limit_kmh=30.0,
+            switch_position="NORMAL",
+            chainage_km=79.5,
+            start_coord=transformer.chainage_to_local_corridor(79.5, track_direction="UP"),
+            end_coord=transformer.chainage_to_local_corridor(79.6, track_direction="DOWN"),
+            source_system="SPARKRAIL_GEO",
+            source_record_id="XOVER-MZP-1",
+            validation_status=ValidationStatus.VALIDATED
+        )
+    ]
+    crossovers: List[Crossover] = [
+        c for c in all_crossovers
+        if c.from_track_id in valid_sec_ids and c.to_track_id in valid_sec_ids
+    ]
+
+    # 4. Interlocking Zones
+    interlockings: List[InterlockingZone] = [
+        InterlockingZone(
+            id="IXL_PRYJ",
+            station_code="PRYJ",
+            name="Prayagraj Route Relay Interlocking Zone",
+            interlocking_type="Electronic Interlocking (EI)",
+            controlled_signals=["SIG_B1_UP", "SIG_B1_DN", "SIG_B2_UP", "SIG_B2_DN"],
+            controlled_points=["101A/B", "102A/B"],
+            controlled_circuits=["TC_B1_UP", "TC_B1_DOWN", "TC_B2_UP", "TC_B2_DOWN"],
+            status="Active",
+            chainage_start_km=8.0,
+            chainage_end_km=12.0,
+            boundary_coords=[
+                transformer.chainage_to_local_corridor(8.0, track_direction="UP"),
+                transformer.chainage_to_local_corridor(12.0, track_direction="DOWN")
+            ],
+            source_system="SPARKRAIL_GEO",
+            source_record_id="IXL-PRYJ-01",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        InterlockingZone(
+            id="IXL_NYN",
+            station_code="NYN",
+            name="Naini Junction Interlocking Zone",
+            interlocking_type="Electronic Interlocking (EI)",
+            controlled_signals=["SIG_B2_UP", "SIG_B2_DN", "SIG_B3_UP", "SIG_B3_DN"],
+            controlled_points=["201A/B", "202A/B"],
+            controlled_circuits=["TC_B2_UP", "TC_B2_DOWN", "TC_B3_UP", "TC_B3_DOWN"],
+            status="Active",
+            chainage_start_km=18.0,
+            chainage_end_km=22.0,
+            boundary_coords=[
+                transformer.chainage_to_local_corridor(18.0, track_direction="UP"),
+                transformer.chainage_to_local_corridor(22.0, track_direction="DOWN")
+            ],
+            source_system="SPARKRAIL_GEO",
+            source_record_id="IXL-NYN-01",
+            validation_status=ValidationStatus.VALIDATED
+        )
+    ]
+
+    # 5. OHE Feeding Posts & Elementary Sections & Isolator Switches
+    feeding_posts: List[FeedingPost] = [
+        FeedingPost(
+            id="FP_SFG",
+            name="Subedarganj Traction Substation",
+            substation_name="SFG TSS 132/25kV",
+            chainage_km=0.5,
+            coordinates=transformer.chainage_to_local_corridor(0.5, lateral_offset_m=12.0),
+            capacity_mva=30.0,
+            is_active=True,
+            source_system="SPARKRAIL_TRD",
+            source_record_id="FP-SFG-01",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        FeedingPost(
+            id="FP_NYN",
+            name="Naini Traction Substation",
+            substation_name="NYN TSS 132/25kV",
+            chainage_km=20.5,
+            coordinates=transformer.chainage_to_local_corridor(20.5, lateral_offset_m=12.0),
+            capacity_mva=30.0,
+            is_active=True,
+            source_system="SPARKRAIL_TRD",
+            source_record_id="FP-NYN-01",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        FeedingPost(
+            id="FP_MJA",
+            name="Meja Road Traction Substation",
+            substation_name="MJA TSS 132/25kV",
+            chainage_km=50.5,
+            coordinates=transformer.chainage_to_local_corridor(50.5, lateral_offset_m=12.0),
+            capacity_mva=30.0,
+            is_active=True,
+            source_system="SPARKRAIL_TRD",
+            source_record_id="FP-MJA-01",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        FeedingPost(
+            id="FP_MZP",
+            name="Mirzapur Traction Substation",
+            substation_name="MZP TSS 132/25kV",
+            chainage_km=79.5,
+            coordinates=transformer.chainage_to_local_corridor(79.5, lateral_offset_m=12.0),
+            capacity_mva=30.0,
+            is_active=True,
+            source_system="SPARKRAIL_TRD",
+            source_record_id="FP-MZP-01",
+            validation_status=ValidationStatus.VALIDATED
+        )
+    ]
+
+    elementary_sections: List[ElementarySection] = []
+    isolator_switches: List[IsolatorSwitch] = []
+    for s_idx in range(len(blocks)):
+        sec_num = s_idx + 1
+        start_k = s_idx * 10.0
+        end_k = (s_idx + 1) * 10.0
+        fp_id = "FP_SFG" if s_idx < 2 else ("FP_NYN" if s_idx < 4 else ("FP_MJA" if s_idx < 6 else "FP_MZP"))
+        es_id = f"ES_SEC_{sec_num}"
+        is_isolated = (sec_num == 4)  # B4 under OHE isolation
+
+        sw_id = f"IS_SW_{sec_num}"
+        isolator_switches.append(IsolatorSwitch(
+            id=sw_id,
+            switch_code=f"SS-{100+sec_num}",
+            elementary_section_id=es_id,
+            state="OPEN" if is_isolated else "CLOSED",
+            switch_type="Motorized",
+            chainage_km=start_k + 0.2,
+            coordinates=transformer.chainage_to_local_corridor(start_k + 0.2, lateral_offset_m=4.5),
+            source_system="SPARKRAIL_TRD",
+            source_record_id=f"IS-REC-{sec_num}",
+            validation_status=ValidationStatus.VALIDATED
+        ))
+
+        elementary_sections.append(ElementarySection(
+            id=es_id,
+            section_code=f"ES-PRYJ-{sec_num:02d}",
+            name=f"Sector {sec_num} Catenary ({start_k:.0f}km - {end_k:.0f}km)",
+            feeding_post_id=fp_id,
+            associated_tracks=[f"SEC_B{sec_num}_UP", f"SEC_B{sec_num}_DOWN"],
+            associated_masts=[f"OHE_B{sec_num}_M1", f"OHE_B{sec_num}_M2", f"OHE_B{sec_num}_M3"],
+            isolator_switch_ids=[sw_id],
+            is_energized=(not is_isolated),
+            nominal_voltage_kv=25.0,
+            chainage_start_km=start_k,
+            chainage_end_km=end_k,
+            source_system="SPARKRAIL_TRD",
+            source_record_id=f"ES-REC-{sec_num}",
+            validation_status=ValidationStatus.VALIDATED
+        ))
+
+    # 6. Possessions with Immutable Lock State
+    all_possessions: List[PossessionEntity] = [
+        PossessionEntity(
+            id="POSS_GRANTED_B2",
+            job_id="J2",
+            block_id="B2",
+            department="Civil",
+            status="GRANTED",
+            start_time_hours=2.0,
+            end_time_hours=6.0,
+            chainage_start_km=10.0,
+            chainage_end_km=20.0,
+            affected_tracks=["SEC_B2_UP"],
+            affected_ohe_sections=["ES_SEC_2"],
+            affected_signals=["SIG_B2_UP"],
+            is_locked=True,  # GRANTED possessions are visibly locked and cannot be moved
+            is_shadow=True,
+            shadow_bundle_id="SHADOW-BUNDLE-1",
+            required_machines=["BCM (Ballast Cleaning Machine)"],
+            crew_count=8,
+            safety_certified=True,
+            approval_status="GRANTED",
+            source_system="SPARKRAIL_ADVISORY",
+            source_record_id="POSS-REC-GRANTED-B2",
+            referenced_block_id="B2",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        PossessionEntity(
+            id="POSS_IN_PROGRESS_B4",
+            job_id="J4",
+            block_id="B4",
+            department="OHE",
+            status="IN_PROGRESS",
+            start_time_hours=1.0,
+            end_time_hours=5.0,
+            chainage_start_km=30.0,
+            chainage_end_km=40.0,
+            affected_tracks=["SEC_B4_UP", "SEC_B4_DOWN"],
+            affected_ohe_sections=["ES_SEC_4"],
+            affected_signals=["SIG_B4_UP", "SIG_B4_DN"],
+            is_locked=True,  # IN_PROGRESS possessions are visibly locked and immutable
+            is_shadow=False,
+            required_machines=["Tower Wagon (TRD)"],
+            crew_count=6,
+            safety_certified=True,
+            approval_status="IN_PROGRESS",
+            source_system="SPARKRAIL_ADVISORY",
+            source_record_id="POSS-REC-IN-PROGRESS-B4",
+            referenced_block_id="B4",
+            validation_status=ValidationStatus.VALIDATED
+        ),
+        PossessionEntity(
+            id="POSS_PLAN_B6",
+            job_id="J6",
+            block_id="B6",
+            department="S&T",
+            status="PLANNED",
+            start_time_hours=8.0,
+            end_time_hours=12.0,
+            chainage_start_km=50.0,
+            chainage_end_km=60.0,
+            affected_tracks=["SEC_B6_UP"],
+            affected_ohe_sections=[],
+            affected_signals=["SIG_B6_UP"],
+            is_locked=False,
+            is_shadow=False,
+            required_machines=[],
+            crew_count=4,
+            safety_certified=True,
+            approval_status="PENDING_CTPC_REVIEW",
+            source_system="SPARKRAIL_ADVISORY",
+            source_record_id="POSS-REC-PLAN-B6",
+            referenced_block_id="B6",
+            validation_status=ValidationStatus.SYNTHETIC
+        )
+    ]
+    possessions: List[PossessionEntity] = [
+        p for p in all_possessions
+        if p.block_id in valid_block_ids and all(t in valid_sec_ids for t in p.affected_tracks)
+    ]
+
+    # 7. Shadow Possession Bundles
+    all_shadow_bundles: List[ShadowPossessionBundle] = [
+        ShadowPossessionBundle(
+            id="SHADOW-BUNDLE-1",
+            primary_possession_id="POSS_GRANTED_B2",
+            shadow_possession_ids=["POSS_GRANTED_B2", "POSS_PLAN_B2_SIG"],
+            corridor_closure_saving_hours=2.5,
+            block_id="B2",
+            time_window_start=2.0,
+            time_window_end=6.0,
+            source_system="SPARKRAIL_OPTIMIZER",
+            source_record_id="SHADOW-BUNDLE-01",
+            referenced_block_id="B2",
+            validation_status=ValidationStatus.VALIDATED
+        )
+    ]
+    shadow_bundles: List[ShadowPossessionBundle] = [
+        b for b in all_shadow_bundles
+        if b.block_id in valid_block_ids
+    ]
+
+    # 8. Speed Restrictions
+    all_speed_restrictions: List[SpeedRestrictionZone] = [
+        SpeedRestrictionZone(
+            id="SR_B2_CAUTION",
+            track_id="SEC_B2_UP",
+            block_id="B2",
+            chainage_start_km=14.0,
+            chainage_end_km=16.5,
+            restricted_speed_kmh=45.0,
+            normal_speed_kmh=130.0,
+            reason="Ballast screening & tamping in progress",
+            is_permanent=False,
+            start_coord=transformer.chainage_to_local_corridor(14.0, track_direction="UP"),
+            end_coord=transformer.chainage_to_local_corridor(16.5, track_direction="UP"),
+            source_system="SPARKRAIL_PWAY",
+            source_record_id="SR-REC-01",
+            referenced_block_id="B2",
+            validation_status=ValidationStatus.VALIDATED
+        )
+    ]
+    speed_restrictions: List[SpeedRestrictionZone] = [
+        sr for sr in all_speed_restrictions
+        if sr.block_id in valid_block_ids and sr.track_id in valid_sec_ids
+    ]
+
+    # 9. Derive Conflicts
     conflicts = derive_conflicts(scenario)
 
+    # 10. Junction Nodes
     junctions: List[JunctionNode] = []
     for stn in station_templates:
         if stn["type"] == "junction" and stn["km"] <= total_km + 5.0:
             connected = [b.id for b in blocks if b.chainage_start <= stn["km"] <= b.chainage_end]
+            junc_pos = transformer.chainage_to_local_corridor(stn["km"])
             junctions.append(JunctionNode(
                 id=f"JUNC_{stn['code']}",
                 name=f"{stn['name']} Interlocking Junction",
                 code=stn["code"],
-                coordinates=pos_at_km(stn["km"]),
-                position=pos_at_km(stn["km"]),
+                coordinates=junc_pos,
+                position=junc_pos,
                 chainage_km=stn["km"],
                 node_type="junction",
                 diverging_blocks=connected,
                 switch_type="Turnout 1-in-12",
-                interlocking_status="Active"
+                interlocking_status="Active",
+                source_system="SPARKRAIL_GEO",
+                source_record_id=f"JUNC-REC-{stn['code']}",
+                validation_status=ValidationStatus.VALIDATED
             ))
 
+    # 11. Assets with Provenance
     assets = generate_synthetic_assets(scenario)
 
     return NetworkGeometryResponse(
         geometry_schema_version="1.0.0",
-        coordinate_system=CoordinateSystemContract(
-            name="LOCAL_CORRIDOR",
-            crs="LOCAL_CORRIDOR",
-            units="meters",
-            axis_order=["x", "y", "z"],
-            handedness="right-handed",
-            origin_description="Synthetic local origin for the bounded railway division",
-            geometry_source="synthetic"
-        ),
+        coordinate_system=transformer.get_contract("LOCAL_CORRIDOR", is_synthetic=True),
         division="Prayagraj (PRYJ)",
         line_name="Subedarganj - Mirzapur Mainline Corridor",
         total_length_km=total_km,
@@ -558,7 +996,18 @@ def generate_network_geometry(scenario: Scenario) -> NetworkGeometryResponse:
         conflicts=conflicts,
         junctions=junctions,
         assets=assets,
-        disconnected_components=[]
+        disconnected_components=[],
+        track_sections=track_sections,
+        track_centerlines=track_centerlines,
+        crossovers=crossovers,
+        interlockings=interlockings,
+        track_circuits=track_circuits,
+        elementary_sections=elementary_sections,
+        feeding_posts=feeding_posts,
+        isolator_switches=isolator_switches,
+        possessions=possessions,
+        shadow_bundles=shadow_bundles,
+        speed_restrictions=speed_restrictions
     )
 
 if __name__ == "__main__":

@@ -226,6 +226,56 @@ def validate_network_geometry(
             if mast.block_id not in valid_scenario_blocks:
                 issues.append(f"OHEMast '{mast.id}' references unknown block_id '{mast.block_id}' not in scenario.")
 
+    # 5b. Canonical TrackSections, OHE, and Possession Invariant Validation
+    all_track_ids = {t.block_id for t in geometry.tracks}
+    if hasattr(geometry, "track_sections") and geometry.track_sections:
+        for sec in geometry.track_sections:
+            all_track_ids.add(sec.id)
+            all_track_ids.add(sec.block_id)
+            if not math.isfinite(sec.length_km) or sec.length_km <= 0.0:
+                issues.append(f"TrackSection '{sec.id}' has zero or negative length: {sec.length_km} km")
+            if sec.chainage_start_km >= sec.chainage_end_km:
+                issues.append(
+                    f"TrackSection '{sec.id}' has reversed or zero-length chainage: "
+                    f"{sec.chainage_start_km} >= {sec.chainage_end_km}"
+                )
+            _check_coord_finite_and_bounds(sec.start_coord, f"TrackSection '{sec.id}' start_coord", issues, effective_bounds)
+            _check_coord_finite_and_bounds(sec.end_coord, f"TrackSection '{sec.id}' end_coord", issues, effective_bounds)
+            if getattr(sec, "validation_status", None) == "INVALID":
+                issues.append(f"TrackSection '{sec.id}' is marked with validation_status INVALID")
+            elif getattr(sec, "validation_status", None) == "CONTRADICTORY":
+                issues.append(f"TrackSection '{sec.id}' has contradictory source geometry")
+
+    # Signals must have valid track reference
+    for sig in geometry.signals:
+        if sig.referenced_track_section_id and sig.referenced_track_section_id not in all_track_ids:
+            issues.append(f"Signal '{sig.id}' references non-existent track section '{sig.referenced_track_section_id}'")
+        elif sig.referenced_block_id and sig.referenced_block_id not in all_track_ids:
+            issues.append(f"Signal '{sig.id}' references non-existent block '{sig.referenced_block_id}'")
+        elif sig.block_id and sig.block_id not in all_track_ids:
+            issues.append(f"Signal '{sig.id}' has invalid track reference '{sig.block_id}'")
+
+    # OHE Elementary Sections must map to valid track sections
+    if hasattr(geometry, "elementary_sections") and geometry.elementary_sections:
+        for elem in geometry.elementary_sections:
+            if not elem.associated_tracks:
+                issues.append(f"OHE ElementarySection '{elem.id}' has no mapped track sections")
+            for t_id in elem.associated_tracks:
+                if t_id not in all_track_ids and (scenario and t_id not in valid_scenario_blocks):
+                    issues.append(f"OHE ElementarySection '{elem.id}' references unknown track '{t_id}'")
+
+    # Possessions must be within track boundaries and locked when GRANTED/IN_PROGRESS
+    if hasattr(geometry, "possessions") and geometry.possessions:
+        for poss in geometry.possessions:
+            if poss.chainage_start_km >= poss.chainage_end_km:
+                issues.append(f"Possession '{poss.id}' has invalid extent: {poss.chainage_start_km} >= {poss.chainage_end_km}")
+            if poss.status in ("GRANTED", "IN_PROGRESS") and not getattr(poss, "is_locked", False):
+                issues.append(f"Possession '{poss.id}' in state '{poss.status}' must be visibly locked (is_locked=True)")
+            if getattr(poss, "validation_status", None) == "INVALID":
+                issues.append(f"Possession '{poss.id}' has validation_status INVALID")
+            elif getattr(poss, "validation_status", None) == "CONTRADICTORY":
+                issues.append(f"Possession '{poss.id}' has contradictory source data")
+
     # 6. Topological Connectivity Analysis
     # Sort tracks by chainage_start to detect gaps or disjoint corridors
     sorted_tracks = sorted(geometry.tracks, key=lambda t: t.chainage_start)

@@ -17,27 +17,56 @@ export interface RailwayTrackProps {
   lod?: 'full' | 'simplified' | 'corridor';
 }
 
-// Color tokens adhering to control-room standards (accessible OKLCH mapped)
+// Canonical color tokens adhering to Indian Railways digital-twin visual standards
 const STATE_COLORS: Record<string, string> = {
-  available: '#64748b',         // Slate neutral track
-  active_maintenance: '#f59e0b', // Signal amber
-  planned_maintenance: '#3b82f6',// Info blue
-  fixed_block: '#8b5cf6',        // Purple immutable
-  conflict: '#ef4444',           // Danger red
-  high_risk: '#f97316',          // Warning orange
-  frozen_week1: '#06b6d4',       // Frozen cyan
-  shadow_block: '#10b981'        // Operational green / multi-dept
+  available: '#64748b',                // Neutral slate track
+  planned_maintenance: '#f59e0b',       // Amber planned maintenance
+  sanctioned: '#3b82f6',                // Blue sanctioned work
+  granted: '#8b5cf6',                   // Purple granted work (locked)
+  fixed_block: '#8b5cf6',               // Purple fixed block
+  in_progress: '#ef4444',               // Red in-progress work (active)
+  active_maintenance: '#ef4444',        // Red active maintenance
+  completed: '#6b7280',                 // Muted completed work
+  ohe_isolation: '#f97316',             // Orange OHE isolation
+  signalling_disconnection: '#c026d3',  // Magenta signalling disconnection
+  conflict: '#dc2626',                  // High-contrast danger red
+  high_risk: '#f97316',                 // Warning orange
+  frozen_week1: '#06b6d4',              // Frozen cyan
+  shadow_block: '#10b981'               // Coordinated shadow group
+};
+
+const STATE_ICONS: Record<string, string> = {
+  available: '🛤',
+  planned_maintenance: '📅',
+  sanctioned: '📋',
+  granted: '🔒',
+  fixed_block: '🔒',
+  in_progress: '⚡',
+  active_maintenance: '⚡',
+  completed: '✓',
+  ohe_isolation: '⚡🚫',
+  signalling_disconnection: '📡🚫',
+  conflict: '🚫',
+  high_risk: '⚠️',
+  frozen_week1: '❄️',
+  shadow_block: '🔗'
 };
 
 const STATE_LABELS: Record<string, string> = {
   available: 'Available',
+  planned_maintenance: 'Planned Maintenance',
+  sanctioned: 'Sanctioned Work',
+  granted: 'Granted (Locked)',
+  fixed_block: 'Fixed Mega Block (Locked)',
+  in_progress: 'In-Progress Work',
   active_maintenance: 'Active Possession',
-  planned_maintenance: 'Planned Work',
-  fixed_block: 'Mega Block (Fixed)',
-  conflict: 'Critical Conflict',
-  high_risk: 'High Risk Defect',
+  completed: 'Completed (Muted)',
+  ohe_isolation: 'OHE Isolation',
+  signalling_disconnection: 'Signal Disconnection',
+  conflict: 'Safety Conflict',
+  high_risk: 'High-Risk Defect',
   frozen_week1: 'Frozen Week 1',
-  shadow_block: 'Shadow Block (Multi-Dept)'
+  shadow_block: 'Shadow Bundle'
 };
 
 // Reusable standard materials
@@ -72,16 +101,18 @@ export const RailwayTrack: React.FC<RailwayTrackProps> = React.memo(({
 
   const color = STATE_COLORS[state.status] || '#64748b';
   const label = STATE_LABELS[state.status] || 'Available';
+  const icon = STATE_ICONS[state.status] || '🛤';
 
   // Status overlay material
   const statusMaterial = useMemo(() => {
     if (state.status === 'available') return null;
+    const isWireframe = state.status === 'planned_maintenance' || state.status === 'frozen_week1' || state.status === 'ohe_isolation';
     return new THREE.MeshStandardMaterial({
       color,
       transparent: true,
-      opacity: isSelected ? 0.65 : 0.35,
+      opacity: isSelected ? 0.75 : 0.4,
       roughness: 0.4,
-      wireframe: state.status === 'planned_maintenance' || state.status === 'frozen_week1'
+      wireframe: isWireframe
     });
   }, [state.status, color, isSelected]);
 
@@ -136,7 +167,7 @@ export const RailwayTrack: React.FC<RailwayTrackProps> = React.memo(({
         </mesh>
       )}
 
-      {/* 5. Accessible Block Label Badge */}
+      {/* 5. Accessible Block Label Badge (Icon + Pattern + Color + Text) */}
       {shouldRenderLabel && (
         <Html position={[midPoint.x, midPoint.y, midPoint.z]} center distanceFactor={180}>
           <div
@@ -157,8 +188,10 @@ export const RailwayTrack: React.FC<RailwayTrackProps> = React.memo(({
               cursor: 'pointer',
               userSelect: 'none'
             }}
-            title={`${track.block_id}: ${label} (${track.speed_limit_kmh} km/h)`}
+            title={`${track.block_id}: ${icon} ${label} (${track.speed_limit_kmh} km/h)`}
+            aria-label={`Track Block ${track.block_id}: Status ${label}, Speed Limit ${track.speed_limit_kmh} km/h`}
           >
+            <span>{icon}</span>
             <span
               style={{
                 width: '8px',

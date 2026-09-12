@@ -1,3 +1,4 @@
+from __future__ import annotations
 import time
 import math
 import re
@@ -211,6 +212,15 @@ class GeometryNode(BaseModel):
             raise ValueError(f"Node '{self.id}' must provide either 'coordinates' or 'position'")
         return self
 
+class ValidationStatus(str, Enum):
+    VALIDATED = "VALIDATED"
+    SYNTHETIC = "SYNTHETIC"
+    STALE = "STALE"
+    LOW_CONFIDENCE = "LOW_CONFIDENCE"
+    INVALID = "INVALID"
+    CONTRADICTORY = "CONTRADICTORY"
+    UNAVAILABLE = "UNAVAILABLE"
+
 class StationNode(GeometryNode):
     name: str
     code: str
@@ -218,6 +228,15 @@ class StationNode(GeometryNode):
     node_type: str = "station"  # "station", "junction", "terminal"
     platforms: int = 2
     connected_blocks: List[str] = []
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_track_section_id: Optional[str] = None
 
 class JunctionNode(GeometryNode):
     name: str
@@ -227,6 +246,15 @@ class JunctionNode(GeometryNode):
     diverging_blocks: List[str] = []
     switch_type: str = "Turnout 1-in-12"
     interlocking_status: str = "Active"
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_track_section_id: Optional[str] = None
 
 class GeometryTrack(BaseModel):
     """
@@ -248,9 +276,18 @@ class GeometryTrack(BaseModel):
     gauge: str = "Broad Gauge 1676mm"
     speed_limit_kmh: float = 130.0
     referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
     geometry_source: str = "synthetic"
     geometry_schema_version: str = "1.0.0"
     schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
 
     @model_validator(mode="after")
     def check_track_invariants(self) -> "GeometryTrack":
@@ -266,19 +303,108 @@ class GeometryTrack(BaseModel):
 
 TrackGeometry = GeometryTrack
 
+class TrackCenterline(BaseModel):
+    id: str
+    entity_type: str = "track_centerline"
+    track_section_id: str
+    path_points: List[Coordinate3D] = Field(..., min_length=2)
+    elevation_profile: List[float] = []
+    curvature_radius_m: Optional[float] = None
+    cant_mm: float = 0.0
+    gradient_permille: float = 0.0
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+
+class Crossover(BaseModel):
+    id: str
+    entity_type: str = "crossover"
+    name: str
+    station_code: str
+    from_track_id: str
+    to_track_id: str
+    turnout_ratio: str = "1-in-12"
+    points_number: str = "101A/B"
+    speed_limit_kmh: float = 30.0
+    switch_position: str = "NORMAL"  # "NORMAL", "REVERSE"
+    chainage_km: float = Field(..., ge=0.0)
+    start_coord: Coordinate3D
+    end_coord: Coordinate3D
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+
+class InterlockingZone(BaseModel):
+    id: str
+    entity_type: str = "interlocking"
+    station_code: str
+    name: str
+    interlocking_type: str = "Electronic Interlocking (EI)"
+    controlled_signals: List[str] = []
+    controlled_points: List[str] = []
+    controlled_circuits: List[str] = []
+    status: str = "Active"  # "Active", "Disconnected", "Degraded"
+    chainage_start_km: float = Field(..., ge=0.0)
+    chainage_end_km: float = Field(..., gt=0.0)
+    boundary_coords: List[Coordinate3D] = []
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+
 class SignalMarker(BaseModel):
     id: str
     entity_type: str = "signal"
     block_id: str
     referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
     chainage_km: float = Field(..., ge=0.0)
     coordinates: Optional[Coordinate3D] = None
     position: Coordinate3D
-    aspect: str = "clear"  # "clear", "caution", "danger"
+    aspect: str = "clear"  # "clear", "caution", "danger", "stop"
     direction: str = "UP"  # "UP", "DOWN"
+    signal_type: str = "automatic"  # "home", "starter", "advanced_starter", "distant", "automatic"
+    interlocking_zone_id: Optional[str] = None
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
     geometry_source: str = "synthetic"
     geometry_schema_version: str = "1.0.0"
     schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
 
     @model_validator(mode="after")
     def sync_signal(self) -> "SignalMarker":
@@ -288,19 +414,55 @@ class SignalMarker(BaseModel):
             self.coordinates = self.position
         return self
 
+class TrackCircuit(BaseModel):
+    id: str
+    entity_type: str = "track_circuit"
+    track_id: str
+    block_id: str
+    chainage_start_km: float = Field(..., ge=0.0)
+    chainage_end_km: float = Field(..., gt=0.0)
+    is_occupied: bool = False
+    circuit_type: str = "Axle Counter (BPAC)"
+    interlocking_zone_id: Optional[str] = None
+    coordinates: Optional[Coordinate3D] = None
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+
 class OHEMast(BaseModel):
     id: str
     entity_type: str = "ohe_mast"
     block_id: str
     referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
     coordinates: Optional[Coordinate3D] = None
     position: Coordinate3D
     chainage_km: Optional[float] = None
     catenary_height_m: float = 5.5
+    contact_wire_height_m: float = 5.5
     is_isolated: bool = False
+    elementary_section_id: Optional[str] = None
+    source_system: str = "SPARKRAIL_GEO"
+    source_record_id: str = ""
     geometry_source: str = "synthetic"
     geometry_schema_version: str = "1.0.0"
     schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
 
     @model_validator(mode="after")
     def sync_mast(self) -> "OHEMast":
@@ -309,6 +471,68 @@ class OHEMast(BaseModel):
         if self.coordinates is None:
             self.coordinates = self.position
         return self
+
+class PossessionEntity(BaseModel):
+    id: str
+    entity_type: str = "possession"
+    job_id: str
+    block_id: str
+    department: str
+    status: str = "PLANNED"  # "PLANNED", "SANCTIONED", "GRANTED", "IN_PROGRESS", "COMPLETED"
+    start_time_hours: float
+    end_time_hours: float
+    chainage_start_km: float = Field(..., ge=0.0)
+    chainage_end_km: float = Field(..., gt=0.0)
+    affected_tracks: List[str] = []
+    affected_ohe_sections: List[str] = []
+    affected_signals: List[str] = []
+    is_locked: bool = False  # True for GRANTED and IN_PROGRESS
+    is_shadow: bool = False
+    shadow_bundle_id: Optional[str] = None
+    required_machines: List[str] = []
+    crew_count: int = 1
+    safety_certified: bool = True
+    approval_status: str = "PENDING_CTPC_REVIEW"
+    source_system: str = "SPARKRAIL_ADVISORY"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
+
+class SpeedRestrictionZone(BaseModel):
+    id: str
+    entity_type: str = "speed_restriction"
+    track_id: str
+    block_id: str
+    chainage_start_km: float = Field(..., ge=0.0)
+    chainage_end_km: float = Field(..., gt=0.0)
+    restricted_speed_kmh: float
+    normal_speed_kmh: float = 130.0
+    reason: str = "Track renewal work"
+    is_permanent: bool = False
+    start_coord: Optional[Coordinate3D] = None
+    end_coord: Optional[Coordinate3D] = None
+    source_system: str = "SPARKRAIL_PWAY"
+    source_record_id: str = ""
+    geometry_source: str = "synthetic"
+    schema_version: str = "1.0.0"
+    geometry_schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
 
 class ConflictType(str, Enum):
     TRAIN_BLOCK = "train_vs_block"
@@ -326,6 +550,7 @@ class NetworkConflict(BaseModel):
     severity: str  # "CRITICAL", "MAJOR", "WARNING", "INFO"
     block_id: str
     referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
     title: str
     description: str
     affected_jobs: List[str] = []
@@ -334,9 +559,18 @@ class NetworkConflict(BaseModel):
     suggested_resolution: str = ""
     coordinates: Optional[Coordinate3D] = None
     position: Optional[Coordinate3D] = None
+    blocks_approval: bool = False
+    source_system: str = "SPARKRAIL_SAFETY"
+    source_record_id: str = ""
     geometry_source: str = "synthetic"
     geometry_schema_version: str = "1.0.0"
     schema_version: str = "1.0.0"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    source_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    ingestion_timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    data_freshness_seconds: float = 0.0
+    confidence: float = 1.0
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
 
     @model_validator(mode="after")
     def sync_conflict(self) -> "NetworkConflict":
@@ -346,6 +580,8 @@ class NetworkConflict(BaseModel):
             self.coordinates = self.position
         elif self.position is None and self.coordinates is not None:
             self.position = self.coordinates
+        if self.severity in ("CRITICAL", "MAJOR"):
+            self.blocks_approval = True
         return self
 
 ConflictItem = NetworkConflict
@@ -467,6 +703,8 @@ class CoordinateSystemContract(BaseModel):
     handedness: str = "right-handed"
     origin_description: str = "Synthetic local origin for the bounded railway division"
     geometry_source: str = "synthetic"
+    transform_version: str = "1.0.0"
+    is_synthetic: bool = True
 
 class NetworkGeometryResponse(BaseModel):
     geometry_schema_version: str = "1.0.0"
@@ -487,6 +725,19 @@ class NetworkGeometryResponse(BaseModel):
     junctions: List[JunctionNode] = []
     assets: List[AssetHealthRecord] = []
     disconnected_components: List[List[str]] = []
+
+    # Phase 2 Canonical 3D Railway Entities
+    track_sections: List[TrackSection] = []
+    track_centerlines: List[TrackCenterline] = []
+    crossovers: List[Crossover] = []
+    interlockings: List[InterlockingZone] = []
+    track_circuits: List[TrackCircuit] = []
+    elementary_sections: List[ElementarySection] = []
+    feeding_posts: List[FeedingPost] = []
+    isolator_switches: List[IsolatorSwitch] = []
+    possessions: List[PossessionEntity] = []
+    shadow_bundles: List[ShadowPossessionBundle] = []
+    speed_restrictions: List[SpeedRestrictionZone] = []
 
 class PlanningCapabilitiesResponse(BaseModel):
     geometry_schema_version: str = "1.0.0"
@@ -648,12 +899,19 @@ class CanonicalEntity(BaseModel):
     def auto_populate_id_and_lineage(cls, data: Any) -> Any:
         if isinstance(data, dict):
             # Sync source_timestamp and event_timestamp
+            now_iso = datetime.now(timezone.utc).isoformat()
             st = data.get("source_timestamp")
             et = data.get("event_timestamp")
             if st and not et:
                 data["event_timestamp"] = st
             elif et and not st:
                 data["source_timestamp"] = et
+            elif not st and not et:
+                data["source_timestamp"] = now_iso
+                data["event_timestamp"] = now_iso
+
+            if not data.get("ingestion_timestamp"):
+                data["ingestion_timestamp"] = now_iso
 
             # Sync data_freshness and data_freshness_seconds
             df = data.get("data_freshness")
@@ -662,6 +920,9 @@ class CanonicalEntity(BaseModel):
                 data["data_freshness_seconds"] = df
             elif dfs is not None and df is None:
                 data["data_freshness"] = dfs
+            elif df is None and dfs is None:
+                data["data_freshness_seconds"] = 0.0
+                data["data_freshness"] = 0.0
 
             if "id" not in data or not data["id"]:
                 for key in (
@@ -715,14 +976,27 @@ class TrackSection(CanonicalEntity):
     block_id: Optional[str] = None
     division_code: str = "PRYJ"
     line_id: str = "MAIN_LINE"
-    start_station: str
-    end_station: str
+    start_station: Optional[str] = "SFG"
+    end_station: Optional[str] = "MZP"
     chainage_start_km: float = Field(..., ge=0.0)
     chainage_end_km: float = Field(..., gt=0.0)
     speed_limit_kmh: float = Field(default=110.0, gt=0.0)
     signaling_type: str = "Automatic"
     electrification_type: str = "25kV AC"
     elementary_section_id: Optional[str] = None
+    # 3D spatial properties
+    start_coord: Optional[Coordinate3D] = None
+    end_coord: Optional[Coordinate3D] = None
+    track_direction: str = "UP"  # "UP", "DOWN", "BIDIRECTIONAL"
+    length_km: Optional[float] = None
+    line_name: str = "Mainline"
+    electrification_status: str = "25kV AC"
+    gauge: str = "Broad Gauge 1676mm"
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    geometry_schema_version: str = "1.0.0"
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+    referenced_block_id: Optional[str] = None
+    referenced_track_section_id: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -767,6 +1041,30 @@ class Station(CanonicalEntity):
     station_type: str = "station"
     interlocking_type: str = "Electronic"
 
+class Platform(CanonicalEntity):
+    platform_id: str
+    station_code: str
+    platform_number: int = Field(..., ge=1)
+    length_meters: float = Field(default=600.0, gt=0.0)
+    track_section_id: Optional[str] = None
+    is_accessible: bool = True
+
+class Corridor(CanonicalEntity):
+    corridor_id: str
+    name: str
+    division_code: str = "PRYJ"
+    start_station_code: str
+    end_station_code: str
+    total_length_km: float = Field(..., gt=0.0)
+    electrified: bool = True
+    lines_count: int = Field(default=2, ge=1)
+
+# Canonical domain aliases
+Junction = JunctionNode
+Signal = SignalMarker
+MaintenanceAsset = AssetHealthRecord
+Conflict = ConflictItem
+
 class Interlocking(CanonicalEntity):
     interlocking_id: Optional[str] = None
     station_code: str
@@ -799,38 +1097,128 @@ class TrackSegment(CanonicalEntity):
 
 class ElementarySection(CanonicalEntity):
     """Canonical 25kV OHE power supply zone."""
-    section_id: str
-    name: str
+    id: Optional[str] = None
+    section_id: Optional[str] = None
+    section_code: Optional[str] = None
+    name: str = "OHE Sector"
     feeding_post_id: str
     catenary_voltage_kv: float = Field(default=25.0, gt=0.0)
+    nominal_voltage_kv: Optional[float] = 25.0
     track_section_ids: List[str] = Field(default_factory=list)
     block_ids: List[str] = Field(default_factory=list)  # Legacy alias
+    associated_tracks: List[str] = Field(default_factory=list)
+    associated_masts: List[str] = Field(default_factory=list)
     isolator_switch_ids: List[str] = Field(default_factory=list)
     is_energized: bool = True
+    chainage_start_km: float = Field(default=0.0, ge=0.0)
+    chainage_end_km: float = Field(default=10.0, gt=0.0)
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    geometry_schema_version: str = "1.0.0"
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_elementary_ids(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            sec_id = data.get("section_id") or data.get("id")
+            if sec_id:
+                data["section_id"] = sec_id
+                data["id"] = sec_id
+            tracks = data.get("track_section_ids") or data.get("associated_tracks") or data.get("block_ids")
+            if tracks:
+                data["track_section_ids"] = list(tracks)
+                data["associated_tracks"] = list(tracks)
+                data["block_ids"] = list(tracks)
+        return data
 
     @model_validator(mode="after")
     def sync_track_sections(self) -> "ElementarySection":
+        if not self.section_id and self.id:
+            self.section_id = self.id
+        if not self.id and self.section_id:
+            self.id = self.section_id
         if not self.track_section_ids and self.block_ids:
             self.track_section_ids = list(self.block_ids)
         elif not self.block_ids and self.track_section_ids:
             self.block_ids = list(self.track_section_ids)
+        if not self.associated_tracks and self.track_section_ids:
+            self.associated_tracks = list(self.track_section_ids)
         return self
 
 ElementaryElectricalSection = ElementarySection
 
 class FeedingPost(CanonicalEntity):
-    post_id: str
-    name: str
+    id: Optional[str] = None
+    post_id: Optional[str] = None
+    name: str = "Feeding Post"
+    substation_name: Optional[str] = None
     chainage_km: float = Field(..., ge=0.0)
     capacity_mva: float = Field(default=30.0, gt=0.0)
     feeding_sections: List[str] = Field(default_factory=list)
+    coordinates: Optional[Coordinate3D] = None
+    is_active: bool = True
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    geometry_schema_version: str = "1.0.0"
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_post_id(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            p_id = data.get("post_id") or data.get("id")
+            if p_id:
+                data["post_id"] = p_id
+                data["id"] = p_id
+        return data
+
+    @model_validator(mode="after")
+    def sync_post(self) -> "FeedingPost":
+        if not self.post_id and self.id:
+            self.post_id = self.id
+        if not self.id and self.post_id:
+            self.id = self.post_id
+        return self
 
 class IsolatorSwitch(CanonicalEntity):
-    switch_id: str
+    id: Optional[str] = None
+    switch_id: Optional[str] = None
+    switch_code: Optional[str] = None
     elementary_section_id: str
-    location_chainage_km: float = Field(..., ge=0.0)
+    location_chainage_km: Optional[float] = None
+    chainage_km: Optional[float] = None
     state: str = "CLOSED"
     is_motorized: bool = True
+    switch_type: str = "Motorized"
+    coordinates: Optional[Coordinate3D] = None
+    coordinate_reference_system: str = "LOCAL_CORRIDOR"
+    geometry_schema_version: str = "1.0.0"
+    validation_status: ValidationStatus = ValidationStatus.SYNTHETIC
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_switch_ids(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            s_id = data.get("switch_id") or data.get("id")
+            if s_id:
+                data["switch_id"] = s_id
+                data["id"] = s_id
+            km = data.get("location_chainage_km") if data.get("location_chainage_km") is not None else data.get("chainage_km")
+            if km is not None:
+                data["location_chainage_km"] = km
+                data["chainage_km"] = km
+        return data
+
+    @model_validator(mode="after")
+    def sync_switch(self) -> "IsolatorSwitch":
+        if not self.switch_id and self.id:
+            self.switch_id = self.id
+        if not self.id and self.switch_id:
+            self.id = self.switch_id
+        if self.location_chainage_km is None and self.chainage_km is not None:
+            self.location_chainage_km = self.chainage_km
+        if self.chainage_km is None and self.location_chainage_km is not None:
+            self.chainage_km = self.location_chainage_km
+        return self
 
 class SignalAsset(CanonicalEntity):
     signal_id: str
@@ -898,6 +1286,51 @@ class ShadowPossessionBundle(CanonicalEntity):
     compatibility_rationale: str = ""
     spatial_extent_km: Optional[Tuple[float, float]] = None
     total_tci_benefit: float = Field(default=0.0, ge=0.0)
+    total_duration_hours: Optional[float] = None
+    elementary_section_id: Optional[str] = None
+    tci_benefit_score: Optional[float] = None
+    bundling_rationale: Optional[str] = None
+    corridor_closure_saving_hours: Optional[float] = None
+    primary_possession_id: Optional[str] = None
+    shadow_possession_ids: Optional[List[str]] = None
+    time_window_start: Optional[float] = None
+    time_window_end: Optional[float] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_bundle_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            b_id = data.get("bundle_id") or data.get("id")
+            if b_id:
+                data["bundle_id"] = b_id
+                data.setdefault("id", b_id)
+            p_id = data.get("primary_demand_id") or data.get("primary_possession_id") or data.get("primary_job_id")
+            if p_id:
+                data["primary_demand_id"] = p_id
+                data.setdefault("primary_possession_id", p_id)
+            sec_ids = data.get("secondary_demand_ids") or data.get("shadow_possession_ids") or data.get("secondary_job_ids")
+            if sec_ids is not None:
+                data["secondary_demand_ids"] = sec_ids
+                data.setdefault("shadow_possession_ids", sec_ids)
+            sec = data.get("track_section_id") or data.get("block_id") or data.get("referenced_block_id")
+            if sec:
+                data["track_section_id"] = sec
+                data.setdefault("block_id", sec)
+            w_start = data.get("window_start")
+            if w_start is None:
+                w_start = data.get("time_window_start", 0.0)
+            data["window_start"] = w_start
+            data.setdefault("time_window_start", w_start)
+            w_end = data.get("window_end")
+            if w_end is None:
+                w_end = data.get("time_window_end", 4.0)
+            data["window_end"] = w_end
+            data.setdefault("time_window_end", w_end)
+            if "corridor_closure_saving_hours" in data and "total_tci_benefit" not in data:
+                data["total_tci_benefit"] = float(data["corridor_closure_saving_hours"])
+            if "bundling_rationale" in data and "compatibility_rationale" not in data:
+                data["compatibility_rationale"] = data["bundling_rationale"]
+        return data
 
     @model_validator(mode="after")
     def sync_bundle(self) -> "ShadowPossessionBundle":
@@ -905,6 +1338,14 @@ class ShadowPossessionBundle(CanonicalEntity):
             self.block_id = self.track_section_id
         if not self.track_section_id and self.block_id:
             self.track_section_id = self.block_id
+        if self.primary_possession_id is None:
+            self.primary_possession_id = self.primary_demand_id
+        if self.shadow_possession_ids is None:
+            self.shadow_possession_ids = self.secondary_demand_ids
+        if self.time_window_start is None:
+            self.time_window_start = self.window_start
+        if self.time_window_end is None:
+            self.time_window_end = self.window_end
         if self.window_start >= self.window_end:
             raise ValueError("window_start must be strictly less than window_end")
         return self
@@ -935,6 +1376,23 @@ class Possession(CanonicalEntity):
     def transition_to(self, new_status: PossessionStatus) -> None:
         validate_possession_transition(self.status, new_status)
         self.status = new_status
+
+    def modify_window(self, new_start_time: float, new_end_time: float) -> None:
+        """
+        Modifies the temporal window of the possession.
+        Strict Safety Rule: GRANTED and IN_PROGRESS possessions are immutable.
+        """
+        if self.status in (PossessionStatus.GRANTED, PossessionStatus.IN_PROGRESS):
+            raise ValueError(
+                f"Cannot modify temporal window for possession '{self.possession_id}': "
+                f"Possessions in {self.status.value} status are strictly immutable."
+            )
+        if new_start_time >= new_end_time:
+            raise ValueError("new_start_time must be strictly less than new_end_time")
+        if new_start_time < 0.0:
+            raise ValueError("new_start_time must be non-negative")
+        self.start_time = new_start_time
+        self.end_time = new_end_time
 
 class TrainPriorityClass(CanonicalEntity):
     priority: TrainPriority

@@ -10,13 +10,15 @@ import {
   AlertTriangle,
   ChevronDown,
   ShieldAlert,
-  FileCheck
+  FileCheck,
+  Download
 } from 'lucide-react';
 import { useAppContext } from '../../context/useAppContext';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { mockEvents } from '../../api/mockData';
 import { AdvisoryProposalDrawer } from '../shared/AdvisoryProposalDrawer';
+import { ExportModal } from '../shared/ExportModal';
 
 interface GlobalHeaderProps {
   onToggleMobileNav: () => void;
@@ -37,6 +39,7 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAdvisoryDrawer, setShowAdvisoryDrawer] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleManualRefresh = async () => {
@@ -152,6 +155,16 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
           >
             <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>BDMS Proposals</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowExportModal(true)}
+            className="text-xs border-neutral-300 hover:border-accent-500 hover:text-accent-700 flex items-center gap-1.5 py-1 px-2.5"
+            title="Export Statutory Advisory Schedule Package"
+          >
+            <Download className="w-3.5 h-3.5 text-accent-600" />
+            <span>Export Docket</span>
           </Button>
         </div>
 
@@ -298,6 +311,12 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
       <AdvisoryProposalDrawer
         isOpen={showAdvisoryDrawer}
         onClose={() => setShowAdvisoryDrawer(false)}
+      />
+
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        divisionCode={division}
       />
     </header>
   );

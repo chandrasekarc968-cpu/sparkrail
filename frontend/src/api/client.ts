@@ -249,7 +249,12 @@ export const ApiClient = {
       await new Promise((r) => setTimeout(r, 180));
       return validateNetworkGeometryContract(mockNetworkGeometry, true);
     }
-    const res = await fetchWithRetry(`${getApiBaseUrl()}/network/geometry`, { signal });
+    let res: Response;
+    try {
+      res = await fetchWithRetry(`${getApiBaseUrl()}/network/geometry/v1`, { signal });
+    } catch {
+      res = await fetchWithRetry(`${getApiBaseUrl()}/network/geometry`, { signal });
+    }
     const data = await res.json();
     try {
       return validateNetworkGeometryContract(data, false);
@@ -259,6 +264,29 @@ export const ApiClient = {
       }
       throw err;
     }
+  },
+
+  async getNetworkTopology(signal?: AbortSignal): Promise<unknown> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 120));
+      return { division: "PRYJ", corridor: "Subedarganj - Mirzapur", directed: true, schema_version: "1.0.0" };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/network/topology`, { signal });
+    return res.json();
+  },
+
+  async queryNetworkTopology(query: { query_type: string; [key: string]: unknown }, signal?: AbortSignal): Promise<unknown> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 150));
+      return { status: "success", query_type: query.query_type, result: [] };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/network/topology/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query),
+      signal
+    });
+    return res.json();
   },
 
   async getPlanningCapabilities(signal?: AbortSignal): Promise<PlanningCapabilitiesResponse> {
@@ -437,5 +465,65 @@ export const ApiClient = {
       throw new ApiError(502, "Invalid audit trail response from backend", data);
     }
     return data;
+  },
+
+  async getV1Health(signal?: AbortSignal): Promise<Record<string, unknown>> {
+    if (this.isDemoMode()) {
+      return {
+        status: "ok",
+        plugin_version: "1.0.0",
+        mode: "synthetic",
+        is_synthetic: true,
+        is_shadow: false,
+        is_live: false,
+        geometry_schema_version: "1.0.0",
+        solver_available: true,
+        solver_mode: "CP-SAT / ALNS Deterministic Fallback",
+        statutory_safety_rules: {
+          advisory_only: true,
+          zero_physical_actuation: true,
+          active_possession_immutability: true,
+          four_role_approval_enforced: true
+        }
+      };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/health`, { signal });
+    return res.json();
+  },
+
+  async exportAdvisorySchedule(
+    format: 'json' | 'csv' | 'html' | 'pdf' = 'json',
+    runId?: string,
+    signal?: AbortSignal
+  ): Promise<string> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 150));
+      if (format === 'json') {
+        return JSON.stringify({
+          advisory_notice: "ADVISORY ONLY: HUMAN APPROVAL REQUIRED",
+          environment_status: "SYNTHETIC DEMO MODE",
+          division_code: "PRYJ",
+          corridor: "Subedarganj (SFG) - Mirzapur (MZP)",
+          optimization_run_id: runId || "RUN-SYNTH-DEMO-01",
+          primary_possession: {
+            possession_id: "POSS-PRYJ-DEMO",
+            track_section_id: "B1",
+            scheduled_start: 0.0,
+            scheduled_end: 4.0,
+            status: "PROPOSED"
+          },
+          statutory_approvals: { CTPC: "PENDING", SR_DOM: "PENDING", SECTION_CONTROLLER: "PENDING", STATION_MASTER: "PENDING" },
+          limitations: "SparkRail is advisory only. Physical railway commands strictly prohibited."
+        }, null, 2);
+      } else if (format === 'csv') {
+        return `# ADVISORY ONLY: HUMAN APPROVAL REQUIRED\n# ENVIRONMENT: SYNTHETIC DEMO MODE\nPossession_ID,Track_Section,Start_Hr,End_Hr,Status\nPOSS-PRYJ-DEMO,B1,0.0,4.0,PROPOSED`;
+      } else {
+        return `<!DOCTYPE html><html><body><h1>ADVISORY ONLY: HUMAN APPROVAL REQUIRED</h1><p>Synthetic Demo Corridor Advisory Docket</p></body></html>`;
+      }
+    }
+    const params = new URLSearchParams({ format });
+    if (runId) params.append('run_id', runId);
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/advisory/export?${params.toString()}`, { signal });
+    return res.text();
   }
 };

@@ -64,13 +64,13 @@ describe('Geometry Schema Contract (Frontend)', () => {
         ...mockNetworkGeometry,
         coordinate_system: {
           ...CANONICAL_COORDINATE_SYSTEM,
-          crs: 'EPSG:4326' // GPS coordinates rejected! Must be LOCAL_CORRIDOR
+          crs: 'EPSG:9999' // Unknown CRS rejected
         }
       } as unknown as NetworkGeometryResponse;
 
       expect(() => {
         validateNetworkGeometryContract(invalidCrsGeo, false);
-      }).toThrowError(/LOCAL_CORRIDOR/);
+      }).toThrowError(/coordinate_system\.crs/);
 
       const invalidUnitsGeo = {
         ...mockNetworkGeometry,

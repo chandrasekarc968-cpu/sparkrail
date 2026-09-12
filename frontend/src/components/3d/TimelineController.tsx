@@ -13,6 +13,8 @@ interface TimelineControllerProps {
   maxHorizonHours: number;
   activePossessionsCount: number;
   activeTrainsCount: number;
+  isStale?: boolean;
+  staleSeconds?: number;
 }
 
 export const TimelineController: React.FC<TimelineControllerProps> = ({
@@ -26,7 +28,9 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
   onWindowChange,
   maxHorizonHours,
   activePossessionsCount,
-  activeTrainsCount
+  activeTrainsCount,
+  isStale = false,
+  staleSeconds = 0
 }) => {
   // Format hours to Day X, HH:MM
   const formatTime = (hours: number): string => {
@@ -48,7 +52,7 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
         backgroundColor: 'rgba(255, 255, 255, 0.96)',
         borderRadius: '8px',
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
-        border: '1px solid #cbd5e1',
+        border: isStale ? '1px solid #f87171' : '1px solid #cbd5e1',
         padding: '12px 18px',
         display: 'flex',
         flexDirection: 'column',
@@ -58,6 +62,28 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
       role="region"
       aria-label="Operations Timeline Controller"
     >
+      {/* Stale Telemetry Warning Banner (Phase 7) */}
+      {isStale && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#fee2e2',
+            border: '1px solid #fca5a5',
+            color: '#991b1b',
+            borderRadius: '4px',
+            padding: '4px 8px',
+            fontSize: '11px',
+            fontWeight: 700
+          }}
+          role="status"
+        >
+          <span>⚠️ STALE TELEMETRY: Data age is {staleSeconds}s (&gt;300s threshold). Train and possession positions are approximate.</span>
+          <span style={{ fontSize: '9px', backgroundColor: '#dc2626', color: '#fff', padding: '1px 5px', borderRadius: '3px' }}>UNVALIDATED FIX</span>
+        </div>
+      )}
+
       {/* Top Bar: Playback Controls + Current Time Badge + Presets */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -93,9 +119,9 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
             ⏮ Reset
           </button>
 
-          {/* Playback Speed */}
+          {/* Playback Speed: 1x, 5x, 15x, 60x (Phase 7 requirement) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', backgroundColor: '#f1f5f9', padding: '2px', borderRadius: '4px' }}>
-            {[0.5, 1, 2, 5].map((spd) => (
+            {[1, 5, 15, 60].map((spd) => (
               <button
                 key={spd}
                 onClick={() => onSpeedChange(spd)}

@@ -347,6 +347,12 @@ def test_determinism_contract(api):
         c.pop("runtime_seconds", None)
         if "kpi_metrics" in c and isinstance(c["kpi_metrics"], dict):
             c["kpi_metrics"].pop("solver_runtime_seconds", None)
+        if "conflicts" in c and isinstance(c["conflicts"], list):
+            for conf in c["conflicts"]:
+                if isinstance(conf, dict):
+                    conf.pop("source_timestamp", None)
+                    conf.pop("ingestion_timestamp", None)
+                    conf.pop("data_freshness_seconds", None)
         return c
 
     def normalize_eval(e):

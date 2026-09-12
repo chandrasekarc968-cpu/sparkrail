@@ -7,6 +7,8 @@ interface MaintenanceBlockVolumeProps {
   track: TrackGeometry;
   jobId: string;
   department: string;
+  status?: string;
+  isLocked?: boolean;
   isShadow?: boolean;
   shadowJobs?: string[];
   isSelected?: boolean;
@@ -14,10 +16,16 @@ interface MaintenanceBlockVolumeProps {
   showLabel?: boolean;
 }
 
-const DEPT_COLORS: Record<string, string> = {
-  Engineering: '#f59e0b', // Amber
-  OHE: '#06b6d4',         // Cyan
-  'S&T': '#8b5cf6'        // Purple
+// Canonical possession status colors
+const POSSESSION_STATUS_COLORS: Record<string, string> = {
+  REQUESTED: '#f59e0b',        // Amber planned
+  PLANNED: '#f59e0b',          // Amber planned
+  SANCTIONED: '#3b82f6',       // Blue sanctioned
+  GRANTED: '#8b5cf6',          // Purple granted (immutable)
+  IN_PROGRESS: '#ef4444',      // Red in-progress (active)
+  COMPLETED: '#6b7280',        // Muted completed
+  active_maintenance: '#ef4444',
+  fixed_block: '#8b5cf6'
 };
 
 const chassisGeometry = new THREE.BoxGeometry(8, 1.6, 2.6);
@@ -32,6 +40,8 @@ export const MaintenanceBlockVolume: React.FC<MaintenanceBlockVolumeProps> = Rea
   track,
   jobId,
   department,
+  status = 'REQUESTED',
+  isLocked = false,
   isShadow = false,
   shadowJobs = [],
   isSelected = false,
@@ -52,24 +62,30 @@ export const MaintenanceBlockVolume: React.FC<MaintenanceBlockVolumeProps> = Rea
     return new THREE.Vector3(p.x, p.y + 6.0, p.z);
   }, [points]);
 
-  const color = isShadow ? '#10b981' : (DEPT_COLORS[department] || '#f59e0b');
+  const normalizedStatus = String(status).toUpperCase();
+  const isImmutableLocked = isLocked || normalizedStatus === 'GRANTED' || normalizedStatus === 'IN_PROGRESS' || normalizedStatus === 'FIXED_BLOCK';
+
+  const baseColor = isShadow
+    ? '#10b981'
+    : (POSSESSION_STATUS_COLORS[normalizedStatus] || POSSESSION_STATUS_COLORS[status] || '#f59e0b');
+
   const shouldRenderLabel = isSelected || showLabel;
 
   return (
     <group onClick={(e) => { e.stopPropagation(); onSelect?.(); }}>
-      {/* 1. Volumetric Possession Cage */}
+      {/* 1. Volumetric Possession Cage Envelope */}
       <mesh position={[0, 1.2, 0]}>
         <tubeGeometry args={[curve, 20, 3.5, 8, false]} />
         <meshStandardMaterial
-          color={color}
+          color={baseColor}
           transparent
-          opacity={isSelected ? 0.45 : 0.25}
+          opacity={isSelected ? 0.55 : 0.3}
           roughness={0.2}
-          wireframe
+          wireframe={!isImmutableLocked}
         />
       </mesh>
 
-      {/* 2. Heavy Maintenance Machine Model (BCM / Tower Wagon) at Midpoint */}
+      {/* 2. Heavy Maintenance Machine Model (BCM / Track Tamper / Tower Wagon) */}
       <group position={[midPoint.x, midPoint.y - 4.5, midPoint.z]}>
         {/* Machine Chassis */}
         <mesh position={[0, 0.8, 0]}>
@@ -88,30 +104,35 @@ export const MaintenanceBlockVolume: React.FC<MaintenanceBlockVolumeProps> = Rea
         </mesh>
       </group>
 
-      {/* 3. Operational Work Zone Tag */}
+      {/* 3. Operational Possession Tag with Immutable Lock Indicator */}
       {shouldRenderLabel && (
         <Html position={[midPoint.x, midPoint.y, midPoint.z]} center distanceFactor={150}>
           <div
             style={{
-              padding: '3px 8px',
+              padding: '4px 9px',
               backgroundColor: '#0f172a',
               color: '#ffffff',
               borderRadius: '4px',
-              border: `2px solid ${color}`,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-              fontSize: '9.5px',
+              border: isImmutableLocked ? '2px solid #8b5cf6' : `2px solid ${baseColor}`,
+              boxShadow: isImmutableLocked ? '0 3px 12px rgba(139, 92, 246, 0.4)' : '0 2px 8px rgba(0,0,0,0.25)',
+              fontSize: '10px',
               fontFamily: 'monospace',
               whiteSpace: 'nowrap',
               cursor: 'pointer',
               textAlign: 'center',
               userSelect: 'none'
             }}
-            title={`Job ${jobId} (${department}) - ${isShadow ? 'Consolidated Shadow Possession' : 'Single Department Block'}`}
+            title={`Possession ${jobId} (${department}) [${normalizedStatus}]${isImmutableLocked ? ' - IMMUTABLE ACTIVE POSSESSION (LOCKED)' : ''}`}
+            aria-label={`Possession ${jobId}, Department ${department}, Status ${normalizedStatus}${isImmutableLocked ? ', Locked and Immutable' : ''}`}
           >
-            <div style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '6px', height: '6px', backgroundColor: color, borderRadius: '50%' }} />
+            <div style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+              {isImmutableLocked && <span title="Safety Boundary #6: Granted and in-progress possessions are immutable">🔒</span>}
+              <span style={{ width: '6px', height: '6px', backgroundColor: baseColor, borderRadius: '50%' }} />
               <span>{jobId}</span>
               <span style={{ color: '#94a3b8', fontSize: '8.5px' }}>[{department}]</span>
+            </div>
+            <div style={{ fontSize: '8px', color: isImmutableLocked ? '#c084fc' : '#38bdf8', marginTop: '2px', fontWeight: 700 }}>
+              {isImmutableLocked ? '🔒 IMMUTABLE ACTIVE' : normalizedStatus}
             </div>
             {isShadow && shadowJobs.length > 0 && (
               <div style={{ fontSize: '8px', color: '#34d399', marginTop: '1px' }}>
@@ -130,6 +151,8 @@ export const MaintenanceBlockVolume: React.FC<MaintenanceBlockVolumeProps> = Rea
     prev.isSelected === next.isSelected &&
     prev.showLabel === next.showLabel &&
     prev.isShadow === next.isShadow &&
-    prev.department === next.department
+    prev.department === next.department &&
+    prev.status === next.status &&
+    prev.isLocked === next.isLocked
   );
 });

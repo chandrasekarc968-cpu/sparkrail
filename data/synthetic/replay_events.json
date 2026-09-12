@@ -1,0 +1,29 @@
+[
+  {
+    "id": "EVT-1001",
+    "timestamp": "2026-09-12T14:15:23Z",
+    "level": "info",
+    "message": "PySCIPOpt MILP solver optimized 24h horizon with 0.0% gap.",
+    "source": "MILP Optimizer",
+    "division": "PRYJ",
+    "action_required": false
+  },
+  {
+    "id": "EVT-1002",
+    "timestamp": "2026-09-12T14:15:23Z",
+    "level": "warning",
+    "message": "Ghost train reservation enforced on Block B2 to preserve express train paths.",
+    "source": "Conflict Engine",
+    "division": "PRYJ",
+    "action_required": false
+  },
+  {
+    "id": "EVT-1003",
+    "timestamp": "2026-09-12T14:15:23Z",
+    "level": "info",
+    "message": "Multi-department shadow block consolidated across Engineering and OHE on section B4.",
+    "source": "Block Planner",
+    "division": "PRYJ",
+    "action_required": false
+  }
+]

@@ -1,0 +1,6175 @@
+{
+  "geometry_schema_version": "1.0.0",
+  "coordinate_system": {
+    "name": "LOCAL_CORRIDOR",
+    "crs": "LOCAL_CORRIDOR",
+    "units": "meters",
+    "axis_order": [
+      "x",
+      "y",
+      "z"
+    ],
+    "handedness": "right-handed",
+    "origin_description": "Synthetic local origin for the bounded railway division",
+    "geometry_source": "synthetic",
+    "transform_version": "1.0.0",
+    "is_synthetic": true
+  },
+  "division": "Prayagraj (PRYJ)",
+  "line_name": "Subedarganj - Mirzapur Mainline Corridor",
+  "total_length_km": 80.0,
+  "is_synthetic": true,
+  "geometry_source": "synthetic",
+  "coordinate_convention": "X: corridor longitudinal (m), Y: elevation (m), Z: lateral offset (m)",
+  "schema_version": "1.0.0",
+  "nodes": [
+    {
+      "id": "NODE_SFG",
+      "entity_type": "station",
+      "coordinates": {
+        "x": -400.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "position": {
+        "x": -400.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "chainage_km": 0.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Subedarganj",
+      "code": "SFG",
+      "node_type": "terminal",
+      "platforms": 2,
+      "connected_blocks": [
+        "B1"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-SFG",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_PRYJ",
+      "entity_type": "station",
+      "coordinates": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "position": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "chainage_km": 10.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Prayagraj Jn",
+      "code": "PRYJ",
+      "node_type": "junction",
+      "platforms": 4,
+      "connected_blocks": [
+        "B1",
+        "B2"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-PRYJ",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_NYN",
+      "entity_type": "station",
+      "coordinates": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "position": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "chainage_km": 20.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Naini Jn",
+      "code": "NYN",
+      "node_type": "junction",
+      "platforms": 4,
+      "connected_blocks": [
+        "B2",
+        "B3"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-NYN",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_KCN",
+      "entity_type": "station",
+      "coordinates": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 3.121
+      },
+      "position": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 3.121
+      },
+      "chainage_km": 30.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Karchana",
+      "code": "KCN",
+      "node_type": "station",
+      "platforms": 2,
+      "connected_blocks": [
+        "B3",
+        "B4"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-KCN",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_BEP",
+      "entity_type": "station",
+      "coordinates": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -11.314
+      },
+      "position": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -11.314
+      },
+      "chainage_km": 40.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Bheepur",
+      "code": "BEP",
+      "node_type": "station",
+      "platforms": 2,
+      "connected_blocks": [
+        "B4",
+        "B5"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-BEP",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_MJA",
+      "entity_type": "station",
+      "coordinates": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -15.693
+      },
+      "position": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -15.693
+      },
+      "chainage_km": 50.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Meja Road",
+      "code": "MJA",
+      "node_type": "station",
+      "platforms": 2,
+      "connected_blocks": [
+        "B5",
+        "B6"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-MJA",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172477+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_UND",
+      "entity_type": "station",
+      "coordinates": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -6.123
+      },
+      "position": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -6.123
+      },
+      "chainage_km": 60.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Unchdih",
+      "code": "UND",
+      "node_type": "station",
+      "platforms": 2,
+      "connected_blocks": [
+        "B6",
+        "B7"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-UND",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_MNF",
+      "entity_type": "station",
+      "coordinates": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 8.889
+      },
+      "position": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 8.889
+      },
+      "chainage_km": 70.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Manda Road",
+      "code": "MNF",
+      "node_type": "station",
+      "platforms": 2,
+      "connected_blocks": [
+        "B7",
+        "B8"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-MNF",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "NODE_MZP",
+      "entity_type": "station",
+      "coordinates": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "position": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "chainage_km": 80.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Mirzapur",
+      "code": "MZP",
+      "node_type": "junction",
+      "platforms": 4,
+      "connected_blocks": [
+        "B8"
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "STN-PRYJ-MZP",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    }
+  ],
+  "tracks": [
+    {
+      "id": "TRACK_B1",
+      "block_id": "B1",
+      "entity_type": "track",
+      "name": "Station A to B (B1)",
+      "start_coord": {
+        "x": -400.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "end_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "path_points": [
+        {
+          "x": -400.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        {
+          "x": -380.0,
+          "y": 0.584,
+          "z": 3.121
+        },
+        {
+          "x": -360.0,
+          "y": 1.135,
+          "z": 6.123
+        },
+        {
+          "x": -340.0,
+          "y": 1.624,
+          "z": 8.889
+        },
+        {
+          "x": -320.0,
+          "y": 2.023,
+          "z": 11.314
+        },
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 13.304
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 0.0,
+      "chainage_end": 10.0,
+      "elevation_profile": [
+        0.0,
+        0.584,
+        1.135,
+        1.624,
+        2.023,
+        2.31
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B2",
+      "block_id": "B2",
+      "entity_type": "track",
+      "name": "Station B to C (B2)",
+      "start_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "end_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "path_points": [
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 13.304
+        },
+        {
+          "x": -280.0,
+          "y": 2.469,
+          "z": 14.782
+        },
+        {
+          "x": -260.0,
+          "y": 2.492,
+          "z": 15.693
+        },
+        {
+          "x": -240.0,
+          "y": 2.378,
+          "z": 16.0
+        },
+        {
+          "x": -220.0,
+          "y": 3.332,
+          "z": 15.693
+        },
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 14.782
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 10.0,
+      "chainage_end": 20.0,
+      "elevation_profile": [
+        2.31,
+        2.469,
+        2.492,
+        2.378,
+        3.332,
+        2.968
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 75.0,
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B3",
+      "block_id": "B3",
+      "entity_type": "track",
+      "name": "Station C to D (B3)",
+      "start_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "end_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 3.121
+      },
+      "path_points": [
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 14.782
+        },
+        {
+          "x": -180.0,
+          "y": 2.506,
+          "z": 13.304
+        },
+        {
+          "x": -160.0,
+          "y": 1.973,
+          "z": 11.314
+        },
+        {
+          "x": -140.0,
+          "y": 0.196,
+          "z": 8.889
+        },
+        {
+          "x": -120.0,
+          "y": -0.391,
+          "z": 6.123
+        },
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 3.121
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 20.0,
+      "chainage_end": 30.0,
+      "elevation_profile": [
+        2.968,
+        2.506,
+        1.973,
+        0.196,
+        -0.391,
+        -0.957
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B4",
+      "block_id": "B4",
+      "entity_type": "track",
+      "name": "Station D to E (B4)",
+      "start_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 3.121
+      },
+      "end_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -11.314
+      },
+      "path_points": [
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 3.121
+        },
+        {
+          "x": -80.0,
+          "y": -1.469,
+          "z": 0.0
+        },
+        {
+          "x": -60.0,
+          "y": -1.901,
+          "z": -3.121
+        },
+        {
+          "x": -40.0,
+          "y": -2.228,
+          "z": -6.123
+        },
+        {
+          "x": -20.0,
+          "y": -2.431,
+          "z": -8.889
+        },
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -11.314
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 30.0,
+      "chainage_end": 40.0,
+      "elevation_profile": [
+        -0.957,
+        -1.469,
+        -1.901,
+        -2.228,
+        -2.431,
+        -2.5
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B4",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B5",
+      "block_id": "B5",
+      "entity_type": "track",
+      "name": "Station E to F (B5)",
+      "start_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -11.314
+      },
+      "end_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -15.693
+      },
+      "path_points": [
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -11.314
+        },
+        {
+          "x": 20.0,
+          "y": -2.431,
+          "z": -13.304
+        },
+        {
+          "x": 40.0,
+          "y": -2.228,
+          "z": -14.782
+        },
+        {
+          "x": 60.0,
+          "y": -1.901,
+          "z": -15.693
+        },
+        {
+          "x": 80.0,
+          "y": -1.469,
+          "z": -16.0
+        },
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -15.693
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 40.0,
+      "chainage_end": 50.0,
+      "elevation_profile": [
+        -2.5,
+        -2.431,
+        -2.228,
+        -1.901,
+        -1.469,
+        -0.957
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B5",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B6",
+      "block_id": "B6",
+      "entity_type": "track",
+      "name": "Station F to G (B6)",
+      "start_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -15.693
+      },
+      "end_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -6.123
+      },
+      "path_points": [
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -15.693
+        },
+        {
+          "x": 120.0,
+          "y": -0.391,
+          "z": -14.782
+        },
+        {
+          "x": 140.0,
+          "y": 0.196,
+          "z": -13.304
+        },
+        {
+          "x": 160.0,
+          "y": 0.773,
+          "z": -11.314
+        },
+        {
+          "x": 180.0,
+          "y": 1.306,
+          "z": -8.889
+        },
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -6.123
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 50.0,
+      "chainage_end": 60.0,
+      "elevation_profile": [
+        -0.957,
+        -0.391,
+        0.196,
+        0.773,
+        1.306,
+        1.768
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B6",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B7",
+      "block_id": "B7",
+      "entity_type": "track",
+      "name": "Station G to H (B7)",
+      "start_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -6.123
+      },
+      "end_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 8.889
+      },
+      "path_points": [
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -6.123
+        },
+        {
+          "x": 220.0,
+          "y": 2.132,
+          "z": -3.121
+        },
+        {
+          "x": 240.0,
+          "y": 2.378,
+          "z": -0.0
+        },
+        {
+          "x": 260.0,
+          "y": 2.492,
+          "z": 3.121
+        },
+        {
+          "x": 280.0,
+          "y": 2.469,
+          "z": 6.123
+        },
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 8.889
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 60.0,
+      "chainage_end": 70.0,
+      "elevation_profile": [
+        1.768,
+        2.132,
+        2.378,
+        2.492,
+        2.469,
+        2.31
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B7",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "TRACK_B8",
+      "block_id": "B8",
+      "entity_type": "track",
+      "name": "Station H to I (B8)",
+      "start_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 8.889
+      },
+      "end_coord": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "path_points": [
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 8.889
+        },
+        {
+          "x": 320.0,
+          "y": 2.023,
+          "z": 11.314
+        },
+        {
+          "x": 340.0,
+          "y": 1.624,
+          "z": 13.304
+        },
+        {
+          "x": 360.0,
+          "y": 1.135,
+          "z": 14.782
+        },
+        {
+          "x": 380.0,
+          "y": 0.584,
+          "z": 15.693
+        },
+        {
+          "x": 400.0,
+          "y": 0.0,
+          "z": 16.0
+        }
+      ],
+      "length_km": 10.0,
+      "chainage_start": 70.0,
+      "chainage_end": 80.0,
+      "elevation_profile": [
+        2.31,
+        2.023,
+        1.624,
+        1.135,
+        0.584,
+        0.0
+      ],
+      "track_type": "Mainline",
+      "electrification": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "speed_limit_kmh": 100.0,
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "TRK-BLK-B8",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "signals": [
+    {
+      "id": "SIG_B1_UP",
+      "entity_type": "signal",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": "SEC_B1_UP",
+      "chainage_km": 0.5,
+      "coordinates": {
+        "x": -395.0,
+        "y": 0.147,
+        "z": 4.785
+      },
+      "position": {
+        "x": -395.0,
+        "y": 0.147,
+        "z": 4.785
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B1-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B1_DN",
+      "entity_type": "signal",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": "SEC_B1_DOWN",
+      "chainage_km": 9.5,
+      "coordinates": {
+        "x": -305.0,
+        "y": 2.249,
+        "z": 8.851
+      },
+      "position": {
+        "x": -305.0,
+        "y": 2.249,
+        "z": 8.851
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B1-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B2_UP",
+      "entity_type": "signal",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": "SEC_B2_UP",
+      "chainage_km": 10.5,
+      "coordinates": {
+        "x": -295.0,
+        "y": 2.362,
+        "z": 17.724
+      },
+      "position": {
+        "x": -295.0,
+        "y": 2.362,
+        "z": 17.724
+      },
+      "aspect": "caution",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B2-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B2_DN",
+      "entity_type": "signal",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": "SEC_B2_DOWN",
+      "chainage_km": 19.5,
+      "coordinates": {
+        "x": -205.0,
+        "y": 3.069,
+        "z": 11.065
+      },
+      "position": {
+        "x": -205.0,
+        "y": 3.069,
+        "z": 11.065
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B2-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B3_UP",
+      "entity_type": "signal",
+      "block_id": "B3",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": "SEC_B3_UP",
+      "chainage_km": 20.5,
+      "coordinates": {
+        "x": -195.0,
+        "y": 2.861,
+        "z": 18.464
+      },
+      "position": {
+        "x": -195.0,
+        "y": 2.861,
+        "z": 18.464
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B3-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B3_DN",
+      "entity_type": "signal",
+      "block_id": "B3",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": "SEC_B3_DOWN",
+      "chainage_km": 29.5,
+      "coordinates": {
+        "x": -105.0,
+        "y": -0.819,
+        "z": -0.112
+      },
+      "position": {
+        "x": -105.0,
+        "y": -0.819,
+        "z": -0.112
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B3-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B4_UP",
+      "entity_type": "signal",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": "SEC_B4_UP",
+      "chainage_km": 30.5,
+      "coordinates": {
+        "x": -95.0,
+        "y": -1.091,
+        "z": 6.348
+      },
+      "position": {
+        "x": -95.0,
+        "y": -1.091,
+        "z": 6.348
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B4-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B4_DN",
+      "entity_type": "signal",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": "SEC_B4_DOWN",
+      "chainage_km": 39.5,
+      "coordinates": {
+        "x": -5.0,
+        "y": -2.496,
+        "z": -14.745
+      },
+      "position": {
+        "x": -5.0,
+        "y": -2.496,
+        "z": -14.745
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B4-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B5_UP",
+      "entity_type": "signal",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": "SEC_B5_UP",
+      "chainage_km": 40.5,
+      "coordinates": {
+        "x": 5.0,
+        "y": -2.496,
+        "z": -7.855
+      },
+      "position": {
+        "x": 5.0,
+        "y": -2.496,
+        "z": -7.855
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B5-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B5_DN",
+      "entity_type": "signal",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": "SEC_B5_DOWN",
+      "chainage_km": 49.5,
+      "coordinates": {
+        "x": 95.0,
+        "y": -1.091,
+        "z": -19.827
+      },
+      "position": {
+        "x": 95.0,
+        "y": -1.091,
+        "z": -19.827
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B5-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B6_UP",
+      "entity_type": "signal",
+      "block_id": "B6",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": "SEC_B6_UP",
+      "chainage_km": 50.5,
+      "coordinates": {
+        "x": 105.0,
+        "y": -0.819,
+        "z": -11.521
+      },
+      "position": {
+        "x": 105.0,
+        "y": -0.819,
+        "z": -11.521
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B6-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B6_DN",
+      "entity_type": "signal",
+      "block_id": "B6",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": "SEC_B6_DOWN",
+      "chainage_km": 59.5,
+      "coordinates": {
+        "x": 195.0,
+        "y": 1.661,
+        "z": -10.841
+      },
+      "position": {
+        "x": 195.0,
+        "y": 1.661,
+        "z": -10.841
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B6-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B7_UP",
+      "entity_type": "signal",
+      "block_id": "B7",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": "SEC_B7_UP",
+      "chainage_km": 60.5,
+      "coordinates": {
+        "x": 205.0,
+        "y": 1.869,
+        "z": -1.39
+      },
+      "position": {
+        "x": 205.0,
+        "y": 1.869,
+        "z": -1.39
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B7-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B7_DN",
+      "entity_type": "signal",
+      "block_id": "B7",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": "SEC_B7_DOWN",
+      "chainage_km": 69.5,
+      "coordinates": {
+        "x": 295.0,
+        "y": 2.362,
+        "z": 4.226
+      },
+      "position": {
+        "x": 295.0,
+        "y": 2.362,
+        "z": 4.226
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B7-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B8_UP",
+      "entity_type": "signal",
+      "block_id": "B8",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": "SEC_B8_UP",
+      "chainage_km": 70.5,
+      "coordinates": {
+        "x": 305.0,
+        "y": 2.249,
+        "z": 13.531
+      },
+      "position": {
+        "x": 305.0,
+        "y": 2.249,
+        "z": 13.531
+      },
+      "aspect": "clear",
+      "direction": "UP",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B8-UP",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "SIG_B8_DN",
+      "entity_type": "signal",
+      "block_id": "B8",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": "SEC_B8_DOWN",
+      "chainage_km": 79.5,
+      "coordinates": {
+        "x": 395.0,
+        "y": 0.147,
+        "z": 11.981
+      },
+      "position": {
+        "x": 395.0,
+        "y": 0.147,
+        "z": 11.981
+      },
+      "aspect": "clear",
+      "direction": "DOWN",
+      "signal_type": "automatic",
+      "interlocking_zone_id": null,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "SIG-REC-B8-DN",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "ohe_masts": [
+    {
+      "id": "OHE_B1_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": "SEC_B1_UP",
+      "coordinates": {
+        "x": -383.333,
+        "y": 0.488,
+        "z": 5.806
+      },
+      "position": {
+        "x": -383.333,
+        "y": 0.488,
+        "z": 5.806
+      },
+      "chainage_km": 1.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_1",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B1-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B1_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": "SEC_B1_UP",
+      "coordinates": {
+        "x": -350.0,
+        "y": 1.389,
+        "z": 10.742
+      },
+      "position": {
+        "x": -350.0,
+        "y": 1.389,
+        "z": 10.742
+      },
+      "chainage_km": 5.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_1",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B1-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B1_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": "SEC_B1_UP",
+      "coordinates": {
+        "x": -316.667,
+        "y": 2.079,
+        "z": 14.878
+      },
+      "position": {
+        "x": -316.667,
+        "y": 2.079,
+        "z": 14.878
+      },
+      "chainage_km": 8.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_1",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B1-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B2_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": "SEC_B2_UP",
+      "coordinates": {
+        "x": -283.333,
+        "y": 2.452,
+        "z": 17.774
+      },
+      "position": {
+        "x": -283.333,
+        "y": 2.452,
+        "z": 17.774
+      },
+      "chainage_km": 11.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_2",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B2-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B2_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": "SEC_B2_UP",
+      "coordinates": {
+        "x": -250.0,
+        "y": 2.452,
+        "z": 19.123
+      },
+      "position": {
+        "x": -250.0,
+        "y": 2.452,
+        "z": 19.123
+      },
+      "chainage_km": 15.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_2",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B2-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B2_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": "SEC_B2_UP",
+      "coordinates": {
+        "x": -216.667,
+        "y": 3.279,
+        "z": 18.782
+      },
+      "position": {
+        "x": -216.667,
+        "y": 3.279,
+        "z": 18.782
+      },
+      "chainage_km": 18.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_2",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B2-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B3_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B3",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": "SEC_B3_UP",
+      "coordinates": {
+        "x": -183.333,
+        "y": 2.589,
+        "z": 16.787
+      },
+      "position": {
+        "x": -183.333,
+        "y": 2.589,
+        "z": 16.787
+      },
+      "chainage_km": 21.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_3",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B3-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B3_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B3",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": "SEC_B3_UP",
+      "coordinates": {
+        "x": -150.0,
+        "y": 0.488,
+        "z": 13.35
+      },
+      "position": {
+        "x": -150.0,
+        "y": 0.488,
+        "z": 13.35
+      },
+      "chainage_km": 25.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_3",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B3-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B3_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B3",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": "SEC_B3_UP",
+      "coordinates": {
+        "x": -116.667,
+        "y": -0.488,
+        "z": 8.836
+      },
+      "position": {
+        "x": -116.667,
+        "y": -0.488,
+        "z": 8.836
+      },
+      "chainage_km": 28.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_3",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B3-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B4_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": "SEC_B4_UP",
+      "coordinates": {
+        "x": -83.333,
+        "y": -1.389,
+        "z": 3.724
+      },
+      "position": {
+        "x": -83.333,
+        "y": -1.389,
+        "z": 3.724
+      },
+      "chainage_km": 31.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": true,
+      "elementary_section_id": "ES_SEC_4",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B4-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B4_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": "SEC_B4_UP",
+      "coordinates": {
+        "x": -50.0,
+        "y": -2.079,
+        "z": -1.445
+      },
+      "position": {
+        "x": -50.0,
+        "y": -2.079,
+        "z": -1.445
+      },
+      "chainage_km": 35.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": true,
+      "elementary_section_id": "ES_SEC_4",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B4-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B4_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": "SEC_B4_UP",
+      "coordinates": {
+        "x": -16.667,
+        "y": -2.452,
+        "z": -6.12
+      },
+      "position": {
+        "x": -16.667,
+        "y": -2.452,
+        "z": -6.12
+      },
+      "chainage_km": 38.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": true,
+      "elementary_section_id": "ES_SEC_4",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B4-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B5_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": "SEC_B5_UP",
+      "coordinates": {
+        "x": 16.667,
+        "y": -2.452,
+        "z": -9.806
+      },
+      "position": {
+        "x": 16.667,
+        "y": -2.452,
+        "z": -9.806
+      },
+      "chainage_km": 41.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_5",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B5-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B5_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": "SEC_B5_UP",
+      "coordinates": {
+        "x": 50.0,
+        "y": -2.079,
+        "z": -12.111
+      },
+      "position": {
+        "x": 50.0,
+        "y": -2.079,
+        "z": -12.111
+      },
+      "chainage_km": 45.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_5",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B5-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B5_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": "SEC_B5_UP",
+      "coordinates": {
+        "x": 83.333,
+        "y": -1.389,
+        "z": -12.791
+      },
+      "position": {
+        "x": 83.333,
+        "y": -1.389,
+        "z": -12.791
+      },
+      "chainage_km": 48.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_5",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B5-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B6_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B6",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": "SEC_B6_UP",
+      "coordinates": {
+        "x": 116.667,
+        "y": -0.488,
+        "z": -11.774
+      },
+      "position": {
+        "x": 116.667,
+        "y": -0.488,
+        "z": -11.774
+      },
+      "chainage_km": 51.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_6",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B6-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B6_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B6",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": "SEC_B6_UP",
+      "coordinates": {
+        "x": 150.0,
+        "y": 0.488,
+        "z": -9.168
+      },
+      "position": {
+        "x": 150.0,
+        "y": 0.488,
+        "z": -9.168
+      },
+      "chainage_km": 55.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_6",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B6-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B6_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B6",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": "SEC_B6_UP",
+      "coordinates": {
+        "x": 183.333,
+        "y": 1.389,
+        "z": -5.249
+      },
+      "position": {
+        "x": 183.333,
+        "y": 1.389,
+        "z": -5.249
+      },
+      "chainage_km": 58.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_6",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B6-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B7_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B7",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": "SEC_B7_UP",
+      "coordinates": {
+        "x": 216.667,
+        "y": 2.079,
+        "z": -0.433
+      },
+      "position": {
+        "x": 216.667,
+        "y": 2.079,
+        "z": -0.433
+      },
+      "chainage_km": 61.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_7",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B7-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B7_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B7",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": "SEC_B7_UP",
+      "coordinates": {
+        "x": 250.0,
+        "y": 2.452,
+        "z": 4.768
+      },
+      "position": {
+        "x": 250.0,
+        "y": 2.452,
+        "z": 4.768
+      },
+      "chainage_km": 65.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_7",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B7-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B7_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B7",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": "SEC_B7_UP",
+      "coordinates": {
+        "x": 283.333,
+        "y": 2.452,
+        "z": 9.803
+      },
+      "position": {
+        "x": 283.333,
+        "y": 2.452,
+        "z": 9.803
+      },
+      "chainage_km": 68.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_7",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B7-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B8_M1",
+      "entity_type": "ohe_mast",
+      "block_id": "B8",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": "SEC_B8_UP",
+      "coordinates": {
+        "x": 316.667,
+        "y": 2.079,
+        "z": 14.137
+      },
+      "position": {
+        "x": 316.667,
+        "y": 2.079,
+        "z": 14.137
+      },
+      "chainage_km": 71.67,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_8",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B8-1",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B8_M2",
+      "entity_type": "ohe_mast",
+      "block_id": "B8",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": "SEC_B8_UP",
+      "coordinates": {
+        "x": 350.0,
+        "y": 1.389,
+        "z": 17.311
+      },
+      "position": {
+        "x": 350.0,
+        "y": 1.389,
+        "z": 17.311
+      },
+      "chainage_km": 75.0,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_8",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B8-2",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "OHE_B8_M3",
+      "entity_type": "ohe_mast",
+      "block_id": "B8",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": "SEC_B8_UP",
+      "coordinates": {
+        "x": 383.333,
+        "y": 0.488,
+        "z": 18.986
+      },
+      "position": {
+        "x": 383.333,
+        "y": 0.488,
+        "z": 18.986
+      },
+      "chainage_km": 78.33,
+      "catenary_height_m": 5.5,
+      "contact_wire_height_m": 5.5,
+      "is_isolated": false,
+      "elementary_section_id": "ES_SEC_8",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "OHE-REC-B8-3",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "B1",
+      "chainage_start": 0.0,
+      "chainage_end": 10.0,
+      "description": "Station A to B",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B2",
+      "chainage_start": 10.0,
+      "chainage_end": 20.0,
+      "description": "Station B to C",
+      "speed_restriction_kmh": 75.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B3",
+      "chainage_start": 20.0,
+      "chainage_end": 30.0,
+      "description": "Station C to D",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B4",
+      "chainage_start": 30.0,
+      "chainage_end": 40.0,
+      "description": "Station D to E",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B5",
+      "chainage_start": 40.0,
+      "chainage_end": 50.0,
+      "description": "Station E to F",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B6",
+      "chainage_start": 50.0,
+      "chainage_end": 60.0,
+      "description": "Station F to G",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B7",
+      "chainage_start": 60.0,
+      "chainage_end": 70.0,
+      "description": "Station G to H",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    },
+    {
+      "id": "B8",
+      "chainage_start": 70.0,
+      "chainage_end": 80.0,
+      "description": "Station H to I",
+      "speed_restriction_kmh": 100.0,
+      "track_type": "Mainline",
+      "electrification_status": "25kV AC",
+      "signaling_type": "Automatic"
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-FIXED-FB1",
+      "entity_type": "conflict",
+      "conflict_type": "fixed_block_collision",
+      "severity": "CRITICAL",
+      "block_id": "B1",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null,
+      "title": "Mega Block Lock on B1",
+      "description": "Pre-scheduled immutable block FB1 occupies section B1 from T+2.0h to T+6.0h. All routine traffic and conflicting jobs barred.",
+      "affected_jobs": [
+        "J11",
+        "J15"
+      ],
+      "affected_trains": [
+        "T6",
+        "T7"
+      ],
+      "time_window": {
+        "start": 2.0,
+        "end": 6.0
+      },
+      "suggested_resolution": "Consolidate compatible routine jobs into shadow window or re-route express trains via loop line.",
+      "coordinates": {
+        "x": -300.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "position": {
+        "x": -300.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "blocks_approval": true,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    },
+    {
+      "id": "CONF-FIXED-FB2",
+      "entity_type": "conflict",
+      "conflict_type": "fixed_block_collision",
+      "severity": "CRITICAL",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null,
+      "title": "Mega Block Lock on B4",
+      "description": "Pre-scheduled immutable block FB2 occupies section B4 from T+10.0h to T+12.0h. All routine traffic and conflicting jobs barred.",
+      "affected_jobs": [
+        "J1",
+        "J7",
+        "J16"
+      ],
+      "affected_trains": [
+        "T6",
+        "T8"
+      ],
+      "time_window": {
+        "start": 10.0,
+        "end": 12.0
+      },
+      "suggested_resolution": "Consolidate compatible routine jobs into shadow window or re-route express trains via loop line.",
+      "coordinates": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "position": {
+        "x": 0.0,
+        "y": 1.0,
+        "z": 0.0
+      },
+      "blocks_approval": true,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    },
+    {
+      "id": "CONF-DEPT-J1-J7",
+      "entity_type": "conflict",
+      "conflict_type": "incompatible_department",
+      "severity": "MAJOR",
+      "block_id": "B4",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null,
+      "title": "Cross-Department Safety Hazard on B4",
+      "description": "OHE power isolation on J1 conflicts with live circuit testing on J7 in section B4.",
+      "affected_jobs": [
+        "J1",
+        "J7"
+      ],
+      "affected_trains": [],
+      "time_window": {
+        "start": 4.0,
+        "end": 6.0
+      },
+      "suggested_resolution": "Sequence S&T point motor testing after 25kV traction re-energization or enforce joint permit-to-work.",
+      "coordinates": {
+        "x": -100.0,
+        "y": 2.0,
+        "z": 4.0
+      },
+      "position": {
+        "x": -100.0,
+        "y": 2.0,
+        "z": 4.0
+      },
+      "blocks_approval": true,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    },
+    {
+      "id": "CONF-DEPT-J2-J18",
+      "entity_type": "conflict",
+      "conflict_type": "incompatible_department",
+      "severity": "MAJOR",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null,
+      "title": "Cross-Department Safety Hazard on B5",
+      "description": "OHE power isolation on J2 conflicts with live circuit testing on J18 in section B5.",
+      "affected_jobs": [
+        "J2",
+        "J18"
+      ],
+      "affected_trains": [],
+      "time_window": {
+        "start": 4.0,
+        "end": 6.0
+      },
+      "suggested_resolution": "Sequence S&T point motor testing after 25kV traction re-energization or enforce joint permit-to-work.",
+      "coordinates": {
+        "x": -100.0,
+        "y": 2.0,
+        "z": 4.0
+      },
+      "position": {
+        "x": -100.0,
+        "y": 2.0,
+        "z": 4.0
+      },
+      "blocks_approval": true,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    },
+    {
+      "id": "CONF-OVERDUE-AST-TRK-B2-01",
+      "entity_type": "conflict",
+      "conflict_type": "overdue_critical_maintenance",
+      "severity": "CRITICAL",
+      "block_id": "B2",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null,
+      "title": "Critical Defect: Point Machine 104A (B2)",
+      "description": "Health score 42.0%, overdue by 14 days. Defect: Motor current surge during throw. High derailment probability.",
+      "affected_jobs": [
+        "J2"
+      ],
+      "affected_trains": [],
+      "time_window": {
+        "start": 0.0,
+        "end": 24.0
+      },
+      "suggested_resolution": "Grant immediate emergency maintenance slot or impose 30 km/h caution order.",
+      "coordinates": {
+        "x": -200.0,
+        "y": 1.5,
+        "z": 8.0
+      },
+      "position": {
+        "x": -200.0,
+        "y": 1.5,
+        "z": 8.0
+      },
+      "blocks_approval": true,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    },
+    {
+      "id": "CONF-PREMIUM-T1",
+      "entity_type": "conflict",
+      "conflict_type": "premium_train_risk",
+      "severity": "WARNING",
+      "block_id": "B5",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null,
+      "title": "Punctuality Risk: Vande Bharat Exp 20000 (T1)",
+      "description": "Priority passenger service T1 scheduled window [0.0h - 3.0h] traverses congested work zone. Risk of punctuality index degradation.",
+      "affected_jobs": [],
+      "affected_trains": [
+        "T1"
+      ],
+      "time_window": {
+        "start": 0.0,
+        "end": 3.0
+      },
+      "suggested_resolution": "Lock green wave signal priority corridor; prohibit maintenance grant within 60 minutes of ETA.",
+      "coordinates": {
+        "x": -350.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "position": {
+        "x": -350.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "blocks_approval": false,
+      "source_system": "SPARKRAIL_SAFETY",
+      "source_record_id": "",
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC"
+    }
+  ],
+  "junctions": [
+    {
+      "id": "JUNC_PRYJ",
+      "entity_type": "junction",
+      "coordinates": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "position": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 13.304
+      },
+      "chainage_km": 10.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Prayagraj Jn Interlocking Junction",
+      "code": "PRYJ",
+      "node_type": "junction",
+      "diverging_blocks": [
+        "B1",
+        "B2"
+      ],
+      "switch_type": "Turnout 1-in-12",
+      "interlocking_status": "Active",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "JUNC-REC-PRYJ",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "JUNC_NYN",
+      "entity_type": "junction",
+      "coordinates": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "position": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 14.782
+      },
+      "chainage_km": 20.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Naini Jn Interlocking Junction",
+      "code": "NYN",
+      "node_type": "junction",
+      "diverging_blocks": [
+        "B2",
+        "B3"
+      ],
+      "switch_type": "Turnout 1-in-12",
+      "interlocking_status": "Active",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "JUNC-REC-NYN",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "JUNC_MZP",
+      "entity_type": "junction",
+      "coordinates": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "position": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 16.0
+      },
+      "chainage_km": 80.0,
+      "referenced_block_id": null,
+      "referenced_asset_id": null,
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0",
+      "schema_version": "1.0.0",
+      "name": "Mirzapur Interlocking Junction",
+      "code": "MZP",
+      "node_type": "junction",
+      "diverging_blocks": [
+        "B8"
+      ],
+      "switch_type": "Turnout 1-in-12",
+      "interlocking_status": "Active",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "JUNC-REC-MZP",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_track_section_id": null
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "AST-TRK-B2-01",
+      "block_id": "B2",
+      "name": "Point Machine 104A",
+      "asset_type": "Point Machine",
+      "chainage_start_km": 12.4,
+      "chainage_end_km": 12.6,
+      "health_score": 42.0,
+      "defect_severity": "Critical",
+      "degradation_velocity": 4.2,
+      "observed_defect_type": "Motor current surge during throw",
+      "model_predicted_risk": 0.88,
+      "last_ultrasonic_test": "2026-08-20",
+      "days_overdue": 14,
+      "associated_job_id": "J2",
+      "coordinates": {
+        "x": -276.0,
+        "y": 2.48,
+        "z": 17.51
+      },
+      "position": {
+        "x": -276.0,
+        "y": 2.48,
+        "z": 17.51
+      },
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0"
+    },
+    {
+      "asset_id": "AST-OHE-B4-09",
+      "block_id": "B4",
+      "name": "Catenary Wire Span 40-42",
+      "asset_type": "OHE Mast",
+      "chainage_start_km": 34.2,
+      "chainage_end_km": 34.8,
+      "health_score": 68.0,
+      "defect_severity": "Major",
+      "degradation_velocity": 2.1,
+      "observed_defect_type": "Dropper wear exceeding 15%",
+      "model_predicted_risk": 0.64,
+      "last_ultrasonic_test": "2026-08-14",
+      "days_overdue": 7,
+      "associated_job_id": "J_FIXED_2",
+      "coordinates": {
+        "x": -58.0,
+        "y": -1.94,
+        "z": -1.23
+      },
+      "position": {
+        "x": -58.0,
+        "y": -1.94,
+        "z": -1.23
+      },
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0"
+    },
+    {
+      "asset_id": "AST-TRK-B1-04",
+      "block_id": "B1",
+      "name": "Weld Joint W-102",
+      "asset_type": "Rail",
+      "chainage_start_km": 4.8,
+      "chainage_end_km": 5.0,
+      "health_score": 85.0,
+      "defect_severity": "Minor",
+      "degradation_velocity": 1.0,
+      "observed_defect_type": "Surface micro-spalling",
+      "model_predicted_risk": 0.25,
+      "last_ultrasonic_test": "2026-08-28",
+      "days_overdue": 0,
+      "associated_job_id": "J_FIXED_1",
+      "coordinates": {
+        "x": -352.0,
+        "y": 1.34,
+        "z": 7.26
+      },
+      "position": {
+        "x": -352.0,
+        "y": 1.34,
+        "z": 7.26
+      },
+      "geometry_source": "synthetic",
+      "geometry_schema_version": "1.0.0"
+    }
+  ],
+  "disconnected_components": [],
+  "track_sections": [
+    {
+      "id": "SEC_B1_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B1_UP",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B1",
+      "block_id": "B1",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 0.0,
+      "chainage_end_km": 10.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -400.0,
+        "y": 0.0,
+        "z": 2.2
+      },
+      "end_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 15.504
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B1_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B1_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B1",
+      "block_id": "B1",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 0.0,
+      "chainage_end_km": 10.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -400.0,
+        "y": 0.0,
+        "z": -2.2
+      },
+      "end_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 11.104
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B2_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B2_UP",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B2",
+      "block_id": "B2",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 15.504
+      },
+      "end_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 16.982
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B2_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B2_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B2",
+      "block_id": "B2",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -300.0,
+        "y": 2.31,
+        "z": 11.104
+      },
+      "end_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 12.582
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B3_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B3_UP",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B3",
+      "block_id": "B3",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 20.0,
+      "chainage_end_km": 30.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 16.982
+      },
+      "end_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 5.321
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B3_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B3_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B3",
+      "block_id": "B3",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 20.0,
+      "chainage_end_km": 30.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -200.0,
+        "y": 2.968,
+        "z": 12.582
+      },
+      "end_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 0.921
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B4_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B4_UP",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B4",
+      "block_id": "B4",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 5.321
+      },
+      "end_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -9.114
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B4_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B4_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B4",
+      "block_id": "B4",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": -100.0,
+        "y": -0.957,
+        "z": 0.921
+      },
+      "end_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -13.514
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B5_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B5_UP",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B5",
+      "block_id": "B5",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 40.0,
+      "chainage_end_km": 50.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -9.114
+      },
+      "end_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -13.493
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B5_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B5_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B5",
+      "block_id": "B5",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 40.0,
+      "chainage_end_km": 50.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 0.0,
+        "y": -2.5,
+        "z": -13.514
+      },
+      "end_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -17.893
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B6_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B6_UP",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B6",
+      "block_id": "B6",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -13.493
+      },
+      "end_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -3.923
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B6_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B6_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B6",
+      "block_id": "B6",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 100.0,
+        "y": -0.957,
+        "z": -17.893
+      },
+      "end_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -8.323
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B7_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B7_UP",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B7",
+      "block_id": "B7",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 60.0,
+      "chainage_end_km": 70.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -3.923
+      },
+      "end_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 11.089
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B7_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B7_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B7",
+      "block_id": "B7",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 60.0,
+      "chainage_end_km": 70.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 200.0,
+        "y": 1.768,
+        "z": -8.323
+      },
+      "end_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 6.689
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B8_UP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B8_UP",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B8",
+      "block_id": "B8",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 70.0,
+      "chainage_end_km": 80.0,
+      "speed_limit_kmh": 130.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 11.089
+      },
+      "end_coord": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 18.2
+      },
+      "track_direction": "UP",
+      "length_km": 10.0,
+      "line_name": "Mainline UP",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "SEC_B8_DOWN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-SEC_B8_DOWN",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "B8",
+      "block_id": "B8",
+      "division_code": "PRYJ",
+      "line_id": "MAIN_LINE",
+      "start_station": "SFG",
+      "end_station": "MZP",
+      "chainage_start_km": 70.0,
+      "chainage_end_km": 80.0,
+      "speed_limit_kmh": 110.0,
+      "signaling_type": "Automatic",
+      "electrification_type": "25kV AC",
+      "elementary_section_id": null,
+      "start_coord": {
+        "x": 300.0,
+        "y": 2.31,
+        "z": 6.689
+      },
+      "end_coord": {
+        "x": 400.0,
+        "y": 0.0,
+        "z": 13.8
+      },
+      "track_direction": "DOWN",
+      "length_km": 10.0,
+      "line_name": "Mainline DOWN",
+      "electrification_status": "25kV AC",
+      "gauge": "Broad Gauge 1676mm",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    }
+  ],
+  "track_centerlines": [
+    {
+      "id": "CL_SEC_B1_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B1_UP",
+      "path_points": [
+        {
+          "x": -400.0,
+          "y": 0.0,
+          "z": 2.2
+        },
+        {
+          "x": -380.0,
+          "y": 0.584,
+          "z": 5.321
+        },
+        {
+          "x": -360.0,
+          "y": 1.135,
+          "z": 8.323
+        },
+        {
+          "x": -340.0,
+          "y": 1.624,
+          "z": 11.089
+        },
+        {
+          "x": -320.0,
+          "y": 2.023,
+          "z": 13.514
+        },
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 15.504
+        }
+      ],
+      "elevation_profile": [
+        0.0,
+        0.584,
+        1.135,
+        1.624,
+        2.023,
+        2.31
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B1_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B1_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B1_DOWN",
+      "path_points": [
+        {
+          "x": -400.0,
+          "y": 0.0,
+          "z": -2.2
+        },
+        {
+          "x": -380.0,
+          "y": 0.584,
+          "z": 0.921
+        },
+        {
+          "x": -360.0,
+          "y": 1.135,
+          "z": 3.923
+        },
+        {
+          "x": -340.0,
+          "y": 1.624,
+          "z": 6.689
+        },
+        {
+          "x": -320.0,
+          "y": 2.023,
+          "z": 9.114
+        },
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 11.104
+        }
+      ],
+      "elevation_profile": [
+        0.0,
+        0.584,
+        1.135,
+        1.624,
+        2.023,
+        2.31
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B1_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B2_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B2_UP",
+      "path_points": [
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 15.504
+        },
+        {
+          "x": -280.0,
+          "y": 2.469,
+          "z": 16.982
+        },
+        {
+          "x": -260.0,
+          "y": 2.492,
+          "z": 17.893
+        },
+        {
+          "x": -240.0,
+          "y": 2.378,
+          "z": 18.2
+        },
+        {
+          "x": -220.0,
+          "y": 3.332,
+          "z": 17.893
+        },
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 16.982
+        }
+      ],
+      "elevation_profile": [
+        2.31,
+        2.469,
+        2.492,
+        2.378,
+        3.332,
+        2.968
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B2_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B2_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B2_DOWN",
+      "path_points": [
+        {
+          "x": -300.0,
+          "y": 2.31,
+          "z": 11.104
+        },
+        {
+          "x": -280.0,
+          "y": 2.469,
+          "z": 12.582
+        },
+        {
+          "x": -260.0,
+          "y": 2.492,
+          "z": 13.493
+        },
+        {
+          "x": -240.0,
+          "y": 2.378,
+          "z": 13.8
+        },
+        {
+          "x": -220.0,
+          "y": 3.332,
+          "z": 13.493
+        },
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 12.582
+        }
+      ],
+      "elevation_profile": [
+        2.31,
+        2.469,
+        2.492,
+        2.378,
+        3.332,
+        2.968
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B2_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B3_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B3_UP",
+      "path_points": [
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 16.982
+        },
+        {
+          "x": -180.0,
+          "y": 2.506,
+          "z": 15.504
+        },
+        {
+          "x": -160.0,
+          "y": 1.973,
+          "z": 13.514
+        },
+        {
+          "x": -140.0,
+          "y": 0.196,
+          "z": 11.089
+        },
+        {
+          "x": -120.0,
+          "y": -0.391,
+          "z": 8.323
+        },
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 5.321
+        }
+      ],
+      "elevation_profile": [
+        2.968,
+        2.506,
+        1.973,
+        0.196,
+        -0.391,
+        -0.957
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B3_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B3_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B3_DOWN",
+      "path_points": [
+        {
+          "x": -200.0,
+          "y": 2.968,
+          "z": 12.582
+        },
+        {
+          "x": -180.0,
+          "y": 2.506,
+          "z": 11.104
+        },
+        {
+          "x": -160.0,
+          "y": 1.973,
+          "z": 9.114
+        },
+        {
+          "x": -140.0,
+          "y": 0.196,
+          "z": 6.689
+        },
+        {
+          "x": -120.0,
+          "y": -0.391,
+          "z": 3.923
+        },
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 0.921
+        }
+      ],
+      "elevation_profile": [
+        2.968,
+        2.506,
+        1.973,
+        0.196,
+        -0.391,
+        -0.957
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B3_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B4_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B4_UP",
+      "path_points": [
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 5.321
+        },
+        {
+          "x": -80.0,
+          "y": -1.469,
+          "z": 2.2
+        },
+        {
+          "x": -60.0,
+          "y": -1.901,
+          "z": -0.921
+        },
+        {
+          "x": -40.0,
+          "y": -2.228,
+          "z": -3.923
+        },
+        {
+          "x": -20.0,
+          "y": -2.431,
+          "z": -6.689
+        },
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -9.114
+        }
+      ],
+      "elevation_profile": [
+        -0.957,
+        -1.469,
+        -1.901,
+        -2.228,
+        -2.431,
+        -2.5
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B4_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B4_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B4_DOWN",
+      "path_points": [
+        {
+          "x": -100.0,
+          "y": -0.957,
+          "z": 0.921
+        },
+        {
+          "x": -80.0,
+          "y": -1.469,
+          "z": -2.2
+        },
+        {
+          "x": -60.0,
+          "y": -1.901,
+          "z": -5.321
+        },
+        {
+          "x": -40.0,
+          "y": -2.228,
+          "z": -8.323
+        },
+        {
+          "x": -20.0,
+          "y": -2.431,
+          "z": -11.089
+        },
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -13.514
+        }
+      ],
+      "elevation_profile": [
+        -0.957,
+        -1.469,
+        -1.901,
+        -2.228,
+        -2.431,
+        -2.5
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B4_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B5_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B5_UP",
+      "path_points": [
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -9.114
+        },
+        {
+          "x": 20.0,
+          "y": -2.431,
+          "z": -11.104
+        },
+        {
+          "x": 40.0,
+          "y": -2.228,
+          "z": -12.582
+        },
+        {
+          "x": 60.0,
+          "y": -1.901,
+          "z": -13.493
+        },
+        {
+          "x": 80.0,
+          "y": -1.469,
+          "z": -13.8
+        },
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -13.493
+        }
+      ],
+      "elevation_profile": [
+        -2.5,
+        -2.431,
+        -2.228,
+        -1.901,
+        -1.469,
+        -0.957
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B5_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B5_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B5_DOWN",
+      "path_points": [
+        {
+          "x": 0.0,
+          "y": -2.5,
+          "z": -13.514
+        },
+        {
+          "x": 20.0,
+          "y": -2.431,
+          "z": -15.504
+        },
+        {
+          "x": 40.0,
+          "y": -2.228,
+          "z": -16.982
+        },
+        {
+          "x": 60.0,
+          "y": -1.901,
+          "z": -17.893
+        },
+        {
+          "x": 80.0,
+          "y": -1.469,
+          "z": -18.2
+        },
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -17.893
+        }
+      ],
+      "elevation_profile": [
+        -2.5,
+        -2.431,
+        -2.228,
+        -1.901,
+        -1.469,
+        -0.957
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B5_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B6_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B6_UP",
+      "path_points": [
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -13.493
+        },
+        {
+          "x": 120.0,
+          "y": -0.391,
+          "z": -12.582
+        },
+        {
+          "x": 140.0,
+          "y": 0.196,
+          "z": -11.104
+        },
+        {
+          "x": 160.0,
+          "y": 0.773,
+          "z": -9.114
+        },
+        {
+          "x": 180.0,
+          "y": 1.306,
+          "z": -6.689
+        },
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -3.923
+        }
+      ],
+      "elevation_profile": [
+        -0.957,
+        -0.391,
+        0.196,
+        0.773,
+        1.306,
+        1.768
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B6_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B6_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B6_DOWN",
+      "path_points": [
+        {
+          "x": 100.0,
+          "y": -0.957,
+          "z": -17.893
+        },
+        {
+          "x": 120.0,
+          "y": -0.391,
+          "z": -16.982
+        },
+        {
+          "x": 140.0,
+          "y": 0.196,
+          "z": -15.504
+        },
+        {
+          "x": 160.0,
+          "y": 0.773,
+          "z": -13.514
+        },
+        {
+          "x": 180.0,
+          "y": 1.306,
+          "z": -11.089
+        },
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -8.323
+        }
+      ],
+      "elevation_profile": [
+        -0.957,
+        -0.391,
+        0.196,
+        0.773,
+        1.306,
+        1.768
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B6_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B7_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B7_UP",
+      "path_points": [
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -3.923
+        },
+        {
+          "x": 220.0,
+          "y": 2.132,
+          "z": -0.921
+        },
+        {
+          "x": 240.0,
+          "y": 2.378,
+          "z": 2.2
+        },
+        {
+          "x": 260.0,
+          "y": 2.492,
+          "z": 5.321
+        },
+        {
+          "x": 280.0,
+          "y": 2.469,
+          "z": 8.323
+        },
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 11.089
+        }
+      ],
+      "elevation_profile": [
+        1.768,
+        2.132,
+        2.378,
+        2.492,
+        2.469,
+        2.31
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B7_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B7_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B7_DOWN",
+      "path_points": [
+        {
+          "x": 200.0,
+          "y": 1.768,
+          "z": -8.323
+        },
+        {
+          "x": 220.0,
+          "y": 2.132,
+          "z": -5.321
+        },
+        {
+          "x": 240.0,
+          "y": 2.378,
+          "z": -2.2
+        },
+        {
+          "x": 260.0,
+          "y": 2.492,
+          "z": 0.921
+        },
+        {
+          "x": 280.0,
+          "y": 2.469,
+          "z": 3.923
+        },
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 6.689
+        }
+      ],
+      "elevation_profile": [
+        1.768,
+        2.132,
+        2.378,
+        2.492,
+        2.469,
+        2.31
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B7_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B8_UP",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B8_UP",
+      "path_points": [
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 11.089
+        },
+        {
+          "x": 320.0,
+          "y": 2.023,
+          "z": 13.514
+        },
+        {
+          "x": 340.0,
+          "y": 1.624,
+          "z": 15.504
+        },
+        {
+          "x": 360.0,
+          "y": 1.135,
+          "z": 16.982
+        },
+        {
+          "x": 380.0,
+          "y": 0.584,
+          "z": 17.893
+        },
+        {
+          "x": 400.0,
+          "y": 0.0,
+          "z": 18.2
+        }
+      ],
+      "elevation_profile": [
+        2.31,
+        2.023,
+        1.624,
+        1.135,
+        0.584,
+        0.0
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B8_UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "CL_SEC_B8_DOWN",
+      "entity_type": "track_centerline",
+      "track_section_id": "SEC_B8_DOWN",
+      "path_points": [
+        {
+          "x": 300.0,
+          "y": 2.31,
+          "z": 6.689
+        },
+        {
+          "x": 320.0,
+          "y": 2.023,
+          "z": 9.114
+        },
+        {
+          "x": 340.0,
+          "y": 1.624,
+          "z": 11.104
+        },
+        {
+          "x": 360.0,
+          "y": 1.135,
+          "z": 12.582
+        },
+        {
+          "x": 380.0,
+          "y": 0.584,
+          "z": 13.493
+        },
+        {
+          "x": 400.0,
+          "y": 0.0,
+          "z": 13.8
+        }
+      ],
+      "elevation_profile": [
+        2.31,
+        2.023,
+        1.624,
+        1.135,
+        0.584,
+        0.0
+      ],
+      "curvature_radius_m": null,
+      "cant_mm": 65.0,
+      "gradient_permille": 0.0,
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-CL-SEC_B8_DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    }
+  ],
+  "crossovers": [
+    {
+      "id": "XOVER_PRYJ_1",
+      "entity_type": "crossover",
+      "name": "Prayagraj Jn Crossover 101A/B",
+      "station_code": "PRYJ",
+      "from_track_id": "SEC_B1_UP",
+      "to_track_id": "SEC_B1_DOWN",
+      "turnout_ratio": "1-in-12",
+      "points_number": "101A/B",
+      "speed_limit_kmh": 30.0,
+      "switch_position": "NORMAL",
+      "chainage_km": 10.2,
+      "start_coord": {
+        "x": -298.0,
+        "y": 2.332,
+        "z": 15.675
+      },
+      "end_coord": {
+        "x": -297.0,
+        "y": 2.342,
+        "z": 11.36
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "XOVER-PRYJ-1",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": null,
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "XOVER_NYN_1",
+      "entity_type": "crossover",
+      "name": "Naini Jn Crossover 202A/B",
+      "station_code": "NYN",
+      "from_track_id": "SEC_B2_UP",
+      "to_track_id": "SEC_B2_DOWN",
+      "turnout_ratio": "1-in-12",
+      "points_number": "202A/B",
+      "speed_limit_kmh": 30.0,
+      "switch_position": "NORMAL",
+      "chainage_km": 20.2,
+      "start_coord": {
+        "x": -198.0,
+        "y": 2.926,
+        "z": 16.859
+      },
+      "end_coord": {
+        "x": -197.0,
+        "y": 2.904,
+        "z": 12.395
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "XOVER-NYN-1",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": null,
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "XOVER_MZP_1",
+      "entity_type": "crossover",
+      "name": "Mirzapur Jn Crossover 303A/B",
+      "station_code": "MZP",
+      "from_track_id": "SEC_B8_UP",
+      "to_track_id": "SEC_B8_DOWN",
+      "turnout_ratio": "1-in-12",
+      "points_number": "303A/B",
+      "speed_limit_kmh": 30.0,
+      "switch_position": "NORMAL",
+      "chainage_km": 79.5,
+      "start_coord": {
+        "x": 395.0,
+        "y": 0.147,
+        "z": 18.181
+      },
+      "end_coord": {
+        "x": 396.0,
+        "y": 0.118,
+        "z": 13.788
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "XOVER-MZP-1",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": null,
+      "referenced_track_section_id": null
+    }
+  ],
+  "interlockings": [
+    {
+      "id": "IXL_PRYJ",
+      "entity_type": "interlocking",
+      "station_code": "PRYJ",
+      "name": "Prayagraj Route Relay Interlocking Zone",
+      "interlocking_type": "Electronic Interlocking (EI)",
+      "controlled_signals": [
+        "SIG_B1_UP",
+        "SIG_B1_DN",
+        "SIG_B2_UP",
+        "SIG_B2_DN"
+      ],
+      "controlled_points": [
+        "101A/B",
+        "102A/B"
+      ],
+      "controlled_circuits": [
+        "TC_B1_UP",
+        "TC_B1_DOWN",
+        "TC_B2_UP",
+        "TC_B2_DOWN"
+      ],
+      "status": "Active",
+      "chainage_start_km": 8.0,
+      "chainage_end_km": 12.0,
+      "boundary_coords": [
+        {
+          "x": -320.0,
+          "y": 2.023,
+          "z": 13.514
+        },
+        {
+          "x": -280.0,
+          "y": 2.469,
+          "z": 12.582
+        }
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "IXL-PRYJ-01",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": null,
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "IXL_NYN",
+      "entity_type": "interlocking",
+      "station_code": "NYN",
+      "name": "Naini Junction Interlocking Zone",
+      "interlocking_type": "Electronic Interlocking (EI)",
+      "controlled_signals": [
+        "SIG_B2_UP",
+        "SIG_B2_DN",
+        "SIG_B3_UP",
+        "SIG_B3_DN"
+      ],
+      "controlled_points": [
+        "201A/B",
+        "202A/B"
+      ],
+      "controlled_circuits": [
+        "TC_B2_UP",
+        "TC_B2_DOWN",
+        "TC_B3_UP",
+        "TC_B3_DOWN"
+      ],
+      "status": "Active",
+      "chainage_start_km": 18.0,
+      "chainage_end_km": 22.0,
+      "boundary_coords": [
+        {
+          "x": -220.0,
+          "y": 3.332,
+          "z": 17.893
+        },
+        {
+          "x": -180.0,
+          "y": 2.506,
+          "z": 11.104
+        }
+      ],
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "IXL-NYN-01",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": null,
+      "referenced_track_section_id": null
+    }
+  ],
+  "track_circuits": [
+    {
+      "id": "TC_B1_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B1_UP",
+      "block_id": "B1",
+      "chainage_start_km": 0.0,
+      "chainage_end_km": 10.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -350.0,
+        "y": 1.389,
+        "z": 9.742
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B1-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B1_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B1_DOWN",
+      "block_id": "B1",
+      "chainage_start_km": 0.0,
+      "chainage_end_km": 10.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -350.0,
+        "y": 1.389,
+        "z": 5.342
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B1-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B1",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B2_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B2_UP",
+      "block_id": "B2",
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "is_occupied": true,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -250.0,
+        "y": 2.452,
+        "z": 18.123
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B2-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B2_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B2_DOWN",
+      "block_id": "B2",
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -250.0,
+        "y": 2.452,
+        "z": 13.723
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B2-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B3_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B3_UP",
+      "block_id": "B3",
+      "chainage_start_km": 20.0,
+      "chainage_end_km": 30.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -150.0,
+        "y": 0.488,
+        "z": 12.35
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B3-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B3_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B3_DOWN",
+      "block_id": "B3",
+      "chainage_start_km": 20.0,
+      "chainage_end_km": 30.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -150.0,
+        "y": 0.488,
+        "z": 7.95
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B3-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.172991+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B3",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B4_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B4_UP",
+      "block_id": "B4",
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -50.0,
+        "y": -2.079,
+        "z": -2.445
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B4-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B4_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B4_DOWN",
+      "block_id": "B4",
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": -50.0,
+        "y": -2.079,
+        "z": -6.845
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B4-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B5_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B5_UP",
+      "block_id": "B5",
+      "chainage_start_km": 40.0,
+      "chainage_end_km": 50.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 50.0,
+        "y": -2.079,
+        "z": -13.111
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B5-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B5_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B5_DOWN",
+      "block_id": "B5",
+      "chainage_start_km": 40.0,
+      "chainage_end_km": 50.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 50.0,
+        "y": -2.079,
+        "z": -17.511
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B5-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B5",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B6_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B6_UP",
+      "block_id": "B6",
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 150.0,
+        "y": 0.488,
+        "z": -10.168
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B6-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B6_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B6_DOWN",
+      "block_id": "B6",
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 150.0,
+        "y": 0.488,
+        "z": -14.568
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B6-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.173539+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B7_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B7_UP",
+      "block_id": "B7",
+      "chainage_start_km": 60.0,
+      "chainage_end_km": 70.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 250.0,
+        "y": 2.452,
+        "z": 3.768
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B7-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B7_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B7_DOWN",
+      "block_id": "B7",
+      "chainage_start_km": 60.0,
+      "chainage_end_km": 70.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 250.0,
+        "y": 2.452,
+        "z": -0.632
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B7-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B7",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B8_UP",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B8_UP",
+      "block_id": "B8",
+      "chainage_start_km": 70.0,
+      "chainage_end_km": 80.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 350.0,
+        "y": 1.389,
+        "z": 16.311
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B8-UP",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "TC_B8_DOWN",
+      "entity_type": "track_circuit",
+      "track_id": "SEC_B8_DOWN",
+      "block_id": "B8",
+      "chainage_start_km": 70.0,
+      "chainage_end_km": 80.0,
+      "is_occupied": false,
+      "circuit_type": "Axle Counter (BPAC)",
+      "interlocking_zone_id": null,
+      "coordinates": {
+        "x": 350.0,
+        "y": 1.389,
+        "z": 11.911
+      },
+      "source_system": "SPARKRAIL_GEO",
+      "source_record_id": "REC-TC-B8-DOWN",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B8",
+      "referenced_track_section_id": null
+    }
+  ],
+  "elementary_sections": [
+    {
+      "id": "ES_SEC_1",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-1",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_1",
+      "section_code": "ES-PRYJ-01",
+      "name": "Sector 1 Catenary (0km - 10km)",
+      "feeding_post_id": "FP_SFG",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B1_UP",
+        "SEC_B1_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B1_UP",
+        "SEC_B1_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B1_UP",
+        "SEC_B1_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B1_M1",
+        "OHE_B1_M2",
+        "OHE_B1_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_1"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 0.0,
+      "chainage_end_km": 10.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_2",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-2",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_2",
+      "section_code": "ES-PRYJ-02",
+      "name": "Sector 2 Catenary (10km - 20km)",
+      "feeding_post_id": "FP_SFG",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B2_UP",
+        "SEC_B2_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B2_UP",
+        "SEC_B2_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B2_UP",
+        "SEC_B2_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B2_M1",
+        "OHE_B2_M2",
+        "OHE_B2_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_2"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_3",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-3",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_3",
+      "section_code": "ES-PRYJ-03",
+      "name": "Sector 3 Catenary (20km - 30km)",
+      "feeding_post_id": "FP_NYN",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B3_UP",
+        "SEC_B3_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B3_UP",
+        "SEC_B3_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B3_UP",
+        "SEC_B3_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B3_M1",
+        "OHE_B3_M2",
+        "OHE_B3_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_3"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 20.0,
+      "chainage_end_km": 30.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_4",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-4",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_4",
+      "section_code": "ES-PRYJ-04",
+      "name": "Sector 4 Catenary (30km - 40km)",
+      "feeding_post_id": "FP_NYN",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B4_UP",
+        "SEC_B4_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B4_UP",
+        "SEC_B4_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B4_UP",
+        "SEC_B4_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B4_M1",
+        "OHE_B4_M2",
+        "OHE_B4_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_4"
+      ],
+      "is_energized": false,
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_5",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-5",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_5",
+      "section_code": "ES-PRYJ-05",
+      "name": "Sector 5 Catenary (40km - 50km)",
+      "feeding_post_id": "FP_MJA",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B5_UP",
+        "SEC_B5_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B5_UP",
+        "SEC_B5_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B5_UP",
+        "SEC_B5_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B5_M1",
+        "OHE_B5_M2",
+        "OHE_B5_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_5"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 40.0,
+      "chainage_end_km": 50.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_6",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-6",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_6",
+      "section_code": "ES-PRYJ-06",
+      "name": "Sector 6 Catenary (50km - 60km)",
+      "feeding_post_id": "FP_MJA",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B6_UP",
+        "SEC_B6_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B6_UP",
+        "SEC_B6_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B6_UP",
+        "SEC_B6_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B6_M1",
+        "OHE_B6_M2",
+        "OHE_B6_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_6"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_7",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-7",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_7",
+      "section_code": "ES-PRYJ-07",
+      "name": "Sector 7 Catenary (60km - 70km)",
+      "feeding_post_id": "FP_MZP",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B7_UP",
+        "SEC_B7_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B7_UP",
+        "SEC_B7_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B7_UP",
+        "SEC_B7_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B7_M1",
+        "OHE_B7_M2",
+        "OHE_B7_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_7"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 60.0,
+      "chainage_end_km": 70.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "ES_SEC_8",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "ES-REC-8",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "section_id": "ES_SEC_8",
+      "section_code": "ES-PRYJ-08",
+      "name": "Sector 8 Catenary (70km - 80km)",
+      "feeding_post_id": "FP_MZP",
+      "catenary_voltage_kv": 25.0,
+      "nominal_voltage_kv": 25.0,
+      "track_section_ids": [
+        "SEC_B8_UP",
+        "SEC_B8_DOWN"
+      ],
+      "block_ids": [
+        "SEC_B8_UP",
+        "SEC_B8_DOWN"
+      ],
+      "associated_tracks": [
+        "SEC_B8_UP",
+        "SEC_B8_DOWN"
+      ],
+      "associated_masts": [
+        "OHE_B8_M1",
+        "OHE_B8_M2",
+        "OHE_B8_M3"
+      ],
+      "isolator_switch_ids": [
+        "IS_SW_8"
+      ],
+      "is_energized": true,
+      "chainage_start_km": 70.0,
+      "chainage_end_km": 80.0,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "feeding_posts": [
+    {
+      "id": "FP_SFG",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "FP-SFG-01",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "post_id": "FP_SFG",
+      "name": "Subedarganj Traction Substation",
+      "substation_name": "SFG TSS 132/25kV",
+      "chainage_km": 0.5,
+      "capacity_mva": 30.0,
+      "feeding_sections": [],
+      "coordinates": {
+        "x": -395.0,
+        "y": 0.147,
+        "z": 12.785
+      },
+      "is_active": true,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "FP_NYN",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "FP-NYN-01",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "post_id": "FP_NYN",
+      "name": "Naini Traction Substation",
+      "substation_name": "NYN TSS 132/25kV",
+      "chainage_km": 20.5,
+      "capacity_mva": 30.0,
+      "feeding_sections": [],
+      "coordinates": {
+        "x": -195.0,
+        "y": 2.861,
+        "z": 26.464
+      },
+      "is_active": true,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "FP_MJA",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "FP-MJA-01",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "post_id": "FP_MJA",
+      "name": "Meja Road Traction Substation",
+      "substation_name": "MJA TSS 132/25kV",
+      "chainage_km": 50.5,
+      "capacity_mva": 30.0,
+      "feeding_sections": [],
+      "coordinates": {
+        "x": 105.0,
+        "y": -0.819,
+        "z": -3.521
+      },
+      "is_active": true,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "FP_MZP",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "FP-MZP-01",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "post_id": "FP_MZP",
+      "name": "Mirzapur Traction Substation",
+      "substation_name": "MZP TSS 132/25kV",
+      "chainage_km": 79.5,
+      "capacity_mva": 30.0,
+      "feeding_sections": [],
+      "coordinates": {
+        "x": 395.0,
+        "y": 0.147,
+        "z": 27.981
+      },
+      "is_active": true,
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "isolator_switches": [
+    {
+      "id": "IS_SW_1",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-1",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_1",
+      "switch_code": "SS-101",
+      "elementary_section_id": "ES_SEC_1",
+      "location_chainage_km": 0.2,
+      "chainage_km": 0.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": -398.0,
+        "y": 0.059,
+        "z": 4.814
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_2",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-2",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_2",
+      "switch_code": "SS-102",
+      "elementary_section_id": "ES_SEC_2",
+      "location_chainage_km": 10.2,
+      "chainage_km": 10.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": -298.0,
+        "y": 2.332,
+        "z": 17.975
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_3",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-3",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_3",
+      "switch_code": "SS-103",
+      "elementary_section_id": "ES_SEC_3",
+      "location_chainage_km": 20.2,
+      "chainage_km": 20.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": -198.0,
+        "y": 2.926,
+        "z": 19.159
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_4",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-4",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_4",
+      "switch_code": "SS-104",
+      "elementary_section_id": "ES_SEC_4",
+      "location_chainage_km": 30.2,
+      "chainage_km": 30.2,
+      "state": "OPEN",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": -98.0,
+        "y": -1.011,
+        "z": 7.313
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_5",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-5",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_5",
+      "switch_code": "SS-105",
+      "elementary_section_id": "ES_SEC_5",
+      "location_chainage_km": 40.2,
+      "chainage_km": 40.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": 2.0,
+        "y": -2.499,
+        "z": -7.034
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_6",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-6",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_6",
+      "switch_code": "SS-106",
+      "elementary_section_id": "ES_SEC_6",
+      "location_chainage_km": 50.2,
+      "chainage_km": 50.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": 102.0,
+        "y": -0.902,
+        "z": -11.128
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_7",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-7",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_7",
+      "switch_code": "SS-107",
+      "elementary_section_id": "ES_SEC_7",
+      "location_chainage_km": 60.2,
+      "chainage_km": 60.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": 202.0,
+        "y": 1.809,
+        "z": -1.332
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    },
+    {
+      "id": "IS_SW_8",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_TRD",
+      "source_record_id": "IS-REC-8",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "switch_id": "IS_SW_8",
+      "switch_code": "SS-108",
+      "elementary_section_id": "ES_SEC_8",
+      "location_chainage_km": 70.2,
+      "chainage_km": 70.2,
+      "state": "CLOSED",
+      "is_motorized": true,
+      "switch_type": "Motorized",
+      "coordinates": {
+        "x": 302.0,
+        "y": 2.287,
+        "z": 13.649
+      },
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "geometry_schema_version": "1.0.0",
+      "validation_status": "VALIDATED"
+    }
+  ],
+  "possessions": [
+    {
+      "id": "POSS_GRANTED_B2",
+      "entity_type": "possession",
+      "job_id": "J2",
+      "block_id": "B2",
+      "department": "Civil",
+      "status": "GRANTED",
+      "start_time_hours": 2.0,
+      "end_time_hours": 6.0,
+      "chainage_start_km": 10.0,
+      "chainage_end_km": 20.0,
+      "affected_tracks": [
+        "SEC_B2_UP"
+      ],
+      "affected_ohe_sections": [
+        "ES_SEC_2"
+      ],
+      "affected_signals": [
+        "SIG_B2_UP"
+      ],
+      "is_locked": true,
+      "is_shadow": true,
+      "shadow_bundle_id": "SHADOW-BUNDLE-1",
+      "required_machines": [
+        "BCM (Ballast Cleaning Machine)"
+      ],
+      "crew_count": 8,
+      "safety_certified": true,
+      "approval_status": "GRANTED",
+      "source_system": "SPARKRAIL_ADVISORY",
+      "source_record_id": "POSS-REC-GRANTED-B2",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174071+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "POSS_IN_PROGRESS_B4",
+      "entity_type": "possession",
+      "job_id": "J4",
+      "block_id": "B4",
+      "department": "OHE",
+      "status": "IN_PROGRESS",
+      "start_time_hours": 1.0,
+      "end_time_hours": 5.0,
+      "chainage_start_km": 30.0,
+      "chainage_end_km": 40.0,
+      "affected_tracks": [
+        "SEC_B4_UP",
+        "SEC_B4_DOWN"
+      ],
+      "affected_ohe_sections": [
+        "ES_SEC_4"
+      ],
+      "affected_signals": [
+        "SIG_B4_UP",
+        "SIG_B4_DN"
+      ],
+      "is_locked": true,
+      "is_shadow": false,
+      "shadow_bundle_id": null,
+      "required_machines": [
+        "Tower Wagon (TRD)"
+      ],
+      "crew_count": 6,
+      "safety_certified": true,
+      "approval_status": "IN_PROGRESS",
+      "source_system": "SPARKRAIL_ADVISORY",
+      "source_record_id": "POSS-REC-IN-PROGRESS-B4",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B4",
+      "referenced_track_section_id": null
+    },
+    {
+      "id": "POSS_PLAN_B6",
+      "entity_type": "possession",
+      "job_id": "J6",
+      "block_id": "B6",
+      "department": "S&T",
+      "status": "PLANNED",
+      "start_time_hours": 8.0,
+      "end_time_hours": 12.0,
+      "chainage_start_km": 50.0,
+      "chainage_end_km": 60.0,
+      "affected_tracks": [
+        "SEC_B6_UP"
+      ],
+      "affected_ohe_sections": [],
+      "affected_signals": [
+        "SIG_B6_UP"
+      ],
+      "is_locked": false,
+      "is_shadow": false,
+      "shadow_bundle_id": null,
+      "required_machines": [],
+      "crew_count": 4,
+      "safety_certified": true,
+      "approval_status": "PENDING_CTPC_REVIEW",
+      "source_system": "SPARKRAIL_ADVISORY",
+      "source_record_id": "POSS-REC-PLAN-B6",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "SYNTHETIC",
+      "referenced_block_id": "B6",
+      "referenced_track_section_id": null
+    }
+  ],
+  "shadow_bundles": [
+    {
+      "id": "SHADOW-BUNDLE-1",
+      "schema_version": "1.0.0",
+      "source_system": "SPARKRAIL_OPTIMIZER",
+      "source_record_id": "SHADOW-BUNDLE-01",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "event_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness": 0.0,
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_errors": [],
+      "audit_metadata": {},
+      "bundle_id": "SHADOW-BUNDLE-1",
+      "primary_demand_id": "POSS_GRANTED_B2",
+      "secondary_demand_ids": [
+        "POSS_GRANTED_B2",
+        "POSS_PLAN_B2_SIG"
+      ],
+      "track_section_id": "B2",
+      "block_id": "B2",
+      "window_start": 2.0,
+      "window_end": 6.0,
+      "departments": [],
+      "compatibility_rationale": "",
+      "spatial_extent_km": null,
+      "total_tci_benefit": 2.5,
+      "total_duration_hours": null,
+      "elementary_section_id": null,
+      "tci_benefit_score": null,
+      "bundling_rationale": null,
+      "corridor_closure_saving_hours": 2.5,
+      "primary_possession_id": "POSS_GRANTED_B2",
+      "shadow_possession_ids": [
+        "POSS_GRANTED_B2",
+        "POSS_PLAN_B2_SIG"
+      ],
+      "time_window_start": 2.0,
+      "time_window_end": 6.0
+    }
+  ],
+  "speed_restrictions": [
+    {
+      "id": "SR_B2_CAUTION",
+      "entity_type": "speed_restriction",
+      "track_id": "SEC_B2_UP",
+      "block_id": "B2",
+      "chainage_start_km": 14.0,
+      "chainage_end_km": 16.5,
+      "restricted_speed_kmh": 45.0,
+      "normal_speed_kmh": 130.0,
+      "reason": "Ballast screening & tamping in progress",
+      "is_permanent": false,
+      "start_coord": {
+        "x": -260.0,
+        "y": 2.492,
+        "z": 17.893
+      },
+      "end_coord": {
+        "x": -235.0,
+        "y": 2.328,
+        "z": 18.181
+      },
+      "source_system": "SPARKRAIL_PWAY",
+      "source_record_id": "SR-REC-01",
+      "geometry_source": "synthetic",
+      "schema_version": "1.0.0",
+      "geometry_schema_version": "1.0.0",
+      "coordinate_reference_system": "LOCAL_CORRIDOR",
+      "source_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "ingestion_timestamp": "2026-09-12T14:15:23.174596+00:00",
+      "data_freshness_seconds": 0.0,
+      "confidence": 1.0,
+      "validation_status": "VALIDATED",
+      "referenced_block_id": "B2",
+      "referenced_track_section_id": null
+    }
+  ]
+}

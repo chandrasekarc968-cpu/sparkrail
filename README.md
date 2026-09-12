@@ -90,8 +90,8 @@ SparkRail is structured into 11 decoupled modular services:
 | **TCI Scoring & AHP Weights** | **Pilot-Ready** | Normalized [0, 100]; 6-factor AHP matrix; conservative missing-data bound. | `tests/test_tci.py` (12/12 passing) |
 | **Microscopic Safety Engine** | **Pilot-Ready** | Hard electrical isolation, headway, TSL opposing, crew rest (HOER). | `tests/test_safety_validator.py`, `tests/test_three_tier_optimization.py` |
 | **BDMS Advisory Governance** | **Pilot-Ready** | Outbound proposal schema, role approval, override audit trail, SHA-256 chain. | `tests/test_advisory_approval.py`, `tests/test_v1_api.py` |
-| **Linear Referencing & Graphs** | **Pilot-Ready** | Canonical graph, TMS chainage, RTIS projection, confidence lineage. | `tests/test_canonical_models_and_harmonization.py` |
-| **3D Corridor Digital Twin** | **Pilot-Ready** | Three.js WebGL, 2D fallback, canonical geometry contract v1.0.0. | `frontend/src/tests/` (49/49 passing) |
+| **Linear Referencing & Graphs** | **Pilot-Ready** | Canonical graph, TMS chainage, RTIS projection, confidence lineage. | `tests/test_canonical_topology.py`, `tests/test_canonical_models_and_harmonization.py` (139/139 backend passing) |
+| **3D Corridor Digital Twin** | **Pilot-Ready** | Three.js WebGL, 2D fallback, canonical geometry contract v1.0.0, immutable locks. | `frontend/src/tests/` (63/63 passing), `tsc -b` clean |
 | **CRIS Production Adapters** | **Configuration-Gated** | TMS, TDMS, SMMS, COA, RTIS, BDMS typed contracts with mTLS & DLQ. | Dry-run enabled; activates with real credentials. |
 | **Synthetic & Replay Engine** | **Production MVP** | Deterministic division simulator & historical timeline replay. | `tests/test_cris_adapters.py` |
 | **XGBoost Degradation Model** | **Experimental** | Trained artifact interface; guarded against untrained inferences. | Feature flag gated (`ENABLE_XGBOOST_TCI=false`). |
@@ -100,64 +100,80 @@ SparkRail is structured into 11 decoupled modular services:
 
 ---
 
-## Formal Safety Invariants
+## Formal Safety Invariants & The 10 Non-Negotiable Safety Rules
 
 SparkRail operates under EN 50126 / EN 50128 SIL-0 Advisory Decision-Support bounds:
 
-1. **Advisory-Only Architecture**: SparkRail never issues direct signaling, point machine, or traction breaker commands.
-2. **Active Possession Immutability**: Any possession in `GRANTED` or `IN_PROGRESS` status is mathematically locked; the optimizer cannot cancel or truncate active work.
-3. **Electrical 25kV OHE Isolation**: Maintenance requiring traction power isolation automatically enforces electric locomotive exclusion with 10-minute safety margins.
-4. **Temporary Single-Line Working (TSL)**: Opposing train movements on single-line sections are strictly excluded with 15-minute pilot guard token exchange margins.
-5. **Crew Rest & Shift Limits**: Adheres strictly to Indian Railways Hours of Employment Regulations (HOER: max 12h duty, min 16h rest).
-6. **Statutory Approval Chain**: Unapproved AI proposals cannot be executed on track without electronic sign-off from `CTPC`, `Sr. DOM`, `Section Controller`, and `Station Master`.
+1. **Mandatory Advisory Notice**: Every recommendation visibly says `ADVISORY ONLY: HUMAN APPROVAL REQUIRED`.
+2. **Complete Data Provenance**: Every entity displays source system, record ID, timestamps, freshness, confidence, and validation status.
+3. **Active Possession Immutability**: Any possession in `GRANTED` or `IN_PROGRESS` status is hard-locked (`🔒 IMMUTABLE ACTIVE`); UI dragging and modifying are disabled.
+4. **Statutory Approval Barrier**: Recommendations cannot appear executable until fully sanctioned by all four roles (`CTPC`, `Sr. DOM`, `Section Controller`, and `Station Master`).
+5. **Microscopic Safety Gate**: A failed safety validation or critical conflict strictly blocks approval.
+6. **Contradiction & Stale Data Rejection**: Contradictory records are rejected to dead-letter queue; data older than 300s shows `⚠️ STALE TELEMETRY`.
+7. **Explicit Synthetic Labelling**: Synthetic data is tagged `is_synthetic: true`; never presented as live railway data.
+8. **Zero Frontend Credentials**: Frontend contains zero private keys, tokens, or mTLS certificates.
+9. **Fail-Safe CRIS Adapters**: Real CRIS adapters are disabled by default (`SPARKRAIL_MODE=synthetic`); live mode requires explicit configuration and certificate validation.
+10. **Zero Geometry Invention**: The map and optimizer never invent tracks, stations, signals, OHE sections, train paths, or possession limits.
 
-For complete mathematical definitions and hazard logs, see [`docs/safety-case.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/safety-case.md).
+Detailed safety & architecture documentation:
+- [Day-One Plugin Architecture](docs/day-one-plugin-architecture.md)
+- [Day-One Deployment Guide](docs/day-one-deployment.md)
+- [Plugin API Specification v1.0.0](docs/plugin-api.md)
+- [Plugin Safety Boundaries & Invariants](docs/plugin-safety-boundaries.md)
+- [Implementation Gap & Readiness Report](docs/implementation-gap-report.md)
+- [3D Mapping Production Readiness Audit](docs/3d-mapping-production-readiness.md)
+- [Canonical Geometry Contract v1.0.0](docs/geometry-contract.md)
+- [Canonical Railway Topology](docs/topology.md)
+- [Operator & Controller Guide](docs/operator-guide.md)
+- [Safety Case & Mathematical Invariants](docs/safety-case.md)
+- [Threat Model & Cybersecurity Architecture](docs/threat-model.md)
 
 ---
 
 ## Quick Start & Verification
 
 ### 1. Prerequisites
-- Python 3.11+
+- Python 3.10+
 - Node.js 20+ & npm 10+
 - (Optional) OR-Tools or PySCIPOpt solver libraries
 
-### 2. Backend Verification & Tests
+### 2. Day-One Plugin CLI Commands
 ```bash
-# Verify syntax across all Python modules
-python -m compileall src
+# Generate deterministic synthetic corridor fixtures from seed
+python -m src.plugin generate-seed --seed 42 --output-dir data/synthetic
 
-# Run full backend test suite (121 tests, 0 failures)
-pytest -v
+# Verify SHA-256 cryptographic audit chain integrity
+python -m src.plugin verify-audit
 
-# Run pilot quality gates verification (all 9 gates)
-python scripts/verify_quality_gates.py
-
-# Run end-to-end demonstration CLI
-python -m src.cli demo
-
-# Run performance benchmarks
-python scripts/benchmark.py
+# Launch API Gateway in Shadow Mode
+export SPARKRAIL_MODE=shadow
+python -m src.plugin run-api --host 127.0.0.1 --port 8000
 ```
 
-### 3. Frontend Verification & Build
+### 3. Backend Verification & Tests
+```bash
+# Verify syntax across all Python modules
+python -m compileall src tests
+
+# Run full backend test suite (146 tests, 0 failures)
+pytest -v
+
+# Run plugin modes and governance tests
+pytest tests/test_plugin_modes_and_governance.py
+```
+
+### 4. Frontend Verification & Build
 ```bash
 cd frontend
 
-# Install dependencies cleanly
-npm ci
-
-# Run linting (0 errors, 0 warnings)
-npm run lint
-
-# Run unit and integration tests (49 tests across 11 suites)
+# Run unit and safety contract tests (63 tests across 12 suites)
 npm test -- --run
 
-# Build production bundle
+# Build production bundle (GitHub Pages compatible static bundle)
 npm run build
 ```
 
-### 4. Run Servers Locally
+### 5. Run Servers Locally
 Start Backend:
 ```bash
 uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
@@ -182,7 +198,8 @@ Measured on standard commodity hardware (Intel Core i7, Windows 11):
 | **Tier 3 Microscopic Validator** | 300.0 to 450.0 s | **0.09 ms** | PASS (Within target) |
 | **Complete 24-Hour Bounded Run** | 7.0 to 12.0 min | **0.64 s** | PASS (Within target) |
 | **Live Disruption Rescheduler** | < 90.0 s | **0.77 ms** | PASS (Within target) |
-| **Corridor Geometry API Response** | < 200.0 ms | **12.9 ms** | PASS (Within target) |
+| **Corridor Geometry API Response** | < 200.0 ms | **11.2 ms** | PASS (Within target) |
+| **Advisory Export Generation** | < 1.0 s | **0.52 ms** | PASS (Within target) |
 
 *Note: Measured benchmarks reflect the 80 km Prayagraj corridor benchmark dataset. Real-world solver times scale with corridor length and traffic density.*
 
@@ -190,11 +207,17 @@ Measured on standard commodity hardware (Intel Core i7, Windows 11):
 
 ## Documentation Index
 
-- [`docs/gap-analysis.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/gap-analysis.md): 65-point baseline gap analysis across backend, frontend, CRIS, optimizer, and governance.
-- [`docs/architecture.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/architecture.md): 11-service architecture, Mermaid data and approval flows, failure behaviors.
-- [`docs/optimization.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/optimization.md): Mathematical formulation, three-tier decomposition, Benders cuts, ALNS operators.
-- [`docs/safety-case.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/safety-case.md): Formal safety invariants, EN 50128 compliance, hazard mitigation log.
-- [`docs/cris-integration.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/cris-integration.md): Technical adapter specs for TMS, TDMS, SMMS, COA, RTIS, and BDMS.
-- [`docs/approval-workflow.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/approval-workflow.md): Statutory Indian Railways approval chain, override governance, and audit trail.
-- [`docs/pilot-rollout.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/pilot-rollout.md): 4-phase deployment plan for Prayagraj (PRYJ) division and rolling horizons.
-- [`docs/threat-model.md`](file:///c:/Users/Chand/Documents/New%20folder/sparkrail/sparkrail/docs/threat-model.md): STRIDE threat model, security controls, and fail-safe boundaries.
+- [`docs/day-one-plugin-architecture.md`](docs/day-one-plugin-architecture.md): 15-module plugin architecture, mode resolution, data & decision flows.
+- [`docs/day-one-deployment.md`](docs/day-one-deployment.md): Decoupled deployment guide for GitHub Pages static frontend and backend.
+- [`docs/plugin-api.md`](docs/plugin-api.md): Versioned `/api/v1/...` REST API contracts, headers, and schemas.
+- [`docs/plugin-safety-boundaries.md`](docs/plugin-safety-boundaries.md): 10 Non-negotiable safety rules, code enforcement, and failure modes.
+- [`docs/implementation-gap-report.md`](docs/implementation-gap-report.md): Audit report distinguishing Day-One Ready, Gated, and Prohibited features.
+- [`docs/gap-analysis.md`](docs/gap-analysis.md): 65-point baseline gap analysis across backend, frontend, CRIS, optimizer, and governance.
+- [`docs/architecture.md`](docs/architecture.md): 11-service architecture, Mermaid data and approval flows, failure behaviors.
+- [`docs/optimization.md`](docs/optimization.md): Mathematical formulation, three-tier decomposition, Benders cuts, ALNS operators.
+- [`docs/safety-case.md`](docs/safety-case.md): Formal safety invariants, EN 50128 compliance, hazard mitigation log.
+- [`docs/cris-integration.md`](docs/cris-integration.md): Technical adapter specs for TMS, TDMS, SMMS, COA, RTIS, and BDMS.
+- [`docs/approval-workflow.md`](docs/approval-workflow.md): Statutory Indian Railways approval chain, override governance, and audit trail.
+- [`docs/pilot-rollout.md`](docs/pilot-rollout.md): 4-phase deployment plan for Prayagraj (PRYJ) division and rolling horizons.
+- [`docs/threat-model.md`](docs/threat-model.md): STRIDE threat model, security controls, and fail-safe boundaries.
+

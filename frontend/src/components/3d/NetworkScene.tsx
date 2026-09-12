@@ -34,6 +34,24 @@ export interface BlockStateScene {
   isFrozen?: boolean;
 }
 
+export interface LayerFilters {
+  showTracks?: boolean;
+  showStations?: boolean;
+  showSignals?: boolean;
+  showOHE?: boolean;
+  showPossessions?: boolean;
+  showTrains?: boolean;
+  showAssets?: boolean;
+  showConflicts?: boolean;
+  filterDepartment?: string;
+  filterPossessionStatus?: string;
+  filterTrainPriority?: string;
+  filterValidationStatus?: string;
+  showOnlyAffectedAssets?: boolean;
+  showOHEIsolationImpact?: boolean;
+  showSignallingImpact?: boolean;
+}
+
 interface NetworkSceneProps {
   geometry: NetworkGeometryResponse;
   scenario: Scenario | null;
@@ -47,6 +65,7 @@ interface NetworkSceneProps {
   focusTarget: [number, number, number] | null;
   onFallbackTo2D?: () => void;
   maxLabelBudget?: number;
+  layers?: LayerFilters;
 }
 
 // Sub-component to manage smooth camera transitions and views
@@ -133,16 +152,69 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
   onSelectEntity,
   focusTarget,
   onFallbackTo2D,
-  maxLabelBudget = 25
+  maxLabelBudget = 25,
+  layers = {
+    showTracks: true,
+    showStations: true,
+    showSignals: true,
+    showOHE: true,
+    showPossessions: true,
+    showTrains: true,
+    showAssets: true,
+    showConflicts: true
+  }
 }) => {
-  const tracks = useMemo(() => geometry.tracks || [], [geometry.tracks]);
-  const nodes = useMemo(() => geometry.nodes || [], [geometry.nodes]);
-  const oheMasts = useMemo(() => geometry.ohe_masts || [], [geometry.ohe_masts]);
-  const signals = useMemo(() => geometry.signals || [], [geometry.signals]);
-  const conflicts = useMemo(
+  const rawTracks = useMemo(() => geometry.tracks || [], [geometry.tracks]);
+  const rawNodes = useMemo(() => geometry.nodes || [], [geometry.nodes]);
+  const rawOheMasts = useMemo(() => geometry.ohe_masts || [], [geometry.ohe_masts]);
+  const rawSignals = useMemo(() => geometry.signals || [], [geometry.signals]);
+  const rawConflicts = useMemo(
     () => schedule?.conflicts || geometry.conflicts || [],
     [schedule?.conflicts, geometry.conflicts]
   );
+
+  // Apply Granular Layer Filtering (Phases 5 & 6)
+  const tracks = useMemo(() => {
+    if (layers.showTracks === false) return [];
+    return rawTracks;
+  }, [rawTracks, layers.showTracks]);
+
+  const nodes = useMemo(() => {
+    if (layers.showStations === false) return [];
+    return rawNodes;
+  }, [rawNodes, layers.showStations]);
+
+  const oheMasts = useMemo(() => {
+    if (layers.showOHE === false) return [];
+    if (layers.showOHEIsolationImpact) {
+      return rawOheMasts.filter(m => m.is_isolated);
+    }
+    return rawOheMasts;
+  }, [rawOheMasts, layers.showOHE, layers.showOHEIsolationImpact]);
+
+  const signals = useMemo(() => {
+    if (layers.showSignals === false) return [];
+    return rawSignals;
+  }, [rawSignals, layers.showSignals]);
+
+  const conflicts = useMemo(() => {
+    if (layers.showConflicts === false) return [];
+    return rawConflicts;
+  }, [rawConflicts, layers.showConflicts]);
+
+  const filteredTrains = useMemo(() => {
+    if (layers.showTrains === false) return [];
+    if (!layers.filterTrainPriority || layers.filterTrainPriority === 'all') return trainPositions;
+    return trainPositions.filter(tp => tp.train.category === layers.filterTrainPriority);
+  }, [trainPositions, layers.showTrains, layers.filterTrainPriority]);
+
+  const filteredAssets = useMemo(() => {
+    if (layers.showAssets === false) return [];
+    if (layers.showOnlyAffectedAssets) {
+      return assets.filter(a => a.health_score < 60 || a.days_overdue > 0);
+    }
+    return assets;
+  }, [assets, layers.showAssets, layers.showOnlyAffectedAssets]);
 
   // Determine Level of Detail (LOD) based on network size
   const isLargeNetwork = tracks.length > 50;
@@ -178,7 +250,7 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
     });
 
     // 4. Moving trains
-    trainPositions.forEach(tp => {
+    filteredTrains.forEach(tp => {
       if (count >= maxLabelBudget) return;
       if (tp.isMoving) {
         ids.add(tp.train.id);
@@ -205,10 +277,10 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
     });
 
     return ids;
-  }, [selectedEntity, conflicts, tracks, blockStates, trainPositions, nodes, maxLabelBudget]);
+  }, [selectedEntity, conflicts, tracks, blockStates, filteredTrains, nodes, maxLabelBudget]);
 
-  const totalEntityCount = tracks.length + nodes.length + trainPositions.length + oheMasts.length + signals.length + assets.length + conflicts.length;
-  const visibleEntityCount = tracks.length + nodes.length + trainPositions.length + (isLargeNetwork ? Math.min(200, oheMasts.length) : oheMasts.length) + conflicts.length;
+  const totalEntityCount = tracks.length + nodes.length + filteredTrains.length + oheMasts.length + signals.length + filteredAssets.length + conflicts.length;
+  const visibleEntityCount = tracks.length + nodes.length + filteredTrains.length + (isLargeNetwork ? Math.min(200, oheMasts.length) : oheMasts.length) + conflicts.length;
 
   return (
     <ThreeDErrorBoundary onFallbackTo2D={onFallbackTo2D}>
@@ -274,7 +346,7 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
           ))}
 
           {/* 3. Trains Moving along Corridor */}
-          {trainPositions.map((tp) => (
+          {filteredTrains.map((tp) => (
             <TrainMarker
               key={tp.train.id}
               trainPos={tp}
@@ -285,21 +357,37 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
           ))}
 
           {/* 4. Active Maintenance Possession Volumes */}
-          {tracks.map((track) => {
+          {layers.showPossessions !== false && tracks.map((track) => {
             const state = blockStates.get(track.block_id);
             if (state && (state.status === 'active_maintenance' || state.status === 'shadow_block')) {
+              if (layers.filterDepartment && layers.filterDepartment !== 'all' && state.department !== layers.filterDepartment) {
+                return null;
+              }
+              const isImmutable = state.status === 'active_maintenance';
               return (
                 <MaintenanceBlockVolume
                   key={`vol_${track.block_id}`}
                   track={track}
                   jobId={state.activeJobId || 'JOB-ACTIVE'}
                   department={state.department || 'Engineering'}
+                  status={state.status === 'active_maintenance' ? 'IN_PROGRESS' : 'SANCTIONED'}
+                  isLocked={isImmutable}
                   isShadow={state.isShadow}
                   shadowJobs={state.shadowWith}
                   isSelected={selectedEntity?.type === 'job' && selectedEntity.id === state.activeJobId}
                   onSelect={() => {
                     const job = scenario?.jobs.find(j => j.id === state.activeJobId);
-                    onSelectEntity({ type: 'job', id: state.activeJobId || 'JOB', data: job || { id: state.activeJobId, department: state.department, block_id: track.block_id } });
+                    onSelectEntity({
+                      type: 'job',
+                      id: state.activeJobId || 'JOB',
+                      data: job || {
+                        id: state.activeJobId,
+                        department: state.department,
+                        block_id: track.block_id,
+                        status: state.status,
+                        is_locked: isImmutable
+                      }
+                    });
                   }}
                   showLabel={visibleLabelIds.has(track.block_id)}
                 />
@@ -312,7 +400,7 @@ export const NetworkScene: React.FC<NetworkSceneProps> = ({
           <InstancedTrackAssets
             oheMasts={oheMasts}
             signals={signals}
-            assets={assets}
+            assets={filteredAssets}
             onSelectEntity={onSelectEntity}
             selectedId={selectedEntity?.id}
           />

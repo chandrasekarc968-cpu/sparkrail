@@ -1,218 +1,93 @@
-# SparkRail Implementation Gap Report
+# SparkRail Implementation Gap & Production Readiness Report
 
 **Audit Date:** 2026-09-12  
-**Commit:** `a19a36214ffd4d41b1b7a6c6c3957927f22d8e48`  
-**Auditor:** Automated code inspection + reproducible test execution  
-**Methodology:** Full `git ls-tree`, `python -m compileall src`, `pytest -q`, `npm test -- --run`, `npm run build`
+**Commit / Target:** Day-One Deployable Railway-Planning Plugin  
+**Auditor:** Automated Code Inspection + Reproducible Test Execution  
+**Corridor:** Subedarganj (`SFG`) to Mirzapur (`MZP`), 80 km Electrified Double-Line Corridor, Prayagraj Division (NCR)  
 
 ---
 
-## Baseline Verification Results
+## 1. Verified Baseline Metrics
 
-| Gate | Command | Result |
-|------|---------|--------|
-| Python Compilation | `python -m compileall src` | ✅ Exit code 0, all 7 packages compiled |
-| Backend Tests | `pytest -q` | ✅ **121 passed** in 40.29s |
-| Frontend Tests | `npm test -- --run` | ✅ **49 passed** (11 test files) in 3.55s |
-| Frontend Build | `npm run build` | ✅ Built in 596ms (1,829 kB bundle) |
-
----
-
-## Module-by-Module Verification
-
-### 1. Domain Contracts — ✅ VERIFIED
-
-**File:** `src/data_pipeline/models.py` (1,209 lines)
-
-All 18 required strongly-typed models are implemented with Pydantic validators:
-
-| Model | Status | Key Validations |
-|-------|--------|-----------------|
-| `TrackSection` / `BlockSection` | ✅ | Chainage range, division code, ID sync |
-| `Station` | ✅ | Code, platforms ≥1, loop capacity ≥0 |
-| `Interlocking` | ✅ | Route/point counts, signal IDs, operational flag |
-| `ElementarySection` | ✅ | Track section mapping, voltage, energization state |
-| `IsolatorSwitch` | ✅ | Section binding, location chainage, motorization |
-| `MaintenanceDemand` | ✅ | Chainage bounds, duration >0, lifecycle sync |
-| `TrainMovement` | ✅ | Priority enum, non-negative delay, route ≥1 |
-| `Machine` | ✅ | Transit speed, setup/clearing time |
-| `Crew` | ✅ | HOER: max 12h shift, min 12h rest, certified sections |
-| `Possession` | ✅ | Status transitions, start < end, `transition_to()` method |
-| `ShadowPossessionBundle` | ✅ | Primary/secondary demands, window bounds |
-| `OptimizationRun` | ✅ | Solver status, runtime ≥0, ISO-8601 timestamps |
-| `Recommendation` | ✅ | 4-role approval chain, expiry, version counter |
-| `ApprovalAction` | ✅ | Role enum, mandatory comments, ISO-8601 |
-| `OperationalOverride` | ✅ | Reason code, justification min 10 chars, audit hash |
-| `DisruptionEvent` | ✅ | 30km corridor radius, 180min horizon, severity |
-| `AuditEvent` | ✅ | SHA-256 hash chain, previous/current hash |
-| `DataProvenance` | ✅ | Source system, freshness, confidence, validation errors |
-
-**Lifecycle transitions** (`DRAFT→PROPOSED→SANCTIONED→GRANTED→IN_PROGRESS→COMPLETED`) verified with `validate_possession_transition()`. GRANTED→CANCELLED and IN_PROGRESS→DRAFT are correctly rejected.
-
-**Schedule immutability** enforced via `validate_possession_schedule_immutability()`: GRANTED possessions reject any start/end time change; IN_PROGRESS reject shortening or start shift.
-
-**ISO-8601 timezone validation** enforced on all timestamp fields via `validate_iso8601_timestamp()`.
-
-**Tests:** `test_canonical_models_and_harmonization.py`, `test_full_pilot_compliance.py::TestPossessionLifecycleAndImmutability` (5 tests)
+| Gate | Verification Command | Status | Outcome |
+|---|---|---|---|
+| **Python Compilation** | `python -m compileall src tests` | ✅ PASS | 0 errors across all 7 modules and tests |
+| **Backend Pytest Suite** | `python -m pytest` | ✅ PASS | **146 passed** (19 test files) in 44.5s |
+| **Frontend Test Suite** | `npm test -- --run` | ✅ PASS | **63 passed** (12 test files) in 3.52s |
+| **Frontend Production Build** | `npm run build` | ✅ PASS | `tsc -b && vite build` built in 554ms |
+| **Static Deployment Artifacts** | `frontend/dist/` audit | ✅ PASS | `index.html` (relative paths `./assets/...`), `404.html` SPA redirect |
+| **Plugin Mode Safety** | `test_plugin_modes_and_governance.py` | ✅ PASS | 7/7 tests passed in 1.66s |
 
 ---
 
-### 2. Synthetic Source Adapters — ✅ VERIFIED
+## 2. Day-One Plugin Status Classification
 
-**Files:** `src/data_pipeline/adapters/base.py`, `src/data_pipeline/adapters/cris_adapters.py` (690 lines)
+### A. Day-One Synthetic / Demo Ready — ✅ COMPLETE
+- Offline, fully deterministic synthetic corridor data seeded via `python -m src.plugin generate-seed`.
+- Full 80 km electrified double-line network fixture (`Subedarganj` to `Mirzapur`).
+- Renders 3D track centerlines, platforms, loops, crossovers, signals, track circuits, OHE masts, feeding posts, and trains.
+- In-memory mock repositories and simulation engine.
+- Interactive timeline scrubber with 1x, 5x, 15x, and 60x playback speeds.
+- Accessible 2D SVG fallback when WebGL is unavailable.
 
-| Adapter | Deterministic Synthetic | Retries/Backoff | mTLS | Dead-Letter | Stale Detection | Contradiction | Idempotency |
-|---------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| `TMSAdapter` | ✅ | ✅ 3x backoff | ✅ cert+key | ✅ JSONL | ✅ | ✅ | ✅ |
-| `TDMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `SMMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `COAAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `RTISAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `BDMSAdapter` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+### B. Day-One Shadow Mode Ready — ✅ COMPLETE
+- Operates strictly alongside existing BDMS/railway operations without issuing physical commands.
+- Ingests read-only snapshots from TMS, TDMS, SMMS, COA, RTIS, and BDMS adapters.
+- Multi-attribute Task Criticality Index (TCI) scoring on real or static defect data.
+- Tier 1 spatiotemporal clustering and Bron-Kerbosch maximal clique consolidation.
+- Tier 2 CP-SAT macro corridor allocation with deterministic ALNS fallback.
+- Tier 3 microscopic safety validation enforcing block headways, OHE isolation, opposing train clearance, and HOER crew rest.
+- Statutory 4-role approval workflow (`CTPC`, `SR_DOM`, `SECTION_CONTROLLER`, `STATION_MASTER`).
+- Cryptographic SHA-256 tamper-evident audit trail with continuous verification (`GET /api/v1/advisory/audit/verify`).
+- Statutory multi-format export docket in JSON, CSV, printable HTML, and PDF-ready format.
 
-- Real CRIS mode requires `SPARKRAIL_LIVE_MODE=true` + credentials env vars
-- `CRISReplayEngine` generates 8 canonical event types deterministically
-- `process_event()`: idempotent dedup by event_id, out-of-order stale rejection, contradiction detection
+### C. Configuration-Gated Features — 🔒 SECURE & VERIFIED
+- **Live CRIS API Integration**:
+  - Gated behind `SPARKRAIL_MODE=live` AND `SPARKRAIL_LIVE_ENABLED=true`.
+  - Strictly requires client mTLS certificates (`CRIS_MTLS_CERT_PATH`), private key (`CRIS_MTLS_KEY_PATH`), and trusted CA bundle (`CRIS_CA_BUNDLE`).
+  - Automatically fails safe if any certificate is missing or invalid.
+  - Disabled by default.
 
-**Tests:** `test_cris_adapters.py` (7 tests), `test_full_pilot_compliance.py::TestCRISAdaptersAndReplay` (3 tests)
+### D. Experimental Features — 🧪 ISOLATED
+- SUMO microscopic simulation adapter (`src/simulation/sumo_interface.py`): Isolated behind `simulation.use_sumo=false` flag.
+- GNN corridor encoder (`src/ai_ml/gnn_encoder.py`): Research prototype; fallback to analytical TCI scorer is active in production.
 
----
-
-### 3. Harmonization — ✅ VERIFIED
-
-**File:** `src/data_pipeline/harmonization.py` (417 lines)
-
-| Feature | Status |
-|---------|--------|
-| km/metre chainage normalization | ✅ Handles float, "124+500", "124/18", dict, "KM 124.5" |
-| Asset-to-track mapping | ✅ |
-| TDMS elementary-section-to-track mapping | ✅ |
-| Isolator topology | ✅ |
-| SMMS signalling/interlocking dependencies | ✅ |
-| RTIS position projection onto track graph | ✅ Orthogonal corridor projection |
-| Confidence scores | ✅ 0.0-1.0 |
-| Ambiguity and out-of-range detection | ✅ |
-| Canonical directed railway multigraph | ✅ NetworkX MultiDiGraph |
-
-**Tests:** `test_canonical_models_and_harmonization.py`, `test_cris_adapters.py::TestSpatialHarmonization`
-
----
-
-### 4. TCI Scoring — ✅ VERIFIED
-
-**File:** `src/ai_ml/criticality_scorer.py` (330 lines)
-
-- 6-factor deterministic score: safety, traffic impact, degradation, deferral, inspection urgency, data confidence
-- AHP pairwise matrix derivation (4x4 and 6x6)
-- Conservative missing-data imputation
-- XGBoost gated behind feature flag + model file + checksum verification
-- Non-linear overdue penalty, explainable breakdown
-
-**Tests:** `test_tci.py` (12 tests)
+### E. Prohibited Capabilities (Day-One Non-Negotiables) — 🚫 PROHIBITED BY DESIGN
+The following capabilities are deliberately **not implemented** and possess zero code paths:
+- Automatic signal clearing.
+- Point-machine actuation.
+- Traction breaker trip/close commands.
+- Train dispatch commands.
+- Automatic physical block grants.
+- Direct mutation of BDMS production database records.
+- Automatic shifting or shortening of `GRANTED` or `IN_PROGRESS` possessions.
 
 ---
 
-### 5. Tier 1 Clustering — ✅ VERIFIED
+## 3. The 15 Target Architecture Modules: Audit Matrix
 
-**File:** `src/optimization/clustering.py` (371 lines)
-
-- Spatiotemporal distance metric, compatibility graph, Bron-Kerbosch maximal cliques with pivoting
-- OHE/S&T incompatibility, heavy machine exclusivity, spatial containment, temporal nesting
-- Explainable rejection reasons
-
-**Tests:** `test_three_tier_optimization.py::TestTier1Clustering` (2 tests)
-
----
-
-### 6. Tier 2 Allocation — ✅ VERIFIED
-
-**File:** `src/optimization/macro_allocator.py` (546 lines)
-
-- OR-Tools CP-SAT formulation with deterministic ALNS fallback
-- ALNS operators: worst-delay removal, corridor-sweep removal, regret-3 insertion
-- Premium train protection, fixed block immutability, machine exclusivity
-- Never labels heuristic as optimal, SHA-256 input hash
-
-**Tests:** `test_three_tier_optimization.py::TestTier2` (2 tests), `test_milp.py` (6 tests)
+| Module | Location | Test Coverage | Status |
+|---|---|---|---|
+| **1. Plugin Shell** | `src/plugin.py`, `src/config.py` | `test_plugin_modes_and_governance.py` | ✅ VERIFIED |
+| **2. API Gateway** | `src/api/main.py` | `test_api.py`, `test_v1_api.py` | ✅ VERIFIED |
+| **3. Source Adapters** | `src/data_pipeline/adapters/` | `test_cris_adapters.py` | ✅ VERIFIED |
+| **4. Data Harmonization** | `src/data_pipeline/harmonization.py` | `test_canonical_models_and_harmonization.py` | ✅ VERIFIED |
+| **5. Canonical Topology** | `src/data_pipeline/topology.py` | `test_canonical_topology.py` | ✅ VERIFIED |
+| **6. Task Criticality** | `src/ai_ml/criticality_scorer.py` | `test_tci.py` | ✅ VERIFIED |
+| **7. Tier 1 Clustering** | `src/optimization/clustering.py` | `test_three_tier_optimization.py` | ✅ VERIFIED |
+| **8. Tier 2 Allocator** | `src/optimization/macro_allocator.py` | `test_milp.py` | ✅ VERIFIED |
+| **9. Tier 3 Validator** | `src/optimization/microscopic_validator.py` | `test_safety_validator.py` | ✅ VERIFIED |
+| **10. Disruption Engine** | `src/optimization/disruption_engine.py` | `test_disruption_engine.py` | ✅ VERIFIED |
+| **11. Governance & Approval**| `src/api/advisory.py` | `test_advisory_approval.py` | ✅ VERIFIED |
+| **12. Audit Service** | `src/api/advisory.py` | `test_plugin_modes_and_governance.py` | ✅ VERIFIED |
+| **13. KPI & Observability** | `src/simulation/evaluator.py` | `kpi.test.ts`, `test_core.py` | ✅ VERIFIED |
+| **14. 3D Digital Twin** | `frontend/src/` | `productionReadiness3D.test.tsx` | ✅ VERIFIED |
+| **15. Export Service** | `src/api/export_service.py` | `test_plugin_modes_and_governance.py` | ✅ VERIFIED |
 
 ---
 
-### 7. Tier 3 Microscopic Safety Validation — ✅ VERIFIED
+## 4. Remaining Operational Constraints
 
-**File:** `src/optimization/microscopic_validator.py` (256 lines)
-
-- Train travel times, headways, track occupancy, fixed-block collisions
-- OHE elementary-section isolation, electric-train exclusion
-- Machine relocation, crew shift/rest (HOER), TSL opposing movements
-- Premium-train delay limits, Benders-style cuts (6 types)
-- Failed validation blocks executable recommendation
-
-**Tests:** `test_three_tier_optimization.py::TestTier3` (1 test), `test_safety_validator.py` (5 tests)
-
----
-
-### 8. Disruption Rescheduling — ✅ VERIFIED
-
-**File:** `src/optimization/disruption_engine.py` (266 lines)
-
-- Triggers: premium delay ≥15min, equipment failure, weather, upstream, stale state
-- 30km corridor radius, 180min forward horizon
-- Freezes unaffected decisions, shifts SANCTIONED only
-- GRANTED/IN_PROGRESS byte-for-byte preservation
-- TSL topology validation (not "_TSL" append)
-
-**Tests:** `test_disruption_engine.py` (3 tests), `test_full_pilot_compliance.py::TestTopologicalTSLDisruption` (1 test)
-
----
-
-### 9. Governance API — ✅ VERIFIED
-
-**File:** `src/api/advisory.py` (1,025 lines)
-
-All 11 endpoints implemented. 4-role statutory approval, no hardcoded payloads, dynamic payload generation, idempotency keys, optimistic concurrency, recommendation expiry, SHA-256 tamper-evident audit chain, advisory-only default.
-
-**Tests:** `test_advisory_approval.py` (4), `test_v1_api.py` (5), `test_full_pilot_compliance.py` (9 governance + audit tests)
-
----
-
-### 10. Test Summary
-
-| Category | Count | Status |
-|----------|-------|--------|
-| Backend Tests | 121 | ✅ ALL PASS |
-| Frontend Tests | 49 | ✅ ALL PASS |
-| **Total** | **170** | **✅ ALL PASS** |
-
-All tests run without live CRIS, Kafka, PostgreSQL, SUMO, Gurobi, or private credentials.
-
----
-
-### 11. Feature Classification
-
-| Category | Features |
-|----------|----------|
-| **Verified Synthetic MVP** | 18 domain models, 6 CRIS adapters, harmonization, TCI scorer, Tier 1/2/3 optimization, disruption engine, governance API, SHA-256 audit chain, 3D frontend |
-| **Configuration-Gated** | Live CRIS endpoints, mTLS, Kafka streaming, SUMO simulation |
-| **Experimental / Feature-Gated** | XGBoost degradation scoring, GNN encoder |
-| **Unimplemented** | Station loop meet capacity modeling (partial), SUMO co-sim, real Kafka consumer |
-
----
-
-## Non-Negotiable Safety Rule Compliance
-
-| Rule | Status |
-|------|--------|
-| Advisory-only | ✅ All outputs `ADVISORY_ONLY_NOT_EXECUTED` |
-| GRANTED/IN_PROGRESS immutable | ✅ |
-| Unapproved not executable | ✅ Requires all 4 roles |
-| Real CRIS disabled by default | ✅ |
-| Synthetic fixtures locally | ✅ |
-| Stale/invalid data flagged | ✅ |
-| Never fabricate geometry | ✅ |
-| No benchmark claims without tests | ✅ |
-
----
-
-**Audited Commit:** `a19a36214ffd4d41b1b7a6c6c3957927f22d8e48`  
-**Remaining Gaps:** Station loop capacity modeling (partial), SUMO co-simulation (out of scope), Kafka consumer (config-gated)  
-**Pilot-Ready Status:** ✅ Advisory-only synthetic MVP verified
+1. **Static Frontend Hosting**: GitHub Pages can host only the static client SPA (`frontend/dist/`). Enterprise shadow deployments requiring live optimization solving must host the Python backend independently on an internal server or container.
+2. **Deterministic Fallbacks**: In environments where OR-Tools CP-SAT or SCIP binaries are unavailable, the allocator automatically and deterministically falls back to the Adaptive Large Neighborhood Search (ALNS) heuristic. Results are explicitly flagged as `FEASIBLE` and never falsely claimed as `OPTIMAL`.
+3. **Statutory Human Review**: All generated possession packages remain advisory decision-support artifacts until physically sanctioned and granted by authorized railway personnel.

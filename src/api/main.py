@@ -28,8 +28,11 @@ from src.data_pipeline.models import (
     SystemEvent,
     NetworkGeometryResponse,
     PlanningCapabilitiesResponse,
-    ConflictItem
+    ConflictItem,
+    PossessionEntity,
+    Train
 )
+from src.data_pipeline.topology import CanonicalRailwayTopology
 from src.data_pipeline.synthetic_data import (
     generate_synthetic_data,
     save_synthetic_data,
@@ -501,6 +504,133 @@ def get_network_3d_geometry():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to generate 3D network geometry."
         )
+
+# 10b. Versioned Geometry Endpoint (v1)
+@app.get("/network/geometry/v1", response_model=NetworkGeometryResponse)
+def get_network_3d_geometry_v1():
+    """Versioned canonical 3D railway geometry contract endpoint (schema v1.0.0)."""
+    return get_network_3d_geometry()
+
+# 10c. Canonical Railway Topology Endpoints
+from pydantic import BaseModel
+
+class TopologyQueryRequest(BaseModel):
+    action: str
+    chainage_km: Optional[float] = None
+    direction: Optional[str] = "UP"
+    track_id: Optional[str] = None
+    track_ids: Optional[List[str]] = None
+    origin_km: Optional[float] = None
+    destination_km: Optional[float] = None
+    start_km: Optional[float] = None
+    end_km: Optional[float] = None
+    healthy_track_id: Optional[str] = None
+    possession: Optional[Dict[str, Any]] = None
+    trains: Optional[List[Dict[str, Any]]] = None
+
+@app.get("/network/topology")
+def get_network_topology():
+    """Returns canonical directed multigraph railway topology for the Prayagraj corridor."""
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        scenario_file = os.path.join(synth_path, "scenario.json")
+        if not os.path.exists(scenario_file):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+        geom = generate_network_geometry(scenario)
+        topology = CanonicalRailwayTopology(geom)
+        validation = topology.validate_topology_connectivity()
+        return {
+            "schema_version": "1.0.0",
+            "corridor": "Subedarganj - Mirzapur (80 km)",
+            "total_length_km": 80.0,
+            "track_sections_count": len(topology.track_sections),
+            "stations": [s.model_dump() for s in topology.stations.values()],
+            "interlockings": [i.model_dump() for i in topology.interlockings.values()],
+            "crossovers": [c.model_dump() for c in topology.crossovers.values()],
+            "validation": validation
+        }
+    except Exception as e:
+        logger.error(f"Error computing network topology: {e}")
+        raise HTTPException(status_code=500, detail="Failed to compute network topology.")
+
+@app.post("/network/topology/query")
+def query_network_topology(query: TopologyQueryRequest):
+    """Executes spatial and graph queries against the canonical corridor topology."""
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        scenario_file = os.path.join(synth_path, "scenario.json")
+        if not os.path.exists(scenario_file):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+        geom = generate_network_geometry(scenario)
+        topology = CanonicalRailwayTopology(geom)
+
+        if query.action == "track_by_chainage":
+            if query.chainage_km is None:
+                raise HTTPException(status_code=400, detail="chainage_km required")
+            sec = topology.get_track_section_by_chainage(query.chainage_km, direction=query.direction or "UP")
+            return {"action": query.action, "result": sec.model_dump() if sec else None}
+
+        elif query.action == "nearest_station":
+            if query.chainage_km is None:
+                raise HTTPException(status_code=400, detail="chainage_km required")
+            stn, dist = topology.get_nearest_station(query.chainage_km)
+            return {"action": query.action, "station": stn.model_dump() if stn else None, "distance_km": dist}
+
+        elif query.action == "adjacent":
+            if not query.track_id:
+                raise HTTPException(status_code=400, detail="track_id required")
+            adj = topology.get_adjacent_sections(query.track_id, direction=query.direction or "UP")
+            return {"action": query.action, "adjacent_track_ids": adj}
+
+        elif query.action == "route":
+            if query.origin_km is None or query.destination_km is None:
+                raise HTTPException(status_code=400, detail="origin_km and destination_km required")
+            route = topology.find_route(query.origin_km, query.destination_km, direction=query.direction or "UP")
+            return {"action": query.action, "route_sections": [r.model_dump() for r in route]}
+
+        elif query.action == "affected_ohe":
+            if not query.track_ids:
+                raise HTTPException(status_code=400, detail="track_ids required")
+            ohe = topology.get_affected_ohe_sections(query.track_ids)
+            return {"action": query.action, "elementary_sections": [es.model_dump() for es in ohe]}
+
+        elif query.action == "affected_signalling":
+            if not query.track_ids:
+                raise HTTPException(status_code=400, detail="track_ids required")
+            ixl = topology.get_affected_signalling_zones(query.track_ids)
+            return {"action": query.action, "interlocking_zones": [z.model_dump() for z in ixl]}
+
+        elif query.action == "valid_tsl":
+            if not query.healthy_track_id or query.start_km is None or query.end_km is None:
+                raise HTTPException(status_code=400, detail="healthy_track_id, start_km, and end_km required")
+            tsl = topology.get_valid_tsl_corridor(query.healthy_track_id, query.start_km, query.end_km)
+            return {"action": query.action, "tsl_corridor": tsl}
+
+        elif query.action == "conflicts":
+            if not query.possession:
+                raise HTTPException(status_code=400, detail="possession dict required")
+            poss_entity = PossessionEntity(**query.possession)
+            train_objs = [Train(**t) for t in (query.trains or [])]
+            confs = topology.find_possession_train_conflicts(poss_entity, train_objs)
+            return {"action": query.action, "conflicts": confs}
+
+        elif query.action == "assets_in_possession":
+            if not query.track_ids or query.start_km is None or query.end_km is None:
+                raise HTTPException(status_code=400, detail="track_ids, start_km, and end_km required")
+            assets = topology.get_assets_in_possession(query.track_ids, query.start_km, query.end_km)
+            return {"action": query.action, "assets": assets}
+
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported action: '{query.action}'")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing topology query '{query.action}': {e}")
+        raise HTTPException(status_code=500, detail=f"Topology query execution failed: {e}")
 
 # 11. Planning Capabilities Endpoint
 @app.get("/planning/capabilities", response_model=PlanningCapabilitiesResponse)

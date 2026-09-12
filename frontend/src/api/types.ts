@@ -157,6 +157,30 @@ export interface Coordinate3D {
 
 export type Vector3D = Coordinate3D;
 
+export type ValidationStatus =
+  | "VALIDATED"
+  | "SYNTHETIC"
+  | "STALE"
+  | "LOW_CONFIDENCE"
+  | "INVALID"
+  | "CONTRADICTORY"
+  | "UNAVAILABLE";
+
+export interface BaseEntityProvenance {
+  source_system?: string;
+  source_record_id?: string;
+  geometry_source?: string;
+  schema_version?: string;
+  coordinate_reference_system?: string;
+  source_timestamp?: string;
+  ingestion_timestamp?: string;
+  data_freshness_seconds?: number;
+  confidence?: number;
+  validation_status?: ValidationStatus;
+  referenced_block_id?: string;
+  referenced_track_section_id?: string;
+}
+
 export interface CoordinateSystemContract {
   name: "LOCAL_CORRIDOR" | string;
   crs: "LOCAL_CORRIDOR" | string;
@@ -165,9 +189,11 @@ export interface CoordinateSystemContract {
   handedness: "right-handed";
   origin_description: string;
   geometry_source: "synthetic" | "surveyed";
+  transform_version?: string;
+  is_synthetic?: boolean;
 }
 
-export interface GeometryNode {
+export interface GeometryNode extends BaseEntityProvenance {
   id: string;
   entity_type?: string;
   coordinates?: Coordinate3D;
@@ -196,7 +222,7 @@ export interface JunctionNode extends GeometryNode {
   interlocking_status?: string;
 }
 
-export interface TrackGeometry {
+export interface TrackGeometry extends BaseEntityProvenance {
   id?: string;
   block_id: string;
   entity_type?: string;
@@ -220,7 +246,157 @@ export interface TrackGeometry {
 
 export type GeometryTrack = TrackGeometry;
 
-export interface SignalMarker {
+export interface TrackSection extends BaseEntityProvenance {
+  id: string;
+  block_id: string;
+  line_name: string;
+  track_direction: "UP" | "DOWN" | "BIDIRECTIONAL";
+  chainage_start_km: number;
+  chainage_end_km: number;
+  length_km: number;
+  start_coord: Coordinate3D;
+  end_coord: Coordinate3D;
+  path_points?: Coordinate3D[];
+  speed_limit_kmh: number;
+  electrification_status: string;
+  gauge: string;
+}
+
+export interface TrackCenterline extends BaseEntityProvenance {
+  id: string;
+  corridor_name: string;
+  chainage_start_km: number;
+  chainage_end_km: number;
+  centerline_points: Coordinate3D[];
+  station_anchors: string[];
+}
+
+export interface Crossover extends BaseEntityProvenance {
+  id: string;
+  name: string;
+  station_code: string;
+  from_track_id: string;
+  to_track_id: string;
+  turnout_ratio: string;
+  points_number: string;
+  speed_limit_kmh: number;
+  switch_position: "NORMAL" | "REVERSE";
+  chainage_km: number;
+  start_coord: Coordinate3D;
+  end_coord: Coordinate3D;
+}
+
+export interface InterlockingZone extends BaseEntityProvenance {
+  id: string;
+  station_code: string;
+  name: string;
+  interlocking_type: string;
+  controlled_signals: string[];
+  controlled_points: string[];
+  controlled_circuits: string[];
+  status: string;
+  chainage_start_km: number;
+  chainage_end_km: number;
+  boundary_coords: Coordinate3D[];
+}
+
+export interface TrackCircuit extends BaseEntityProvenance {
+  id: string;
+  track_id: string;
+  block_id: string;
+  chainage_start_km: number;
+  chainage_end_km: number;
+  is_occupied: boolean;
+  circuit_type: string;
+  coordinates: Coordinate3D;
+}
+
+export interface ElementarySection extends BaseEntityProvenance {
+  id: string;
+  section_code: string;
+  name: string;
+  feeding_post_id: string;
+  associated_tracks: string[];
+  associated_masts: string[];
+  isolator_switch_ids: string[];
+  is_energized: boolean;
+  nominal_voltage_kv: number;
+  chainage_start_km: number;
+  chainage_end_km: number;
+}
+
+export interface FeedingPost extends BaseEntityProvenance {
+  id: string;
+  name: string;
+  location_chainage_km: number;
+  incoming_grid_voltage_kv: number;
+  catenary_voltage_kv: number;
+  is_operational: boolean;
+  coordinates: Coordinate3D;
+}
+
+export interface IsolatorSwitch extends BaseEntityProvenance {
+  id: string;
+  switch_code: string;
+  elementary_section_id: string;
+  state: "OPEN" | "CLOSED";
+  switch_type: string;
+  chainage_km: number;
+  coordinates: Coordinate3D;
+}
+
+export interface PossessionEntity extends BaseEntityProvenance {
+  id: string;
+  job_id: string;
+  block_id: string;
+  department: string;
+  status: "PLANNED" | "SANCTIONED" | "GRANTED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "REJECTED";
+  start_time_hours: number;
+  end_time_hours: number;
+  chainage_start_km: number;
+  chainage_end_km: number;
+  affected_tracks: string[];
+  affected_ohe_sections: string[];
+  affected_signals: string[];
+  is_locked: boolean;
+  is_shadow: boolean;
+  shadow_bundle_id?: string;
+  required_machines: string[];
+  crew_count: number;
+  safety_certified: boolean;
+  approval_status: string;
+}
+
+export interface ShadowPossessionBundle extends BaseEntityProvenance {
+  bundle_id: string;
+  id?: string;
+  primary_demand_id?: string;
+  primary_possession_id?: string;
+  secondary_demand_ids?: string[];
+  shadow_possession_ids?: string[];
+  corridor_closure_saving_hours?: number;
+  block_id: string;
+  window_start?: number;
+  window_end?: number;
+  time_window_start?: number;
+  time_window_end?: number;
+}
+
+export interface SpeedRestrictionZone extends BaseEntityProvenance {
+  id: string;
+  track_id: string;
+  block_id: string;
+  chainage_start_km: number;
+  chainage_end_km: number;
+  restricted_speed_kmh: number;
+  normal_speed_kmh: number;
+  reason: string;
+  is_permanent: boolean;
+  start_coord: Coordinate3D;
+  end_coord: Coordinate3D;
+}
+
+export interface SignalMarker extends BaseEntityProvenance {
   id: string;
   entity_type?: string;
   block_id: string;
@@ -235,7 +411,7 @@ export interface SignalMarker {
   schema_version?: string;
 }
 
-export interface OHEMast {
+export interface OHEMast extends BaseEntityProvenance {
   id: string;
   entity_type?: string;
   block_id: string;
@@ -252,14 +428,25 @@ export interface OHEMast {
 
 export type ConflictType = 
   | "train_vs_block"
+  | "train_versus_possession"
   | "premium_train_risk"
   | "incompatible_department"
   | "resource_overallocation"
   | "fixed_block_collision"
   | "insufficient_safety_clearance"
-  | "overdue_critical_maintenance";
+  | "overdue_critical_maintenance"
+  | "headway_violation"
+  | "ohe_isolation_conflict"
+  | "signalling_disconnection_conflict"
+  | "machine_collision"
+  | "crew_rest_violation"
+  | "tsl_conflict"
+  | "stale_data"
+  | "contradictory_source_data"
+  | "disconnected_topology"
+  | "invalid_geometry";
 
-export interface ConflictItem {
+export interface ConflictItem extends BaseEntityProvenance {
   id: string;
   entity_type?: string;
   conflict_type: ConflictType;
@@ -272,6 +459,9 @@ export interface ConflictItem {
   affected_trains: string[];
   time_window?: { start: number; end: number };
   suggested_resolution: string;
+  blocks_approval?: boolean;
+  explanation?: string;
+  location?: string;
   coordinates?: Coordinate3D;
   position?: Coordinate3D;
   geometry_source?: string;
@@ -300,6 +490,17 @@ export interface NetworkGeometryResponse {
   junctions?: JunctionNode[];
   assets?: AssetHealthRecord[];
   disconnected_components?: string[][];
+  track_sections?: TrackSection[];
+  track_centerlines?: TrackCenterline[];
+  crossovers?: Crossover[];
+  interlockings?: InterlockingZone[];
+  track_circuits?: TrackCircuit[];
+  elementary_sections?: ElementarySection[];
+  feeding_posts?: FeedingPost[];
+  isolator_switches?: IsolatorSwitch[];
+  possessions?: PossessionEntity[];
+  shadow_bundles?: ShadowPossessionBundle[];
+  speed_restrictions?: SpeedRestrictionZone[];
 }
 
 export interface PlanningCapabilitiesResponse {

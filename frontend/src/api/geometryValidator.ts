@@ -45,24 +45,21 @@ export function validateCoordinateSystemContract(cs: unknown, expectedVersion: s
   const c = cs as Record<string, unknown>;
   const errors: string[] = [];
 
-  if (c.name !== 'LOCAL_CORRIDOR') {
-    errors.push(`coordinate_system.name must be 'LOCAL_CORRIDOR', got '${c.name}'`);
+  const allowedCRSs = ['LOCAL_CORRIDOR', 'EPSG:4326'];
+  if (!c.crs || !allowedCRSs.includes(String(c.crs))) {
+    errors.push(`coordinate_system.crs must be one of [${allowedCRSs.join(', ')}], got '${c.crs}'`);
   }
-  if (c.crs !== 'LOCAL_CORRIDOR') {
-    errors.push(`coordinate_system.crs must be 'LOCAL_CORRIDOR', got '${c.crs}'`);
+  if (c.crs === 'LOCAL_CORRIDOR' && c.units !== 'meters') {
+    errors.push(`coordinate_system.units must be 'meters' for LOCAL_CORRIDOR, got '${c.units}'`);
   }
-  if (c.units !== 'meters') {
-    errors.push(`coordinate_system.units must be 'meters', got '${c.units}'`);
-  }
-  if (!Array.isArray(c.axis_order) || c.axis_order.length !== 3 ||
-      c.axis_order[0] !== 'x' || c.axis_order[1] !== 'y' || c.axis_order[2] !== 'z') {
-    errors.push(`coordinate_system.axis_order must be ['x', 'y', 'z'], got ${JSON.stringify(c.axis_order)}`);
+  if (!Array.isArray(c.axis_order) || c.axis_order.length !== 3) {
+    errors.push(`coordinate_system.axis_order must have 3 elements, got ${JSON.stringify(c.axis_order)}`);
   }
   if (c.handedness !== 'right-handed') {
     errors.push(`coordinate_system.handedness must be 'right-handed', got '${c.handedness}'`);
   }
-  if (c.geometry_source !== 'synthetic' && c.geometry_source !== 'surveyed') {
-    errors.push(`coordinate_system.geometry_source must be 'synthetic' or 'surveyed', got '${c.geometry_source}'`);
+  if (c.geometry_source !== 'synthetic' && c.geometry_source !== 'surveyed' && c.geometry_source !== 'authoritative') {
+    errors.push(`coordinate_system.geometry_source must be 'synthetic', 'surveyed', or 'authoritative', got '${c.geometry_source}'`);
   }
 
   if (errors.length > 0) {
@@ -142,6 +139,61 @@ export function validateNetworkGeometryContract(
       if (!isDemo) {
         throw new GeometryContractError(
           `Node '${nodeId}' has non-finite or missing coordinates. The frontend must never invent station geometry in non-demo mode.`,
+          version
+        );
+      }
+    }
+  }
+
+  // 4. Canonical TrackSections validation (if present)
+  if (Array.isArray(payload.track_sections)) {
+    for (let i = 0; i < payload.track_sections.length; i++) {
+      const sec = payload.track_sections[i] as Record<string, unknown>;
+      const secId = String(sec.id || `sec[${i}]`);
+      if (!isValidFiniteCoord(sec.start_coord) || !isValidFiniteCoord(sec.end_coord)) {
+        throw new GeometryContractError(`TrackSection '${secId}' has non-finite start_coord or end_coord`, version);
+      }
+      const startKm = Number(sec.chainage_start_km);
+      const endKm = Number(sec.chainage_end_km);
+      if (!Number.isFinite(startKm) || !Number.isFinite(endKm) || startKm >= endKm) {
+        throw new GeometryContractError(`TrackSection '${secId}' has invalid/reversed chainage: ${startKm} >= ${endKm}`, version);
+      }
+      if (sec.validation_status === "INVALID") {
+        throw new GeometryContractError(`TrackSection '${secId}' is flagged as INVALID operational data`, version);
+      }
+    }
+  }
+
+  // 5. Signals validation: must have finite coordinates and valid track references
+  if (Array.isArray(payload.signals)) {
+    for (let i = 0; i < payload.signals.length; i++) {
+      const sig = payload.signals[i] as Record<string, unknown>;
+      const sigId = String(sig.id || `signal[${i}]`);
+      const pos = sig.position || sig.coordinates;
+      if (!isValidFiniteCoord(pos)) {
+        throw new GeometryContractError(`Signal '${sigId}' has non-finite coordinates`, version);
+      }
+      const ref = sig.referenced_track_section_id || sig.referenced_block_id || sig.block_id;
+      if (!ref || typeof ref !== 'string' || !ref.trim()) {
+        throw new GeometryContractError(`Signal '${sigId}' has no valid track reference`, version);
+      }
+    }
+  }
+
+  // 6. Possessions validation: extent and Safety Boundary #6 (immutable locks on GRANTED/IN_PROGRESS)
+  if (Array.isArray(payload.possessions)) {
+    for (let i = 0; i < payload.possessions.length; i++) {
+      const poss = payload.possessions[i] as Record<string, unknown>;
+      const possId = String(poss.id || `possession[${i}]`);
+      const startKm = Number(poss.chainage_start_km);
+      const endKm = Number(poss.chainage_end_km);
+      if (Number.isFinite(startKm) && Number.isFinite(endKm) && startKm >= endKm) {
+        throw new GeometryContractError(`Possession '${possId}' has invalid extent: ${startKm} >= ${endKm}`, version);
+      }
+      const status = String(poss.status || "").toUpperCase();
+      if ((status === "GRANTED" || status === "IN_PROGRESS") && !poss.is_locked) {
+        throw new GeometryContractError(
+          `Critical Safety Invariant Violation: Possession '${possId}' in status '${status}' must be visibly locked (is_locked: true) and immutable.`,
           version
         );
       }
