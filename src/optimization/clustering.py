@@ -269,6 +269,51 @@ class SpatiotemporalClusteringEngine:
         # Sort cliques by size descending
         return sorted(cliques, key=lambda c: len(c), reverse=True)
 
+    def _dbscan_cluster(self, jobs: List[MaintenanceJob], block_map: Dict[str, TrackBlock], eps: float = 0.6, min_samples: int = 1) -> List[List[MaintenanceJob]]:
+        """
+        Custom DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
+        Clusters jobs using the normalized spatiotemporal distance function.
+        This provides the Tier 1 scalable spatial index pruning.
+        """
+        clusters = []
+        visited = set()
+        noise = set()
+        
+        for job in jobs:
+            if job.id in visited:
+                continue
+            visited.add(job.id)
+            neighbors = [j for j in jobs if self.compute_distance(job, j, block_map) <= eps]
+            
+            if len(neighbors) < min_samples:
+                noise.add(job.id)
+            else:
+                cluster = []
+                clusters.append(cluster)
+                cluster.append(job)
+                
+                seed_set = [n for n in neighbors if n.id != job.id]
+                while seed_set:
+                    curr = seed_set.pop(0)
+                    if curr.id in noise:
+                        noise.remove(curr.id)
+                        cluster.append(curr)
+                    if curr.id not in visited:
+                        visited.add(curr.id)
+                        curr_neighbors = [j for j in jobs if self.compute_distance(curr, j, block_map) <= eps]
+                        if len(curr_neighbors) >= min_samples:
+                            seen_in_seed = set(s.id for s in seed_set)
+                            for cn in curr_neighbors:
+                                if cn.id not in visited and cn.id not in seen_in_seed:
+                                    seed_set.append(cn)
+                        cluster.append(curr)
+                        
+        for job in jobs:
+            if job.id in noise:
+                clusters.append([job])
+                
+        return clusters
+
     def generate_candidate_bundles(
         self,
         jobs: List[MaintenanceJob],
@@ -277,94 +322,105 @@ class SpatiotemporalClusteringEngine:
     ) -> List[CandidateBundle]:
         """
         Generates structured candidate possession bundles for Tier 2 Macro Allocation.
-        Validates spatial containment, temporal nesting, and engineering conflict pruning.
+        Uses DBSCAN spatial indexing to pre-cluster demands, followed by Bron-Kerbosch 
+        to find maximal compatible sub-cliques. Validates spatial containment, 
+        temporal nesting, and engineering conflict pruning.
         """
         block_map = {b.id: b for b in blocks}
         job_map = {j.id: j for j in jobs}
         
-        adj, rejected_pairs = self.build_compatibility_graph(jobs)
-        cliques = self.extract_maximal_cliques(adj)
-
+        # 1. Spatial pre-clustering via DBSCAN to prune search space
+        dbscan_clusters = self._dbscan_cluster(jobs, block_map, eps=0.6, min_samples=1)
+        
         bundles: List[CandidateBundle] = []
         seen_primary_jobs: Set[str] = set()
+        global_rejected_pairs = []
 
-        for c_idx, clique in enumerate(cliques):
-            # Sort jobs in clique by descending TCI
-            clique_jobs = sorted([job_map[jid] for jid in clique if jid in job_map], key=lambda j: job_tcis.get(j.id, 0.0), reverse=True)
-            if not clique_jobs:
-                continue
+        # 2. Extract maximal cliques (Shadow Bundles) per spatial cluster
+        c_idx_offset = 0
+        for cluster_jobs in dbscan_clusters:
+            adj, rejected_pairs = self.build_compatibility_graph(cluster_jobs)
+            global_rejected_pairs.extend(rejected_pairs)
+            cliques = self.extract_maximal_cliques(adj)
 
-            primary = clique_jobs[0]
-            if primary.id in seen_primary_jobs and len(clique_jobs) == 1:
-                continue
-            seen_primary_jobs.add(primary.id)
-
-            # Spatial extent determination
-            primary_block = block_map.get(primary.block_id)
-            primary_chainage = self._parse_chainage(primary)
-            if primary_chainage:
-                spatial_extent = primary_chainage
-            elif primary_block:
-                spatial_extent = (primary_block.chainage_start, primary_block.chainage_end)
-            else:
-                spatial_extent = (0.0, 10.0)
-
-            # Validate secondary jobs for spatial containment and temporal nesting
-            valid_secondary_jobs: List[MaintenanceJob] = []
-            for sec_job in clique_jobs[1:]:
-                sec_chainage = self._parse_chainage(sec_job)
-                sec_extent = sec_chainage or (
-                    (block_map[sec_job.block_id].chainage_start, block_map[sec_job.block_id].chainage_end)
-                    if sec_job.block_id in block_map else None
-                )
-                
-                # Spatial containment check
-                if not self.validate_spatial_containment(spatial_extent, sec_extent):
-                    rejected_pairs.append({
-                        "job_a": primary.id,
-                        "job_b": sec_job.id,
-                        "department_a": str(primary.department),
-                        "department_b": str(sec_job.department),
-                        "reason": f"Secondary job outside primary spatial extent {spatial_extent}"
-                    })
+            for c_idx, clique in enumerate(cliques):
+                # Sort jobs in clique by descending TCI
+                clique_jobs = sorted([job_map[jid] for jid in clique if jid in job_map], key=lambda j: job_tcis.get(j.id, 0.0), reverse=True)
+                if not clique_jobs:
                     continue
 
-                valid_secondary_jobs.append(sec_job)
+                primary = clique_jobs[0]
+                if primary.id in seen_primary_jobs and len(clique_jobs) == 1:
+                    continue
+                seen_primary_jobs.add(primary.id)
 
-            # Effective bundled jobs
-            effective_jobs = [primary] + valid_secondary_jobs
-            secondary_ids = [j.id for j in valid_secondary_jobs]
-            departments = list(set([self._normalize_department(j.department) for j in effective_jobs]))
+                # Spatial extent determination
+                primary_block = block_map.get(primary.block_id)
+                primary_chainage = self._parse_chainage(primary)
+                if primary_chainage:
+                    spatial_extent = primary_chainage
+                elif primary_block:
+                    spatial_extent = (primary_block.chainage_start, primary_block.chainage_end)
+                else:
+                    spatial_extent = (0.0, 10.0)
 
-            # Max duration among bundled jobs preserves every demand's minimum duration
-            max_duration = max(j.duration for j in effective_jobs)
-            total_tci = sum(job_tcis.get(j.id, 50.0) for j in effective_jobs)
+                # Validate secondary jobs for spatial containment and temporal nesting
+                valid_secondary_jobs: List[MaintenanceJob] = []
+                for sec_job in clique_jobs[1:]:
+                    sec_chainage = self._parse_chainage(sec_job)
+                    sec_extent = sec_chainage or (
+                        (block_map[sec_job.block_id].chainage_start, block_map[sec_job.block_id].chainage_end)
+                        if sec_job.block_id in block_map else None
+                    )
+                    
+                    # Spatial containment check
+                    if not self.validate_spatial_containment(spatial_extent, sec_extent):
+                        global_rejected_pairs.append({
+                            "job_a": primary.id,
+                            "job_b": sec_job.id,
+                            "department_a": str(primary.department),
+                            "department_b": str(sec_job.department),
+                            "reason": f"Secondary job outside primary spatial extent {spatial_extent}"
+                        })
+                        continue
 
-            elec_sec = self.elementary_map.get(primary.block_id, None)
+                    valid_secondary_jobs.append(sec_job)
 
-            rationale = (
-                f"Consolidated {len(effective_jobs)} compatible jobs across "
-                f"{', '.join(departments)} under a single {max_duration:.1f}h corridor possession "
-                f"(primary: {primary.id})"
-            )
+                # Effective bundled jobs
+                effective_jobs = [primary] + valid_secondary_jobs
+                secondary_ids = [j.id for j in valid_secondary_jobs]
+                departments = list(set([self._normalize_department(j.department) for j in effective_jobs]))
 
-            bundle = CandidateBundle(
-                bundle_id=f"BUNDLE-{primary.block_id}-{c_idx+1}",
-                primary_job_id=primary.id,
-                secondary_job_ids=secondary_ids,
-                block_id=primary.block_id,
-                departments=departments,
-                spatial_extent_km=spatial_extent,
-                time_envelope_hours=(0.0, 24.0),
-                required_duration_hours=max_duration,
-                total_tci_benefit=round(total_tci, 2),
-                compatibility_rationale=rationale,
-                rejected_pairs=[rp for rp in rejected_pairs if rp["job_a"] in clique or rp["job_b"] in clique],
-                spatial_containment_valid=True,
-                temporal_nesting_valid=True,
-                elementary_section_id=elec_sec
-            )
-            bundles.append(bundle)
+                # Max duration among bundled jobs preserves every demand's minimum duration
+                max_duration = max(j.duration for j in effective_jobs)
+                total_tci = sum(job_tcis.get(j.id, 50.0) for j in effective_jobs)
+
+                elec_sec = self.elementary_map.get(primary.block_id, None)
+
+                rationale = (
+                    f"Consolidated {len(effective_jobs)} compatible jobs across "
+                    f"{', '.join(departments)} under a single {max_duration:.1f}h corridor possession "
+                    f"(primary: {primary.id})"
+                )
+
+                bundle = CandidateBundle(
+                    bundle_id=f"BUNDLE-{primary.block_id}-{c_idx_offset+c_idx+1}",
+                    primary_job_id=primary.id,
+                    secondary_job_ids=secondary_ids,
+                    block_id=primary.block_id,
+                    departments=departments,
+                    spatial_extent_km=spatial_extent,
+                    time_envelope_hours=(0.0, 24.0),
+                    required_duration_hours=max_duration,
+                    total_tci_benefit=round(total_tci, 2),
+                    compatibility_rationale=rationale,
+                    rejected_pairs=[rp for rp in global_rejected_pairs if rp["job_a"] in clique or rp["job_b"] in clique],
+                    spatial_containment_valid=True,
+                    temporal_nesting_valid=True,
+                    elementary_section_id=elec_sec
+                )
+                bundles.append(bundle)
+            c_idx_offset += len(cliques)
 
         return bundles
 

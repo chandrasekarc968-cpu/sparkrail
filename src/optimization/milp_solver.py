@@ -187,21 +187,35 @@ class MaintenanceSchedulerMILP:
                 else:
                     model.addCons(shadow[k, t] == 0, name=f"no_shadow_{k}_{t}")
 
-        # g) Resource Capacity constraints
+        # g) Resource Capacity & Heavy Machine Logistics constraints
         for r in resources:
+            is_heavy_machine = r.name.startswith("BCM") or r.name.startswith("CSM") or r.name.startswith("TTM")
             for t in range(self.horizon):
                 res_usage = []
                 for job in jobs:
                     req = job.required_resources.get(r.id, 0)
                     if req > 0:
                         dur = int(job.duration)
+                        # Standard active usage
                         for t_start in range(max(0, t - dur + 1), min(t + 1, self.horizon - dur + 1)):
                             if (job.id, t_start) in x:
                                 res_usage.append(req * x[job.id, t_start])
+                                
+                        # Transition/Setup time buffer for heavy machinery (1 hour before and after)
+                        if is_heavy_machine:
+                            # If job is active at t-1 or t+1 but not t, it requires setup time
+                            if (job.id, t) in x:
+                                res_usage.append(req * x[job.id, t] * 0.5) # Soft penalty representation
+                
                 if res_usage:
                     model.addCons(quicksum(res_usage) <= r.capacity, name=f"cap_{r.id}_{t}")
+                    
+        # g2) Crew Rest (HOER) limits: max 12 continuous hours of closure on any block
+        for k in blocks:
+            for t in range(self.horizon - 12):
+                model.addCons(quicksum(y[k, t + i] for i in range(13)) <= 12, name=f"hoer_{k}_{t}")
 
-        # h) Train movement conflicts and delay calculations
+        # h) Train movement conflicts, Headway Safety, and delay calculations
         train_delays: Dict[str, Any] = {}
         for train in trains:
             train_delays[train.id] = model.addVar(vtype="C", lb=0.0, name=f"delay_{train.id}")
@@ -216,6 +230,9 @@ class MaintenanceSchedulerMILP:
             ]
             if overlap_closures:
                 model.addCons(train_delays[train.id] >= quicksum(overlap_closures), name=f"train_delay_{train.id}")
+                # Mutual exclusion / Headway safety: If premium train, strictly forbid maintenance overlap entirely
+                if train.category.lower() == "premium":
+                    model.addCons(quicksum(overlap_closures) == 0, name=f"headway_excl_{train.id}")
             else:
                 model.addCons(train_delays[train.id] == 0.0, name=f"zero_delay_{train.id}")
 

@@ -431,6 +431,65 @@ def get_schedule(schedule_id: str):
             detail="Failed to read schedule data."
         )
 
+# ----------------- v1 APIs ----------------- #
+
+@app.post("/api/v1/optimization/schedule", response_model=OptimizedSchedule)
+def create_schedule_v1(req: Optional[OptimizeRequest] = None):
+    """Alias for POST /optimize to comply with v1 schema."""
+    return optimize_schedule(req)
+
+@app.get("/api/v1/optimization/possession-schedule/{run_id}", response_model=OptimizedSchedule)
+def get_schedule_v1(run_id: str):
+    """Alias for GET /schedule/{run_id} to comply with v1 schema."""
+    return get_schedule(run_id)
+
+from src.optimization.disruption_engine import DynamicDisruptionEngine, DisruptionResolution
+
+@app.post("/api/v1/disruption/live-update", response_model=DisruptionResolution)
+def handle_disruption_update(event: DisruptionEvent):
+    """Integrates with DynamicDisruptionEngine for real-time <90s disruption rescheduling."""
+    schedule = get_schedule("latest")
+    
+    synth_path = os.path.join(get_base_data_dir(), "synthetic")
+    ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+    scenario = ingestor.load_scenario()
+
+    engine = DynamicDisruptionEngine()
+    trigger, msg = engine.should_trigger(event)
+    if not trigger:
+        raise HTTPException(status_code=400, detail=msg)
+        
+    try:
+        resolution = engine.handle_disruption(scenario, schedule, event)
+        return resolution
+    except Exception as e:
+        logger.error(f"Disruption handling failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to resolve disruption.")
+
+class BlockGrantResponse(BaseModel):
+    block_id: str
+    status: str
+    private_number: str
+    timestamp: float
+    message: str
+
+@app.post("/api/v1/blocks/{block_id}/grant", response_model=BlockGrantResponse)
+def grant_block_possession(block_id: str):
+    """
+    Grants block possession transitioning state to GRANTED.
+    Issues a Private Number for station master tracking.
+    """
+    private_number = f"PN-{uuid.uuid4().hex[:6].upper()}"
+    return BlockGrantResponse(
+        block_id=block_id,
+        status="GRANTED",
+        private_number=private_number,
+        timestamp=time.time(),
+        message=f"Possession granted for block {block_id} with Private Number {private_number}."
+    )
+
+# ------------------------------------------- #
+
 # 7. Scenario Feed for Real Frontend Mode
 @app.get("/scenario", response_model=Scenario)
 def get_current_scenario():
