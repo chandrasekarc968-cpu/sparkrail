@@ -1,7 +1,7 @@
 # SparkRail Implementation Gap & Production Readiness Report
 
 **Audit Date:** 2026-09-14  
-**Exact Commit SHA (Base):** `cd804ad5cb53281bb1d69ae1087b0170463413bc`  
+**Exact Commit SHA (Hardened HEAD):** `eb6510f1f75f455a1b3e24a4cbf3b116745aed57`  
 **Operational Target:** Production-Grade Day-One Shadow Deployment (Problem Statement 26027)  
 **Corridor:** Subedarganj (`SFG`) to Mirzapur (`MZP`), 80 km Electrified Double-Line Corridor, Prayagraj Division (NCR)  
 **Final Readiness Classification:** **SHADOW-MODE PILOT READY, with live CRIS integration configuration-gated**
