@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Bell,
   RefreshCw,
@@ -11,7 +11,9 @@ import {
   ChevronDown,
   ShieldAlert,
   FileCheck,
-  Download
+  Download,
+  KeyRound,
+  ShieldCheck
 } from 'lucide-react';
 import { useAppContext } from '../../context/useAppContext';
 import { Button } from '../ui/Button';
@@ -19,6 +21,9 @@ import { Badge } from '../ui/Badge';
 import { mockEvents } from '../../api/mockData';
 import { AdvisoryProposalDrawer } from '../shared/AdvisoryProposalDrawer';
 import { ExportModal } from '../shared/ExportModal';
+import { LoginModal } from '../shared/LoginModal';
+import { ApiClient } from '../../api/client';
+import type { UserProfile } from '../../api/types';
 
 interface GlobalHeaderProps {
   onToggleMobileNav: () => void;
@@ -40,7 +45,38 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAdvisoryDrawer, setShowAdvisoryDrawer] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('sparkrail_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    ApiClient.getMe()
+      .then((user) => {
+        setCurrentUser(user);
+        localStorage.setItem('sparkrail_user', JSON.stringify(user));
+      })
+      .catch(() => {
+        // Unauthenticated or offline fallback
+      });
+  }, []);
+
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    localStorage.setItem('sparkrail_user', JSON.stringify(user));
+  };
+
+  const handleLogoutSuccess = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('sparkrail_user');
+  };
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -267,21 +303,31 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
             aria-label="User profile menu"
             aria-expanded={showUserMenu}
           >
-            <div className="w-8 h-8 rounded bg-neutral-800 text-neutral-100 flex items-center justify-center font-mono text-xs font-bold shadow-xs">
-              IR
+            <div className={`w-8 h-8 rounded text-white flex items-center justify-center font-mono text-xs font-bold shadow-xs ${
+              currentUser ? 'bg-emerald-700' : 'bg-neutral-800 text-neutral-100'
+            }`}>
+              {currentUser ? currentUser.role.slice(0, 2) : 'IR'}
             </div>
             <div className="hidden xl:flex flex-col text-left">
-              <span className="text-xs font-bold text-neutral-900 leading-tight">IR-CTR-8842</span>
-              <span className="text-[10px] text-neutral-500 leading-tight">Chief Controller</span>
+              <span className="text-xs font-bold text-neutral-900 leading-tight">
+                {currentUser ? currentUser.full_name : 'IR Personnel Sign-On'}
+              </span>
+              <span className="text-[10px] text-neutral-500 leading-tight">
+                {currentUser ? `${currentUser.role} • ${currentUser.pf_number}` : 'Guest / Control Room'}
+              </span>
             </div>
           </button>
 
           {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-white border border-neutral-200 rounded-md shadow-lg z-50 p-2 text-xs">
+            <div className="absolute right-0 mt-2 w-64 bg-white border border-neutral-200 rounded-md shadow-lg z-50 p-2 text-xs">
               <div className="px-3 py-2 border-b border-neutral-100 mb-1">
-                <p className="font-bold text-neutral-900">Chief Block Controller</p>
-                <p className="text-[11px] text-neutral-500 font-mono">Prayagraj Control Room</p>
+                <p className="font-bold text-neutral-900">
+                  {currentUser ? currentUser.full_name : 'Indian Railways BDMS'}
+                </p>
+                <p className="text-[11px] text-neutral-500 font-mono">
+                  {currentUser ? `${currentUser.role} • ${currentUser.department} (${currentUser.division_code})` : 'Unauthenticated Session'}
+                </p>
                 <div className="mt-1.5 flex items-center gap-1 text-[10px] text-neutral-500">
                   <span>Duty Mode:</span>
                   <Badge variant={isDemoMode ? "warning" : "success"} size="sm">
@@ -289,20 +335,51 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
                   </Badge>
                 </div>
               </div>
-              <div className="px-3 py-1.5 text-neutral-600 hover:bg-neutral-100 rounded cursor-pointer">
-                COA Telemetry Settings
-              </div>
-              <div className="px-3 py-1.5 text-neutral-600 hover:bg-neutral-100 rounded cursor-pointer">
-                Safety Handover Log
-              </div>
-              <div className="border-t border-neutral-100 mt-1 pt-1">
-                <div
-                  onClick={() => setShowUserMenu(false)}
-                  className="px-3 py-1.5 text-op-red hover:bg-op-red/10 rounded cursor-pointer font-semibold"
-                >
-                  End Shift / Lock Station
+
+              {currentUser && currentUser.capabilities.length > 0 && (
+                <div className="px-3 py-1.5 border-b border-neutral-100">
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">
+                    Active Capabilities
+                  </p>
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                    {currentUser.capabilities.slice(0, 4).map((cap) => (
+                      <span key={cap} className="text-[9px] font-mono bg-neutral-100 px-1 py-0.5 rounded text-neutral-700">
+                        {cap}
+                      </span>
+                    ))}
+                    {currentUser.capabilities.length > 4 && (
+                      <span className="text-[9px] font-mono text-neutral-500">
+                        +{currentUser.capabilities.length - 4} more
+                      </span>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              <div
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowLoginModal(true);
+                }}
+                className="px-3 py-2 text-accent-700 font-bold hover:bg-accent-50 rounded cursor-pointer flex items-center gap-1.5"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                {currentUser ? 'Switch Railway Officer' : 'Officer Sign On (PF/Email)'}
               </div>
+
+              {currentUser && (
+                <div className="border-t border-neutral-100 mt-1 pt-1">
+                  <div
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      ApiClient.logout().then(handleLogoutSuccess).catch(handleLogoutSuccess);
+                    }}
+                    className="px-3 py-1.5 text-op-red hover:bg-op-red/10 rounded cursor-pointer font-semibold"
+                  >
+                    End Shift / Sign Out
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -317,6 +394,14 @@ export function GlobalHeader({ onToggleMobileNav }: GlobalHeaderProps) {
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
         divisionCode={division}
+      />
+
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        currentUser={currentUser}
+        onLoginSuccess={handleLoginSuccess}
+        onLogoutSuccess={handleLogoutSuccess}
       />
     </header>
   );

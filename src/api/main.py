@@ -55,6 +55,7 @@ from src.simulation.what_if_service import WhatIfSimulatorService
 from src.optimization.milp_solver import MaintenanceSchedulerMILP, SCIP_AVAILABLE
 from src.simulation.evaluator import KPIEvaluator
 from src.api.advisory import router as advisory_router
+from src.auth import auth_router, init_db, SessionLocal, seed_default_users
 
 # Setup structured logger
 logging.basicConfig(
@@ -131,6 +132,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 app.include_router(advisory_router)
+app.include_router(auth_router)
+
+# Initialize Authentication DB Schema & Seed Realistic DDU Personnel
+try:
+    init_db()
+    with SessionLocal() as _auth_db:
+        seed_default_users(_auth_db)
+except Exception as _auth_err:
+    logger.warning(f"Auth DB initialization deferred: {_auth_err}")
 
 def get_base_data_dir() -> str:
     """Returns configurable data directory, preventing hardcoded paths."""

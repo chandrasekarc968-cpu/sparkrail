@@ -823,3 +823,37 @@ export interface ScheduleJustification {
   energy_impact_en?: string;
   energy_impact_hi?: string;
 }
+
+export type RailwayDepartment = "OPERATING" | "CIVIL" | "TRD" | "SNT" | "ADMIN";
+
+export type RailwayRole =
+  | "SR_DOM"
+  | "SECTION_CONTROLLER"
+  | "CTPC"
+  | "SSE_PWAY"
+  | "SSE_TRD"
+  | "SSE_SIGNAL"
+  | "STATION_MASTER"
+  | "SYSTEM_ADMIN";
+
+export interface UserProfile {
+  id: string;
+  pf_number: string;
+  email: string;
+  full_name: string;
+  department: RailwayDepartment;
+  role: RailwayRole;
+  division_code: string;
+  zone_code: string;
+  is_active: boolean;
+  last_login?: string;
+  capabilities: string[];
+}
+
+export interface AuthTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: UserProfile;
+}

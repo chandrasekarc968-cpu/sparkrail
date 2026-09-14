@@ -15,7 +15,9 @@ import type {
   WhatIfScenarioRequest,
   WhatIfScenarioResponse,
   BlockShiftRequest,
-  BlockShiftResponse
+  BlockShiftResponse,
+  AuthTokenResponse,
+  UserProfile
 } from './types';
 import { validateNetworkGeometryContract, GeometryContractError } from './geometryValidator';
 import {
@@ -74,6 +76,23 @@ export function setDemoModeEnabled(enabled: boolean): void {
   }
 }
 
+export function getAuthToken(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('sparkrail_access_token');
+  }
+  return null;
+}
+
+export function setAuthToken(token: string | null): void {
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('sparkrail_access_token', token);
+    } else {
+      localStorage.removeItem('sparkrail_access_token');
+    }
+  }
+}
+
 async function fetchWithRetry(
   url: string,
   options: RequestInit = {},
@@ -81,7 +100,17 @@ async function fetchWithRetry(
   backoffMs = 500
 ): Promise<Response> {
   try {
-    const res = await fetch(url, options);
+    const headers = new Headers(options.headers || {});
+    const token = getAuthToken();
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    const finalOptions: RequestInit = {
+      ...options,
+      headers,
+      credentials: options.credentials || 'include'
+    };
+    const res = await fetch(url, finalOptions);
     if (!res.ok) {
       let errorBody: unknown;
       try {
@@ -627,6 +656,50 @@ export const ApiClient = {
       };
     }
     const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/simulation/xai-briefing`, { signal });
+    return res.json();
+  },
+
+  async login(identifier: string, password: string, signal?: AbortSignal): Promise<AuthTokenResponse> {
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+      signal
+    });
+    const data: AuthTokenResponse = await res.json();
+    if (data?.access_token) {
+      setAuthToken(data.access_token);
+    }
+    return data;
+  },
+
+  async refresh(signal?: AbortSignal): Promise<AuthTokenResponse> {
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal
+    });
+    const data: AuthTokenResponse = await res.json();
+    if (data?.access_token) {
+      setAuthToken(data.access_token);
+    }
+    return data;
+  },
+
+  async logout(signal?: AbortSignal): Promise<void> {
+    try {
+      await fetchWithRetry(`${getApiBaseUrl()}/api/v1/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal
+      });
+    } finally {
+      setAuthToken(null);
+    }
+  },
+
+  async getMe(signal?: AbortSignal): Promise<UserProfile> {
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/auth/me`, { signal });
     return res.json();
   }
 };
