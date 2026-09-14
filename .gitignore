@@ -31,7 +31,14 @@ frontend/.env.*
 # Runtime and generated outputs (do not commit dynamic schedule / kpi outputs)
 data/schedule_output.json
 data/kpi_report.json
+data/dead_letter.jsonl
 *.log
+
+# Databases and SQLite files
+data/*.db
+*.sqlite
+*.sqlite3
+*.db
 
 # Keep scenario fixture tracked
 !data/synthetic/scenario.json

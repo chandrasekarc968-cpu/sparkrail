@@ -128,8 +128,8 @@ export interface Scenario {
   jobs: MaintenanceJob[];
   resources: Resource[];
   fixed_blocks: FixedMaintenanceBlock[];
-  weather?: Record<string, any>;
-  asset_telemetry?: Record<string, any>;
+  weather?: Record<string, unknown>;
+  asset_telemetry?: Record<string, unknown>;
 }
 
 export interface KPIReport {
@@ -159,7 +159,7 @@ export interface OptimizedSchedule {
   objective_value: number;
   runtime_seconds?: number;
   kpi_metrics?: KPIReport;
-  kpis?: Record<string, any>;
+  kpis?: Record<string, unknown>;
   conflicts?: ConflictItem[];
   shadow_block_groups?: ShadowBlockGroup[];
   is_fallback?: boolean;
@@ -779,7 +779,7 @@ export interface WhatIfScenarioResponse {
   status: string;
   run_id: string;
   delta_report: WhatIfDeltaReport;
-  what_if_schedule: Record<string, any>;
+  what_if_schedule: Record<string, unknown>;
   conflicts_count: number;
 }
 
@@ -799,7 +799,7 @@ export interface BlockShiftResponse {
   is_feasible: boolean;
   conflict_count: number;
   delta_delay_min: number;
-  conflicts: Array<Record<string, any>>;
+  conflicts: Array<Record<string, unknown>>;
   bilingual_advisory: Record<string, string>;
   new_start_time?: number;
   new_end_time?: number;
@@ -822,4 +822,38 @@ export interface ScheduleJustification {
   crew_impact_hi?: string;
   energy_impact_en?: string;
   energy_impact_hi?: string;
+}
+
+export type RailwayDepartment = "OPERATING" | "CIVIL" | "TRD" | "SNT" | "ADMIN";
+
+export type RailwayRole =
+  | "SR_DOM"
+  | "SECTION_CONTROLLER"
+  | "CTPC"
+  | "SSE_PWAY"
+  | "SSE_TRD"
+  | "SSE_SIGNAL"
+  | "STATION_MASTER"
+  | "SYSTEM_ADMIN";
+
+export interface UserProfile {
+  id: string;
+  pf_number: string;
+  email: string;
+  full_name: string;
+  department: RailwayDepartment;
+  role: RailwayRole;
+  division_code: string;
+  zone_code: string;
+  is_active: boolean;
+  last_login?: string;
+  capabilities: string[];
+}
+
+export interface AuthTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: UserProfile;
 }

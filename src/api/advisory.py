@@ -129,6 +129,12 @@ class InMemoryAuditRepository(AuditRepository):
     def get_events(self, limit: int = 100) -> List[Dict[str, Any]]:
         return self.chain[-limit:]
 
+    def get_all_events(self) -> List[Dict[str, Any]]:
+        return list(self.chain)
+
+    def verify_chain_integrity(self) -> Tuple[bool, Optional[str]]:
+        return self.verify_integrity()
+
     def verify_integrity(self) -> Tuple[bool, Optional[str]]:
         """
         Validates the entire audit chain:
@@ -178,25 +184,71 @@ def get_current_actor(
     x_actor_id: Optional[str] = Header(None, alias="X-Actor-ID")
 ) -> Dict[str, Optional[str]]:
     """
-    JWT / Role-based authorization abstraction.
-    Extracts authenticated user and role, preventing caller impersonation.
+    Role-based authentication & authorization abstraction.
+    In SHADOW or LIVE modes:
+      - Strictly requires a verified Bearer JWT.
+      - DEV_ADMIN_TOKEN and arbitrary role headers (X-Actor-Role) are rejected with HTTP 401.
+    In SYNTHETIC mode:
+      - Allows development bypass headers if ALLOW_DEV_BYPASS=true.
     """
+    mode = PluginConfig.get_mode()
+    is_synthetic = (mode == SparkRailMode.SYNTHETIC)
+    allow_dev = is_synthetic and (os.getenv("ALLOW_DEV_BYPASS", "true").lower() == "true")
+
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[len("Bearer "):].strip()
+        if token == "DEV_ADMIN_TOKEN":
+            if not allow_dev:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Development credentials (DEV_ADMIN_TOKEN) are prohibited outside synthetic development mode"
+                )
+            return {"actor_id": "SR_DOM_OFFICER", "role": "SR_DOM"}
+        else:
+            try:
+                from src.auth.security import decode_access_token
+                payload = decode_access_token(token)
+                actor_id = payload.get("pf_number") or payload.get("sub") or "OFFICER"
+                role = payload.get("role")
+                return {"actor_id": actor_id, "role": role}
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid access token: {e}"
+                )
+
+    # In Shadow or Live mode, unauthenticated access or raw role headers are forbidden
+    if not allow_dev:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authorization header required. Arbitrary role headers are strictly prohibited in {mode.value.upper()} mode."
+        )
+
     actor_id = x_actor_id or "DEV_CONTROLLER_01"
     role = x_actor_role
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        if token == "DEV_ADMIN_TOKEN":
-            actor_id = "SR_DOM_OFFICER"
-            role = "SR_DOM"
     return {"actor_id": actor_id, "role": role}
 
 def validate_actor_role_authorization(actor: Dict[str, Optional[str]], claimed_role: str) -> None:
     """
     Enforces that the acting user's authenticated role matches the claimed approval role.
-    If an explicit role header is provided, caller cannot sign off with a different role.
+    In synthetic mode with development bypass, unauthenticated calls are permitted for developer testing.
+    In shadow or live mode (or when authenticated role is present), strictly checks that authenticated role matches claimed role.
     """
+    mode = PluginConfig.get_mode()
+    is_synthetic = (mode == SparkRailMode.SYNTHETIC)
+    allow_dev = is_synthetic and (os.getenv("ALLOW_DEV_BYPASS", "true").lower() == "true")
+
     authenticated_role = actor.get("role")
-    if authenticated_role and authenticated_role != claimed_role:
+    if not authenticated_role:
+        if allow_dev:
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthenticated caller cannot sign off on statutory advisory decisions"
+        )
+    if authenticated_role != claimed_role:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Authenticated actor role '{authenticated_role}' is not authorized to sign off as '{claimed_role}'"
@@ -375,6 +427,17 @@ def approve_proposal(
         raise HTTPException(status_code=404, detail=f"Advisory proposal '{proposal_id}' not found")
 
     prop = PROPOSALS_STORE[proposal_id]
+    if prop.get("safety_status") == "SAFETY_REJECTED":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot approve a proposal flagged with SAFETY_REJECTED"
+        )
+    if any(c.get("severity") in ("CRITICAL", "MAJOR") or c.get("blocks_approval") for c in prop.get("critical_conflicts", [])):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Approval blocked by unmitigated critical safety conflict"
+        )
+
     role_key = action.role.value
 
     if role_key not in MANDATORY_APPROVAL_ROLES:
@@ -464,6 +527,8 @@ def override_proposal(
     req: OperationalOverrideRequest,
     actor: Dict[str, Optional[str]] = Depends(get_current_actor)
 ):
+    if not req.reason_code or not req.reason_code.strip():
+        raise HTTPException(status_code=400, detail="Mandatory reason_code required for operational override")
     if not req.justification or len(req.justification.strip()) < 10:
         raise HTTPException(status_code=400, detail="Mandatory justification required for operational override (min 10 characters)")
     if proposal_id not in PROPOSALS_STORE:

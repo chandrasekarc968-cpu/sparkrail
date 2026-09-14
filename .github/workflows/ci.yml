@@ -17,19 +17,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Verify No Committed Secrets or .env Files
+      - name: Set up Python for Security Audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify No Committed Secrets, Credentials or Databases
         run: |
           echo "Scanning for forbidden committed .env files..."
           if [ -f .env ] || [ -f frontend/.env ]; then
             echo "ERROR: Forbidden .env file detected in tracked workspace!"
             exit 1
           fi
-          echo "Scanning for committed bytecode or caches..."
-          if find . -name "*.pyc" -o -name "__pycache__" | grep -q .; then
-            echo "ERROR: Tracked .pyc or __pycache__ found!"
-            exit 1
-          fi
-          echo "Hygiene scan passed."
+          echo "Running repository cleanliness and credential audit..."
+          python scripts/audit_git_cleanliness.py
+          echo "Hygiene and secret scan passed."
 
   backend-verification:
     name: Backend Lint, Test & Demo
@@ -51,7 +53,11 @@ jobs:
 
       - name: Python Syntax Compilation Check
         run: |
-          python -m compileall src
+          python -m compileall src tests
+
+      - name: Verify Live Mode Remains Disabled by Default
+        run: |
+          python -c "from src.config import PluginConfig; assert not PluginConfig.is_live_permitted(), 'CRITICAL: Live mode must not be enabled by default in CI!'"
 
       - name: Run Backend Pytest Suite
         run: |
@@ -60,6 +66,10 @@ jobs:
       - name: Run End-to-End CLI Demo Pipeline
         run: |
           python -m src.cli demo
+
+      - name: Run Performance Benchmark
+        run: |
+          python scripts/benchmark.py
 
   frontend-verification:
     name: Frontend Lint, Typecheck, Build & Tests

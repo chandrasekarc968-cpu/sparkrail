@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  sparkrail-shadow-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sparkrail-shadow-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SPARKRAIL_MODE=shadow
+      - ALLOW_DEV_BYPASS=false
+      - SPARKRAIL_LIVE_ENABLED=false
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-generate-random-strong-secret-in-production}
+      - DATABASE_URL=sqlite:////app/data/sparkrail_auth.db
+    volumes:
+      - sparkrail-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sparkrail-data:
+    name: sparkrail-audit-and-data

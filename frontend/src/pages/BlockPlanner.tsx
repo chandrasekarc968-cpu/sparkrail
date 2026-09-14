@@ -991,9 +991,9 @@ export function BlockPlanner() {
         isOpen={showWhatIfModal}
         onClose={() => setShowWhatIfModal(false)}
         scenario={scenario}
-        onScenarioCommitted={(newSchedule: any) => {
+        onScenarioCommitted={(newSchedule: Record<string, unknown>) => {
           if (newSchedule && typeof newSchedule === 'object' && 'scheduled_jobs' in newSchedule) {
-            setSchedule(newSchedule as OptimizedSchedule);
+            setSchedule(newSchedule as unknown as OptimizedSchedule);
           }
           setShowWhatIfModal(false);
           setShiftSuccessMessage("Hypothetical scenario committed to active scheduler session.");

@@ -19,8 +19,8 @@ export interface WhatIfSimulatorModalProps {
   isOpen: boolean;
   onClose: () => void;
   scenario?: Scenario | null;
-  onApplyAdvisory?: (whatIfSchedule: any) => void;
-  onScenarioCommitted?: (whatIfSchedule: any) => void;
+  onApplyAdvisory?: (whatIfSchedule: Record<string, unknown>) => void;
+  onScenarioCommitted?: (whatIfSchedule: Record<string, unknown>) => void;
 }
 
 export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
@@ -30,8 +30,6 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
   onApplyAdvisory,
   onScenarioCommitted
 }) => {
-  if (!isOpen) return null;
-
   const [simType, setSimType] = useState<'machine_extension' | 'train_delay' | 'speed_restriction'>('machine_extension');
   const [selectedJobId, setSelectedJobId] = useState<string>('J1');
   const [extensionHours, setExtensionHours] = useState<number>(1.0);
@@ -81,6 +79,8 @@ export const WhatIfSimulatorModal: React.FC<WhatIfSimulatorModalProps> = ({
       setIsLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">

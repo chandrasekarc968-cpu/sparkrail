@@ -144,10 +144,17 @@ export const ThreeDNetwork: React.FC = () => {
   const conflicts = schedule?.conflicts || geometry?.conflicts || [];
   const hasCriticalConflicts = conflicts.some(c => c.severity === 'CRITICAL' || c.severity === 'MAJOR' || c.blocks_approval);
 
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
   const isStale = useMemo(() => {
-    const ageSeconds = (Date.now() - lastRefreshed.getTime()) / 1000;
+    const ageSeconds = (now - lastRefreshed.getTime()) / 1000;
     return ageSeconds > 300;
-  }, [lastRefreshed]);
+  }, [lastRefreshed, now]);
 
   if (networkLoading || scheduleLoading) {
     return (
@@ -609,7 +616,7 @@ export const ThreeDNetwork: React.FC = () => {
           activePossessionsCount={activePossessions}
           activeTrainsCount={movingTrainsCount}
           isStale={isStale}
-          staleSeconds={Math.round((Date.now() - lastRefreshed.getTime()) / 1000)}
+          staleSeconds={Math.round((now - lastRefreshed.getTime()) / 1000)}
         />
       </div>
 

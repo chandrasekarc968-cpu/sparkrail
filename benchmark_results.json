@@ -1,17 +1,17 @@
 [
   {
     "component": "Tier 1: Spatiotemporal Clustering",
-    "measured": "2.18 ms (0.0022s)",
+    "measured": "3.54 ms (0.0035s)",
     "target": "5 to 15 s",
     "status": "PASS (Well within target)",
-    "scaling": "O(N^2) graph + Bron-Kerbosch maximal cliques (10 bundles extracted)"
+    "scaling": "O(N^2) graph + Bron-Kerbosch maximal cliques (4 bundles extracted)"
   },
   {
     "component": "Tier 2: Macro Possession Allocator",
-    "measured": "1.78 ms (0.0018s)",
+    "measured": "0.70 ms (0.0007s)",
     "target": "120 to 240 s",
     "status": "PASS (High-performance ALNS/CP-SAT)",
-    "scaling": "ALNS_DETERMINISTIC (20 jobs allocated)"
+    "scaling": "ALNS_DETERMINISTIC (12 jobs allocated)"
   },
   {
     "component": "Tier 3: Microscopic Validator",
@@ -22,28 +22,28 @@
   },
   {
     "component": "Complete 24-Hour Bounded Run",
-    "measured": "0.6271 s",
+    "measured": "0.4262 s",
     "target": "7 to 12 minutes (420-720s)",
     "status": "PASS (Super-linear efficiency on bounded MVP)",
     "scaling": "Full 3-tier pipeline orchestration + safety audit"
   },
   {
     "component": "Live Disruption Reschedule",
-    "measured": "0.20 ms (0.0002s)",
+    "measured": "0.24 ms (0.0002s)",
     "target": "< 90.0 s",
     "status": "PASS (Measured well under 90s target)",
     "scaling": "Localized 25km corridor radius + granted work frozen"
   },
   {
     "component": "Geometry Generation (Memory)",
-    "measured": "0.42 ms",
+    "measured": "0.33 ms",
     "target": "< 500 ms",
     "status": "PASS",
     "scaling": "8 blocks, 20 jobs, 10 trains, 9 nodes"
   },
   {
     "component": "Network Geometry API Latency",
-    "measured": "19.48 ms",
+    "measured": "26.75 ms",
     "target": "< 200 ms",
     "status": "PASS",
     "scaling": "HTTP GET /network/geometry endpoint with schema 1.0.0"

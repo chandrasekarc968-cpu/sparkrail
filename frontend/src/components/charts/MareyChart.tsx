@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Train as TrainIcon,
   Layers,
@@ -39,6 +39,8 @@ const STATIONS: StationChainage[] = [
   { code: 'MZP', nameEn: 'Mirzapur', nameHi: 'मिर्जापुर', km: 80.0 },
 ];
 
+const HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24];
+
 export const MareyChart: React.FC<MareyChartProps> = ({
   scenario,
   scheduledJobs,
@@ -70,14 +72,14 @@ export const MareyChart: React.FC<MareyChartProps> = ({
   const [isEvaluatingShift, setIsEvaluatingShift] = useState<boolean>(false);
 
   // Time to X conversion (0 to 24 hours)
-  const timeToX = (hours: number): number => {
+  const timeToX = useCallback((hours: number): number => {
     return MARGIN.left + (Math.max(0, Math.min(24, hours)) / 24) * chartWidth;
-  };
+  }, [chartWidth, MARGIN.left]);
 
   // Km to Y conversion (0 to 80 km)
-  const kmToY = (km: number): number => {
+  const kmToY = useCallback((km: number): number => {
     return MARGIN.top + (Math.max(0, Math.min(80, km)) / 80) * chartHeight;
-  };
+  }, [chartHeight, MARGIN.top]);
 
   // Block Section Km mapping helper
   const getBlockKmRange = (blockId: string): [number, number] => {
@@ -148,7 +150,7 @@ export const MareyChart: React.FC<MareyChartProps> = ({
         isUp: isUpDirection
       };
     });
-  }, [scenario]);
+  }, [scenario, kmToY, timeToX]);
 
   const handleBlockShiftConfirm = (shiftMins: number) => {
     if (!activeShiftJobId || !onShiftBlock) return;
@@ -249,7 +251,7 @@ export const MareyChart: React.FC<MareyChartProps> = ({
           />
 
           {/* Vertical Hourly Gridlines (00:00 to 24:00) */}
-          {Array.from({ length: 25 }).map((_, hour) => {
+          {HOURS.map((hour) => {
             const x = timeToX(hour);
             const isMajor = hour % 4 === 0;
             return (
@@ -264,18 +266,16 @@ export const MareyChart: React.FC<MareyChartProps> = ({
                   strokeDasharray={isMajor ? undefined : '2,2'}
                 />
                 {/* 15-minute intermediate tick */}
-                {hour < 24 && (
-                  <>
-                    <line
-                      x1={timeToX(hour + 0.5)}
-                      y1={MARGIN.top}
-                      x2={timeToX(hour + 0.5)}
-                      y2={MARGIN.top + chartHeight}
-                      stroke="#141c2b"
-                      strokeWidth="0.5"
-                    />
-                  </>
-                )}
+                {hour < 24 ? (
+                  <line
+                    x1={timeToX(hour + 0.5)}
+                    y1={MARGIN.top}
+                    x2={timeToX(hour + 0.5)}
+                    y2={MARGIN.top + chartHeight}
+                    stroke="#141c2b"
+                    strokeWidth="0.5"
+                  />
+                ) : null}
                 {/* Hour text on top and bottom */}
                 <text
                   x={x}
@@ -333,7 +333,7 @@ export const MareyChart: React.FC<MareyChartProps> = ({
           })}
 
           {/* Midday Peak Summer Thermal Hazard Zone (12:00 to 16:00) */}
-          {scenario?.weather?.is_summer_buckling_risk && (
+          {Boolean(scenario?.weather?.is_summer_buckling_risk) && (
             <g opacity="0.15">
               <rect
                 x={timeToX(12)}
