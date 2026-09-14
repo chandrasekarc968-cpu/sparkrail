@@ -65,6 +65,16 @@ class Train(BaseModel):
     max_speed_kmh: Optional[float] = 130.0
     current_block: Optional[str] = None
     current_delay_min: Optional[float] = 0.0
+
+    # Heavy Freight Kinetic Energy & FOIS Trailing Load
+    gross_tonnage_tonnes: Optional[float] = Field(default=1500.0, ge=50.0, description="Gross trailing load in tonnes from FOIS")
+    is_loaded_freight: Optional[bool] = Field(default=False, description="True for loaded mineral/coal/steel freight rake")
+    train_type: Optional[str] = Field(default="PASSENGER", description="PREMIUM, EXPRESS, LOADED_FREIGHT, EMPTY_FREIGHT")
+
+    # Crew Management System (CMS) & Statutory HOER Hours Guard
+    crew_duty_remaining_hours: Optional[float] = Field(default=8.0, ge=0.0, description="Continuous duty hours remaining under HOER")
+    crew_duty_expiry_timestamp: Optional[float] = Field(default=None, description="Absolute scheduled time when crew continuous hours expire")
+    designated_crew_stations: Optional[List[str]] = Field(default_factory=lambda: ["SFG", "PRYJ", "MZP"], description="Authorized crew change stations")
     
     @model_validator(mode="after")
     def check_time(self) -> "Train":
@@ -138,12 +148,49 @@ class FixedMaintenanceBlock(BaseModel):
     reason: Optional[str] = "Pre-scheduled Mega Block"
     department: Optional[Department] = None
 
+class WeatherContext(BaseModel):
+    ambient_temp_celsius: float = Field(default=32.0, description="Ambient air temperature in Celsius")
+    rail_temp_celsius: float = Field(default=48.0, description="Measured/forecast rail temperature in Celsius")
+    destressing_temp_celsius: float = Field(default=40.0, description="De-stressing reference temperature T_d for CWR")
+    fog_visibility_meters: float = Field(default=1000.0, ge=0.0, description="Visibility distance in meters")
+    monsoon_warning: bool = Field(default=False, description="Active monsoon/heavy rain alert")
+
+    @property
+    def is_summer_buckling_risk(self) -> bool:
+        """IRPWM Para 509: If rail temp Tr >= Td + 20°C, track lifting/tamping prohibited."""
+        return self.rail_temp_celsius >= (self.destressing_temp_celsius + 20.0)
+
+    @property
+    def is_fog_protocol_active(self) -> bool:
+        """Fog protocol triggers when visibility is under 200m."""
+        return self.fog_visibility_meters < 200.0
+
+class AssetConditionTelemetry(BaseModel):
+    block_id: str
+    trc_tqi_score: float = Field(default=28.0, ge=0.0, le=100.0, description="Track Recording Car TQI (lower is better)")
+    usfd_flaw_severity: str = Field(default="NORMAL", description="USFD rail flaw code: NORMAL, OBS, REM, IMR")
+    cumulative_gmt: float = Field(default=35.0, ge=0.0, description="Cumulative Gross Million Tonnes carried")
+    days_since_tamping: int = Field(default=60, ge=0, description="Days elapsed since last machine tamping/screening")
+
+    @property
+    def risk_index(self) -> float:
+        """Composite degradation risk index A_b^crit in [1, 10]."""
+        usfd_scores = {"NORMAL": 0.0, "OBS": 3.0, "REM": 7.0, "IMR": 10.0}
+        u_score = usfd_scores.get(self.usfd_flaw_severity.upper(), 0.0)
+        tqi_contrib = min(10.0, (self.trc_tqi_score / 60.0) * 10.0)
+        gmt_contrib = min(10.0, (self.cumulative_gmt / 80.0) * 10.0)
+        days_contrib = min(10.0, (self.days_since_tamping / 180.0) * 10.0)
+        raw = 0.35 * tqi_contrib + 0.30 * u_score + 0.20 * gmt_contrib + 0.15 * days_contrib
+        return round(max(1.0, min(10.0, raw)), 2)
+
 class Scenario(BaseModel):
     blocks: List[TrackBlock]
     trains: List[Train]
     jobs: List[MaintenanceJob]
     resources: List[Resource]
     fixed_blocks: List[FixedMaintenanceBlock] = []
+    weather: Optional[WeatherContext] = None
+    asset_telemetry: Optional[List[AssetConditionTelemetry]] = None
 
 class ScheduleWindow(BaseModel):
     block_id: str
@@ -1664,3 +1711,85 @@ class SafetyDiagnostic(CanonicalEntity):
     entity_id: str
     details: Dict[str, Any] = Field(default_factory=dict)
     passed: bool = True
+
+# ----------------- What-If Scenario Sandbox Models ----------------- #
+
+class WhatIfModification(BaseModel):
+    job_id: Optional[str] = None
+    extend_duration_hours: Optional[float] = None
+    shift_start_hours: Optional[float] = None
+    cancel_job: Optional[bool] = False
+    train_id: Optional[str] = None
+    added_delay_min: Optional[float] = None
+    speed_restriction_kmh: Optional[float] = None
+    affected_block_id: Optional[str] = None
+
+class WhatIfScenarioRequest(BaseModel):
+    scenario_id: Optional[str] = "latest"
+    modifications: List[WhatIfModification] = Field(default_factory=list)
+    weather_override: Optional[WeatherContext] = None
+    fast_solve: bool = True
+
+class TrainDelayDelta(BaseModel):
+    train_id: str
+    train_name: Optional[str] = None
+    category: str
+    baseline_delay_min: float
+    what_if_delay_min: float
+    delta_delay_min: float
+    energy_loss_kwh: float = 0.0
+    crew_duty_exceeded: bool = False
+
+class WhatIfDeltaReport(BaseModel):
+    baseline_cumulative_delay_min: float
+    what_if_cumulative_delay_min: float
+    delta_cumulative_delay_min: float
+    train_deltas: List[TrainDelayDelta] = Field(default_factory=list)
+    premium_punctuality_impact_delta_percent: float = 0.0
+    heavy_machine_productivity_delta_hours: float = 0.0
+    freight_rakes_regulated_count: int = 0
+    total_energy_loss_kwh: float = 0.0
+    total_fuel_cost_impact_inr: float = 0.0
+    crew_hours_timeout_warnings: List[str] = Field(default_factory=list)
+    narrative_summary_en: str
+    narrative_summary_hi: str
+
+class WhatIfScenarioResponse(BaseModel):
+    status: str
+    run_id: str
+    delta_report: WhatIfDeltaReport
+    what_if_schedule: Dict[str, Any]
+    conflicts_count: int = 0
+
+class BlockShiftRequest(BaseModel):
+    job_id: str
+    shift_minutes: float  # e.g., +30.0 or -15.0
+
+class BlockShiftResponse(BaseModel):
+    job_id: str
+    block_id: str
+    original_start_hours: float
+    new_start_hours: float
+    new_end_hours: float
+    is_feasible: bool
+    conflict_count: int
+    delta_delay_min: float
+    conflicts: List[Dict[str, Any]] = Field(default_factory=list)
+    bilingual_advisory: Dict[str, str] = Field(default_factory=dict)
+
+# ----------------- Bilingual Explainable AI (XAI) Models ----------------- #
+
+class ScheduleJustification(BaseModel):
+    job_id: str
+    block_id: str
+    headline_en: str
+    headline_hi: str
+    detailed_en: str
+    detailed_hi: str
+    tradeoff_en: str
+    tradeoff_hi: str
+    binding_constraints: List[str] = Field(default_factory=list)
+    crew_impact_en: Optional[str] = None
+    crew_impact_hi: Optional[str] = None
+    energy_impact_en: Optional[str] = None
+    energy_impact_hi: Optional[str] = None

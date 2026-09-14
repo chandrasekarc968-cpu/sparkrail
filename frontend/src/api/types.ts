@@ -17,6 +17,11 @@ export interface TrackBlock {
   chainage_start: number;
   chainage_end: number;
   description: string;
+  track_id?: string;
+  start_station?: string;
+  end_station?: string;
+  length_km?: number;
+  speed_limit_kmh?: number;
   track_type?: "Mainline" | "Loop" | "Siding";
   speed_restriction_kmh?: number;
   electrification_status?: "25kV AC" | "Non-Electrified";
@@ -27,13 +32,22 @@ export interface Train {
   id: string;
   name?: string;
   category: TrainCategory;
+  priority?: number;
+  origin?: string;
+  destination?: string;
   scheduled_start: number;
   scheduled_end: number;
   route: string[];
-  min_travel_times: Record<string, number>;
+  min_travel_times?: Record<string, number>;
   max_speed_kmh?: number;
   current_block?: string;
   current_delay_min?: number;
+  gross_tonnage_tonnes?: number;
+  is_loaded_freight?: boolean;
+  train_type?: string;
+  crew_duty_remaining_hours?: number;
+  crew_duty_expiry_timestamp?: string;
+  designated_crew_stations?: string[];
 }
 
 export interface TCIInputs {
@@ -59,13 +73,15 @@ export interface MaintenanceJob {
   duration: number;
   required_resources: Record<string, number>;
   tci_inputs: TCIInputs;
-  is_fixed: boolean;
+  is_fixed?: boolean;
   fixed_start?: number | null;
   job_type?: string;
   due_date?: string;
   safety_clearance_required?: string;
   chainage_km?: string;
   status?: JobStatus;
+  preferred_start_window?: [number, number];
+  urgency_score?: number;
 }
 
 export interface FixedMaintenanceBlock {
@@ -91,6 +107,7 @@ export interface ScheduledJob {
   end_time: number;
   tci: number;
   department: Department;
+  track_id?: string;
   is_shadow_block?: boolean;
   shadow_with_jobs?: string[];
   assigned_resources?: string[];
@@ -104,11 +121,15 @@ export interface UnscheduledJob {
 }
 
 export interface Scenario {
+  id?: string;
+  name?: string;
   blocks: TrackBlock[];
   trains: Train[];
   jobs: MaintenanceJob[];
   resources: Resource[];
   fixed_blocks: FixedMaintenanceBlock[];
+  weather?: Record<string, any>;
+  asset_telemetry?: Record<string, any>;
 }
 
 export interface KPIReport {
@@ -128,6 +149,7 @@ export interface KPIReport {
 }
 
 export interface OptimizedSchedule {
+  scenario_id?: string;
   status: string;
   solver: string;
   scheduled_jobs: ScheduledJob[];
@@ -137,6 +159,7 @@ export interface OptimizedSchedule {
   objective_value: number;
   runtime_seconds?: number;
   kpi_metrics?: KPIReport;
+  kpis?: Record<string, any>;
   conflicts?: ConflictItem[];
   shadow_block_groups?: ShadowBlockGroup[];
   is_fallback?: boolean;
@@ -706,4 +729,97 @@ export interface AuditEventRecord {
   resource_id: string;
   action: string;
   details: Record<string, unknown>;
+}
+
+// ----------------- What-If & Scenario Simulator Types ----------------- //
+
+export interface WhatIfModification {
+  job_id?: string;
+  extend_duration_hours?: number;
+  shift_start_hours?: number;
+  cancel_job?: boolean;
+  train_id?: string;
+  added_delay_min?: number;
+  speed_restriction_kmh?: number;
+  affected_block_id?: string;
+}
+
+export interface WhatIfScenarioRequest {
+  scenario_id?: string;
+  modifications?: WhatIfModification[];
+  fast_solve?: boolean;
+}
+
+export interface TrainDelayDelta {
+  train_id: string;
+  train_name?: string;
+  category: string;
+  baseline_delay_min: number;
+  what_if_delay_min: number;
+  delta_delay_min: number;
+  energy_loss_kwh: number;
+  crew_duty_exceeded: boolean;
+}
+
+export interface WhatIfDeltaReport {
+  baseline_cumulative_delay_min: number;
+  what_if_cumulative_delay_min: number;
+  delta_cumulative_delay_min: number;
+  train_deltas: TrainDelayDelta[];
+  heavy_machine_productivity_delta_hours: number;
+  freight_rakes_regulated_count: number;
+  total_energy_loss_kwh: number;
+  total_fuel_cost_impact_inr: number;
+  crew_hours_timeout_warnings: string[];
+  narrative_summary_en: string;
+  narrative_summary_hi: string;
+}
+
+export interface WhatIfScenarioResponse {
+  status: string;
+  run_id: string;
+  delta_report: WhatIfDeltaReport;
+  what_if_schedule: Record<string, any>;
+  conflicts_count: number;
+}
+
+export interface BlockShiftRequest {
+  job_id: string;
+  shift_minutes?: number;
+  shift_hours?: number;
+  scenario_id?: string;
+}
+
+export interface BlockShiftResponse {
+  job_id: string;
+  block_id: string;
+  original_start_hours: number;
+  new_start_hours: number;
+  new_end_hours: number;
+  is_feasible: boolean;
+  conflict_count: number;
+  delta_delay_min: number;
+  conflicts: Array<Record<string, any>>;
+  bilingual_advisory: Record<string, string>;
+  new_start_time?: number;
+  new_end_time?: number;
+  added_delay_minutes?: number;
+  is_viable?: boolean;
+  recommendation?: string;
+}
+
+export interface ScheduleJustification {
+  job_id: string;
+  block_id: string;
+  headline_en: string;
+  headline_hi: string;
+  detailed_en: string;
+  detailed_hi: string;
+  tradeoff_en: string;
+  tradeoff_hi: string;
+  binding_constraints: string[];
+  crew_impact_en?: string;
+  crew_impact_hi?: string;
+  energy_impact_en?: string;
+  energy_impact_hi?: string;
 }

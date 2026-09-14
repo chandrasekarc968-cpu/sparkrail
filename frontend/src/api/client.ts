@@ -11,7 +11,11 @@ import type {
   AdvisoryProposal,
   ApprovalActionPayload,
   OperationalOverridePayload,
-  AuditEventRecord
+  AuditEventRecord,
+  WhatIfScenarioRequest,
+  WhatIfScenarioResponse,
+  BlockShiftRequest,
+  BlockShiftResponse
 } from './types';
 import { validateNetworkGeometryContract, GeometryContractError } from './geometryValidator';
 import {
@@ -525,5 +529,104 @@ export const ApiClient = {
     if (runId) params.append('run_id', runId);
     const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/advisory/export?${params.toString()}`, { signal });
     return res.text();
+  },
+
+  async simulateWhatIf(
+    req: WhatIfScenarioRequest,
+    signal?: AbortSignal
+  ): Promise<WhatIfScenarioResponse> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 150));
+      return {
+        status: "SUCCESS",
+        run_id: `WIF-DEMO-${Date.now()}`,
+        delta_report: {
+          baseline_cumulative_delay_min: 20.0,
+          what_if_cumulative_delay_min: 35.0,
+          delta_cumulative_delay_min: 15.0,
+          train_deltas: [
+            {
+              train_id: "T4",
+              train_name: "BOXN Coal Freight Spl",
+              category: "freight",
+              baseline_delay_min: 15.0,
+              what_if_delay_min: 30.0,
+              delta_delay_min: 15.0,
+              energy_loss_kwh: 301.4,
+              crew_duty_exceeded: false
+            }
+          ],
+          heavy_machine_productivity_delta_hours: 1.0,
+          freight_rakes_regulated_count: 1,
+          total_energy_loss_kwh: 301.4,
+          total_fuel_cost_impact_inr: 2562.0,
+          crew_hours_timeout_warnings: [],
+          narrative_summary_en: "What-If Simulation Result: Injected changes introduce +15 min delay on 1 freight service. Traction kinetic energy loss: 301 kWh (~₹2,562). Machine window change: +1.0h.",
+          narrative_summary_hi: "वॉट-इफ सिमुलेशन परिणाम: प्रस्तावित परिवर्तन से 1 मालगाड़ी में +15 मिनट का अतिरिक्त विलंब। पुन: गति पकड़ने में अनुमानित 301 kWh बिजली (~₹2,562) खर्च होगी। मशीन समय: +1.0 घंटा।"
+        },
+        what_if_schedule: mockSchedule as unknown as Record<string, unknown>,
+        conflicts_count: 0
+      };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/simulation/scenario`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+      signal
+    });
+    return res.json();
+  },
+
+  async evaluateBlockShift(
+    req: BlockShiftRequest,
+    signal?: AbortSignal
+  ): Promise<BlockShiftResponse> {
+    if (this.isDemoMode()) {
+      await new Promise((r) => setTimeout(r, 100));
+      const shiftMins = req.shift_minutes ?? (req.shift_hours ? req.shift_hours * 60 : 0);
+      const shiftH = shiftMins / 60.0;
+      const newStart = 10.0 + shiftH;
+      const newEnd = 12.0 + shiftH;
+      const addedDelay = shiftMins > 45 ? 12.0 : 0.0;
+      const conflictsCount = shiftMins > 45 ? 1 : 0;
+      return {
+        job_id: req.job_id,
+        block_id: "B4",
+        original_start_hours: 10.0,
+        new_start_hours: newStart,
+        new_end_hours: newEnd,
+        is_feasible: true,
+        conflict_count: conflictsCount,
+        delta_delay_min: addedDelay,
+        conflicts: conflictsCount > 0 ? [{ type: "TRAIN_CONFLICT", detail: "Overlap with BOXN Freight" }] : [],
+        bilingual_advisory: {
+          en: `Shifted Block ${req.job_id} by ${shiftMins > 0 ? '+' : ''}${shiftMins} mins. Added delay: ${addedDelay > 0 ? '12 mins' : '0 mins'}.`,
+          hi: `ब्लॉक ${req.job_id} को ${shiftMins > 0 ? '+' : ''}${shiftMins} मिनट खिसकाया गया। अतिरिक्त विलंब: ${addedDelay > 0 ? '12 मिनट' : '0 मिनट'}।`
+        },
+        new_start_time: newStart,
+        new_end_time: newEnd,
+        added_delay_minutes: addedDelay,
+        is_viable: true,
+        recommendation: addedDelay > 0 ? "Viable with minor freight regulation." : "Viable with zero train conflicts."
+      };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/simulation/evaluate-shift`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+      signal
+    });
+    return res.json();
+  },
+
+  async getXaiBriefing(signal?: AbortSignal): Promise<{ en: string; hi: string }> {
+    if (this.isDemoMode()) {
+      return {
+        en: "SparkRail Decision-Support: 18 maintenance blocks coordinated across 8 sections. Zero Class-1 passenger disruptions. 4 multi-department shadow possessions active.",
+        hi: "स्पार्क-रेल निर्णय-सहायता: 8 सेक्शनों में 18 रखरखाव ब्लॉक समन्वित। प्रीमियम यात्री सेवाओं पर शून्य प्रभाव। 4 बहु-विभागीय शैडो ब्लॉक सक्रिय।"
+      };
+    }
+    const res = await fetchWithRetry(`${getApiBaseUrl()}/api/v1/simulation/xai-briefing`, { signal });
+    return res.json();
   }
 };

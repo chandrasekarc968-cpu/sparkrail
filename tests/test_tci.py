@@ -188,3 +188,26 @@ def test_tci_statutory_inspection_urgency():
     _, expl = scorer.calculate_tci_from_evidence(evidence)
     assert expl.raw_inputs.inspection_urgency == 1.0
 
+def test_tci_enrich_from_asset_telemetry():
+    """Feeds TRC TQI and USFD rail flaw telemetry directly into TCIInputs."""
+    from src.data_pipeline.models import AssetConditionTelemetry
+    telemetry = AssetConditionTelemetry(
+        block_id="B2",
+        trc_tqi_score=42.0,  # Elevated track unevenness
+        usfd_flaw_severity="REM", # Remove within 3 days
+        cumulative_gmt=52.0,
+        days_since_tamping=120
+    )
+    base_inputs = TCIInputs(
+        safety_severity=0.2,
+        traffic_impact=0.6,
+        degradation_indicator=0.2,
+        overdue_days=5
+    )
+    enriched = TaskCriticalityScorer.enrich_from_asset_telemetry(base_inputs, telemetry)
+    # Severity should be elevated to at least 0.85 due to REM flaw
+    assert enriched.safety_severity >= 0.85
+    # Degradation indicator elevated due to high TQI
+    assert enriched.degradation_indicator > 0.4
+    assert enriched.inspection_urgency == 1.0
+

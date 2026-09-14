@@ -160,6 +160,31 @@ def validate_schedule_safety(
                     f"induced delay ({tr_delay:.2f}h) exceeds maximum allowed limit ({max_premium_delay:.2f}h)."
                 )
 
+    # 6. HOER Crew Hours Audit
+    for tr in scenario.trains:
+        expiry_t = getattr(tr, "crew_duty_expiry_timestamp", None)
+        if expiry_t is not None:
+            tr_delay = float(delays.get(tr.id, 0.0))
+            if tr.scheduled_end + tr_delay > expiry_t + 1e-4:
+                warnings.append(
+                    f"HOER crew duty risk: Train '{tr.id}' ({tr.name or 'Train'}) delayed by {tr_delay:.1f}h "
+                    f"pushes arrival past crew duty ceiling ({expiry_t:.1f}h)."
+                )
+
+    # 7. Environmental & Thermal Risk Checks (IRPWM Para 509)
+    if scenario.weather and scenario.weather.is_summer_buckling_risk:
+        for sj in sched_jobs:
+            dept = sj.get("department")
+            if dept in ("CIVIL", "ENGINEERING"):
+                st = float(sj.get("start_time", 0))
+                et = float(sj.get("end_time", 0))
+                if max(st, 12.0) < min(et, 16.0):
+                    warnings.append(
+                        f"IRPWM Para 509 advisory: Job '{sj.get('job_id')}' ({dept}) scheduled during peak summer "
+                        f"midday thermal window (12:00-16:00, rail temp {scenario.weather.rail_temp_celsius}°C). "
+                        f"Ballast de-stressing or lifting poses track buckling hazard."
+                    )
+
     result = SafetyAuditResult(
         is_safe=(len(violations) == 0),
         violations=violations,

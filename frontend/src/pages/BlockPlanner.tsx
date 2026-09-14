@@ -24,9 +24,13 @@ import {
   ShieldCheck,
   Info,
   Zap,
-  FileCheck
+  FileCheck,
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import { AdvisoryProposalDrawer } from '../components/shared/AdvisoryProposalDrawer';
+import { MareyChart } from '../components/charts/MareyChart';
+import { WhatIfSimulatorModal } from '../components/shared/WhatIfSimulatorModal';
 
 export function BlockPlanner() {
   const { lastRefresh, isDemoMode } = useAppContext();
@@ -40,6 +44,9 @@ export function BlockPlanner() {
   const [scheduleMode, setScheduleMode] = useState<'optimized' | 'baseline'>('optimized');
   const [selectedWeek, setSelectedWeek] = useState<number>(1); // Week 1 = Frozen
   const [selectedJobId, setSelectedJobId] = useState<string | null>("J18");
+  const [plannerViewMode, setPlannerViewMode] = useState<'split' | 'marey' | 'gantt'>('split');
+  const [showWhatIfModal, setShowWhatIfModal] = useState<boolean>(false);
+  const [shiftSuccessMessage, setShiftSuccessMessage] = useState<string | null>(null);
 
   // Filters
   const [selectedDept, setSelectedDept] = useState<Department | 'ALL'>('ALL');
@@ -65,6 +72,38 @@ export function BlockPlanner() {
       setError(err instanceof Error ? err.message : "Failed to run optimization.");
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  const handleShiftBlock = async (jobId: string, shiftMinutes: number) => {
+    try {
+      const resp = await ApiClient.evaluateBlockShift({
+        job_id: jobId,
+        shift_minutes: shiftMinutes,
+        scenario_id: scenario?.id || "synthetic_corridor",
+      });
+
+      const newStart = resp.new_start_hours ?? resp.new_start_time ?? 10.0;
+      const newEnd = resp.new_end_hours ?? resp.new_end_time ?? 12.0;
+      const delayMins = resp.delta_delay_min ?? resp.added_delay_minutes ?? 0;
+      const advisory = resp.bilingual_advisory?.en || resp.recommendation || "Shift evaluated.";
+
+      if (schedule) {
+        setSchedule({
+          ...schedule,
+          scheduled_jobs: schedule.scheduled_jobs.map((j) =>
+            j.job_id === jobId
+              ? { ...j, start_time: newStart, end_time: newEnd }
+              : j
+          ),
+        });
+        setShiftSuccessMessage(
+          `Shifted ${jobId} (${newStart.toFixed(1)}:00 - ${newEnd.toFixed(1)}:00). Conflicts: ${resp.conflict_count}, Delay impact: +${delayMins.toFixed(1)}m. ${advisory}`
+        );
+        setTimeout(() => setShiftSuccessMessage(null), 7000);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to evaluate block shift.");
     }
   };
 
@@ -182,6 +221,15 @@ export function BlockPlanner() {
 
           <Button
             size="sm"
+            onClick={() => setShowWhatIfModal(true)}
+            className="bg-purple-700 hover:bg-purple-800 text-white font-semibold cursor-pointer shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-300" />
+            What-If Sandbox
+          </Button>
+
+          <Button
+            size="sm"
             onClick={handleRunOptimization}
             disabled={isOptimizing}
             isLoading={isOptimizing}
@@ -200,6 +248,43 @@ export function BlockPlanner() {
             <FileCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
             BDMS Proposals
           </Button>
+
+          {/* View Mode Toggle: Split / Marey / Gantt */}
+          <div className="flex bg-neutral-100 p-1 rounded border border-neutral-200 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setPlannerViewMode('split')}
+              className={`px-2.5 py-1 rounded transition-all cursor-pointer min-h-[36px] ${
+                plannerViewMode === 'split'
+                  ? "bg-white text-neutral-950 shadow-xs border border-neutral-200"
+                  : "text-neutral-600 hover:text-neutral-900"
+              }`}
+            >
+              Split View
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlannerViewMode('marey')}
+              className={`px-2.5 py-1 rounded transition-all cursor-pointer min-h-[36px] ${
+                plannerViewMode === 'marey'
+                  ? "bg-white text-neutral-950 shadow-xs border border-neutral-200"
+                  : "text-neutral-600 hover:text-neutral-900"
+              }`}
+            >
+              Marey Chart
+            </button>
+            <button
+              type="button"
+              onClick={() => setPlannerViewMode('gantt')}
+              className={`px-2.5 py-1 rounded transition-all cursor-pointer min-h-[36px] ${
+                plannerViewMode === 'gantt'
+                  ? "bg-white text-neutral-950 shadow-xs border border-neutral-200"
+                  : "text-neutral-600 hover:text-neutral-900"
+              }`}
+            >
+              Gantt View
+            </button>
+          </div>
 
           {/* Week Selector */}
           <div className="flex bg-neutral-100 p-1 rounded border border-neutral-200 text-xs font-semibold">
@@ -247,6 +332,31 @@ export function BlockPlanner() {
           </div>
         </div>
       </div>
+
+      {shiftSuccessMessage && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded text-xs text-emerald-900 flex items-center justify-between shadow-xs">
+          <span className="flex items-center gap-1.5 font-semibold">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            {shiftSuccessMessage}
+          </span>
+          <Button size="sm" variant="outline" onClick={() => setShiftSuccessMessage(null)}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+
+      {(plannerViewMode === 'split' || plannerViewMode === 'marey') && (
+        <MareyChart
+          schedule={schedule}
+          scenario={scenario}
+          selectedJobId={selectedJobId}
+          onSelectJob={(jobId) => {
+            setSelectedJobId(jobId);
+            setLocalPreviewJob(null);
+          }}
+          onShiftBlock={handleShiftBlock}
+        />
+      )}
 
       {localPreviewJob && (
         <div className="p-3 bg-amber-50 border border-amber-300 rounded text-xs text-amber-900 flex items-center justify-between">
@@ -875,6 +985,20 @@ export function BlockPlanner() {
       <AdvisoryProposalDrawer
         isOpen={showAdvisoryDrawer}
         onClose={() => setShowAdvisoryDrawer(false)}
+      />
+
+      <WhatIfSimulatorModal
+        isOpen={showWhatIfModal}
+        onClose={() => setShowWhatIfModal(false)}
+        scenario={scenario}
+        onScenarioCommitted={(newSchedule: any) => {
+          if (newSchedule && typeof newSchedule === 'object' && 'scheduled_jobs' in newSchedule) {
+            setSchedule(newSchedule as OptimizedSchedule);
+          }
+          setShowWhatIfModal(false);
+          setShiftSuccessMessage("Hypothetical scenario committed to active scheduler session.");
+          setTimeout(() => setShiftSuccessMessage(null), 7000);
+        }}
       />
     </div>
   );

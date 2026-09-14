@@ -98,51 +98,81 @@
             },
             "max_speed_kmh": 130.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 450.0,
+            "is_loaded_freight": false,
+            "train_type": "PREMIUM",
+            "crew_duty_remaining_hours": 7.1,
+            "crew_duty_expiry_timestamp": 7.1,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T2",
-            "name": "Vande Bharat Exp 20001",
+            "name": "Rajdhani Exp 12401",
             "category": "premium",
             "scheduled_start": 1.0,
             "scheduled_end": 4.0,
             "route": [
+                "B5",
                 "B6",
                 "B7",
                 "B8"
             ],
             "min_travel_times": {
+                "B5": 0.5,
                 "B6": 0.5,
                 "B7": 0.5,
                 "B8": 0.5
             },
             "max_speed_kmh": 130.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 850.0,
+            "is_loaded_freight": false,
+            "train_type": "PREMIUM",
+            "crew_duty_remaining_hours": 6.2,
+            "crew_duty_expiry_timestamp": 7.2,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T3",
-            "name": "Vande Bharat Exp 20002",
+            "name": "Shatabdi Exp 12002",
             "category": "premium",
             "scheduled_start": 2.0,
             "scheduled_end": 5.0,
             "route": [
-                "B6",
                 "B7",
                 "B8"
             ],
             "min_travel_times": {
-                "B6": 0.5,
                 "B7": 0.5,
                 "B8": 0.5
             },
             "max_speed_kmh": 130.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 850.0,
+            "is_loaded_freight": false,
+            "train_type": "PREMIUM",
+            "crew_duty_remaining_hours": 7.3,
+            "crew_duty_expiry_timestamp": 9.3,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T4",
-            "name": "Container Freight 50003",
+            "name": "Empty BOXN Rake 70003",
             "category": "freight",
             "scheduled_start": 3.0,
             "scheduled_end": 9.0,
@@ -156,41 +186,58 @@
                 "B2": 1.0,
                 "B3": 1.0
             },
-            "max_speed_kmh": 75.0,
+            "max_speed_kmh": 85.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 1400.0,
+            "is_loaded_freight": false,
+            "train_type": "EMPTY_FREIGHT",
+            "crew_duty_remaining_hours": 9.6,
+            "crew_duty_expiry_timestamp": 12.6,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T5",
-            "name": "Container Freight 50004",
+            "name": "Loaded Coal BOXN 50004",
             "category": "freight",
             "scheduled_start": 4.0,
             "scheduled_end": 10.0,
             "route": [
-                "B4",
                 "B5",
                 "B6",
-                "B7",
-                "B8"
+                "B7"
             ],
             "min_travel_times": {
-                "B4": 1.0,
                 "B5": 1.0,
                 "B6": 1.0,
-                "B7": 1.0,
-                "B8": 1.0
+                "B7": 1.0
             },
             "max_speed_kmh": 75.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 5200.0,
+            "is_loaded_freight": true,
+            "train_type": "LOADED_FREIGHT",
+            "crew_duty_remaining_hours": 9.0,
+            "crew_duty_expiry_timestamp": 13.0,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T6",
-            "name": "Container Freight 50005",
+            "name": "Empty BOXN Rake 70005",
             "category": "freight",
             "scheduled_start": 5.0,
             "scheduled_end": 11.0,
             "route": [
+                "B1",
                 "B2",
                 "B3",
                 "B4",
@@ -198,43 +245,64 @@
                 "B6"
             ],
             "min_travel_times": {
+                "B1": 1.0,
                 "B2": 1.0,
                 "B3": 1.0,
                 "B4": 1.0,
                 "B5": 1.0,
                 "B6": 1.0
             },
-            "max_speed_kmh": 75.0,
+            "max_speed_kmh": 85.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 1400.0,
+            "is_loaded_freight": false,
+            "train_type": "EMPTY_FREIGHT",
+            "crew_duty_remaining_hours": 9.0,
+            "crew_duty_expiry_timestamp": 14.0,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T7",
-            "name": "Container Freight 50006",
+            "name": "Bulk Cement BCN/E 52006",
             "category": "freight",
             "scheduled_start": 6.0,
             "scheduled_end": 12.0,
             "route": [
+                "B1",
+                "B2",
                 "B3",
                 "B4",
-                "B5",
-                "B6",
-                "B7"
+                "B5"
             ],
             "min_travel_times": {
+                "B1": 1.0,
+                "B2": 1.0,
                 "B3": 1.0,
                 "B4": 1.0,
-                "B5": 1.0,
-                "B6": 1.0,
-                "B7": 1.0
+                "B5": 1.0
             },
             "max_speed_kmh": 75.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 4800.0,
+            "is_loaded_freight": true,
+            "train_type": "LOADED_FREIGHT",
+            "crew_duty_remaining_hours": 9.6,
+            "crew_duty_expiry_timestamp": 15.6,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T8",
-            "name": "Container Freight 50007",
+            "name": "Empty BOXN Rake 70007",
             "category": "freight",
             "scheduled_start": 7.0,
             "scheduled_end": 13.0,
@@ -242,75 +310,132 @@
                 "B4",
                 "B5",
                 "B6",
-                "B7",
-                "B8"
+                "B7"
             ],
             "min_travel_times": {
                 "B4": 1.0,
                 "B5": 1.0,
                 "B6": 1.0,
-                "B7": 1.0,
-                "B8": 1.0
+                "B7": 1.0
             },
-            "max_speed_kmh": 75.0,
+            "max_speed_kmh": 85.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 1400.0,
+            "is_loaded_freight": false,
+            "train_type": "EMPTY_FREIGHT",
+            "crew_duty_remaining_hours": 10.4,
+            "crew_duty_expiry_timestamp": 17.4,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T9",
-            "name": "Container Freight 50008",
+            "name": "Loaded Coal BOXN 50008",
             "category": "freight",
             "scheduled_start": 8.0,
             "scheduled_end": 14.0,
             "route": [
-                "B1",
                 "B2",
-                "B3"
+                "B3",
+                "B4",
+                "B5"
             ],
             "min_travel_times": {
-                "B1": 1.0,
                 "B2": 1.0,
-                "B3": 1.0
+                "B3": 1.0,
+                "B4": 1.0,
+                "B5": 1.0
             },
             "max_speed_kmh": 75.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 5200.0,
+            "is_loaded_freight": true,
+            "train_type": "LOADED_FREIGHT",
+            "crew_duty_remaining_hours": 9.4,
+            "crew_duty_expiry_timestamp": 17.4,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         },
         {
             "id": "T10",
-            "name": "Container Freight 50009",
+            "name": "Empty BOXN Rake 70009",
             "category": "freight",
             "scheduled_start": 9.0,
             "scheduled_end": 15.0,
             "route": [
+                "B1",
+                "B2",
+                "B3",
                 "B4",
-                "B5",
-                "B6"
+                "B5"
             ],
             "min_travel_times": {
+                "B1": 1.0,
+                "B2": 1.0,
+                "B3": 1.0,
                 "B4": 1.0,
-                "B5": 1.0,
-                "B6": 1.0
+                "B5": 1.0
             },
-            "max_speed_kmh": 75.0,
+            "max_speed_kmh": 85.0,
             "current_block": null,
-            "current_delay_min": 0.0
+            "current_delay_min": 0.0,
+            "gross_tonnage_tonnes": 1400.0,
+            "is_loaded_freight": false,
+            "train_type": "EMPTY_FREIGHT",
+            "crew_duty_remaining_hours": 10.9,
+            "crew_duty_expiry_timestamp": 19.9,
+            "designated_crew_stations": [
+                "SFG",
+                "PRYJ",
+                "MZP"
+            ]
         }
     ],
     "jobs": [
         {
             "id": "J1",
+            "department": "Engineering",
+            "block_id": "B7",
+            "duration": 1.0,
+            "required_resources": {
+                "R_TIE": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.41,
+                "traffic_impact": 0.34,
+                "degradation_indicator": 0.14,
+                "overdue_days": 29,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Track Tamping & Ballast Cleaning",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 10.0"
+        },
+        {
+            "id": "J2",
             "department": "OHE",
-            "block_id": "B8",
+            "block_id": "B2",
             "duration": 3.0,
             "required_resources": {
                 "R_CREW_OHE": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.47,
-                "traffic_impact": 0.15,
-                "degradation_indicator": 0.71,
-                "overdue_days": 18,
+                "safety_severity": 0.36,
+                "traffic_impact": 0.67,
+                "degradation_indicator": 0.9,
+                "overdue_days": 23,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -319,205 +444,44 @@
             "job_type": "OHE Cantilever & Contact Wire Inspection",
             "due_date": null,
             "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 50.0"
-        },
-        {
-            "id": "J2",
-            "department": "Engineering",
-            "block_id": "B2",
-            "duration": 2.0,
-            "required_resources": {
-                "R_BCM": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.33,
-                "traffic_impact": 0.91,
-                "degradation_indicator": 0.77,
-                "overdue_days": 3,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Track Tamping & Ballast Cleaning",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 60.0"
+            "chainage_km": "KM 30.0"
         },
         {
             "id": "J3",
-            "department": "Engineering",
-            "block_id": "B2",
-            "duration": 3.0,
-            "required_resources": {
-                "R_TIE": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.58,
-                "traffic_impact": 0.21,
-                "degradation_indicator": 0.63,
-                "overdue_days": 0,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Track Tamping & Ballast Cleaning",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 50.0"
-        },
-        {
-            "id": "J4",
             "department": "S&T",
-            "block_id": "B7",
-            "duration": 2.0,
+            "block_id": "B2",
+            "duration": 1.0,
             "required_resources": {
                 "R_CREW_SIG": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.52,
-                "traffic_impact": 0.71,
-                "degradation_indicator": 0.29,
-                "overdue_days": 6,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Point Machine & Track Circuit Testing",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 70.0"
-        },
-        {
-            "id": "J5",
-            "department": "Engineering",
-            "block_id": "B2",
-            "duration": 2.0,
-            "required_resources": {
-                "R_BCM": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.89,
-                "traffic_impact": 0.3,
-                "degradation_indicator": 0.94,
-                "overdue_days": 40,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Track Tamping & Ballast Cleaning",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 70.0"
-        },
-        {
-            "id": "J6",
-            "department": "Engineering",
-            "block_id": "B5",
-            "duration": 3.0,
-            "required_resources": {
-                "R_TIE": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.26,
-                "traffic_impact": 0.51,
-                "degradation_indicator": 0.64,
-                "overdue_days": 0,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Track Tamping & Ballast Cleaning",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 60.0"
-        },
-        {
-            "id": "J7",
-            "department": "Engineering",
-            "block_id": "B2",
-            "duration": 2.0,
-            "required_resources": {
-                "R_BCM": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.4,
-                "traffic_impact": 0.35,
-                "degradation_indicator": 0.25,
-                "overdue_days": 30,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "Track Tamping & Ballast Cleaning",
-            "due_date": null,
-            "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 30.0"
-        },
-        {
-            "id": "J8",
-            "department": "OHE",
-            "block_id": "B4",
-            "duration": 1.0,
-            "required_resources": {
-                "R_CREW_OHE": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.35,
-                "traffic_impact": 0.95,
-                "degradation_indicator": 0.88,
+                "safety_severity": 0.7,
+                "traffic_impact": 0.8,
+                "degradation_indicator": 0.99,
                 "overdue_days": 14,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
             "is_fixed": false,
             "fixed_start": null,
-            "job_type": "OHE Cantilever & Contact Wire Inspection",
+            "job_type": "Point Machine & Track Circuit Testing",
             "due_date": null,
-            "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 60.0"
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 10.0"
         },
         {
-            "id": "J9",
+            "id": "J4",
             "department": "OHE",
             "block_id": "B5",
-            "duration": 1.0,
-            "required_resources": {
-                "R_CREW_OHE": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.79,
-                "traffic_impact": 0.93,
-                "degradation_indicator": 0.34,
-                "overdue_days": 25,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "OHE Cantilever & Contact Wire Inspection",
-            "due_date": null,
-            "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 60.0"
-        },
-        {
-            "id": "J10",
-            "department": "OHE",
-            "block_id": "B1",
             "duration": 2.0,
             "required_resources": {
                 "R_CREW_OHE": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.12,
-                "traffic_impact": 0.46,
-                "degradation_indicator": 0.81,
-                "overdue_days": 38,
+                "safety_severity": 0.67,
+                "traffic_impact": 0.43,
+                "degradation_indicator": 0.43,
+                "overdue_days": 13,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -526,44 +490,21 @@
             "job_type": "OHE Cantilever & Contact Wire Inspection",
             "due_date": null,
             "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 50.0"
+            "chainage_km": "KM 40.0"
         },
         {
-            "id": "J11",
-            "department": "OHE",
-            "block_id": "B7",
-            "duration": 2.0,
-            "required_resources": {
-                "R_CREW_OHE": 1
-            },
-            "tci_inputs": {
-                "safety_severity": 0.72,
-                "traffic_impact": 0.84,
-                "degradation_indicator": 0.52,
-                "overdue_days": 40,
-                "inspection_urgency": 0.0,
-                "data_confidence": 1.0
-            },
-            "is_fixed": false,
-            "fixed_start": null,
-            "job_type": "OHE Cantilever & Contact Wire Inspection",
-            "due_date": null,
-            "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 0.0"
-        },
-        {
-            "id": "J12",
+            "id": "J5",
             "department": "S&T",
-            "block_id": "B8",
+            "block_id": "B2",
             "duration": 3.0,
             "required_resources": {
                 "R_CREW_SIG": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.89,
-                "traffic_impact": 0.7,
-                "degradation_indicator": 0.2,
-                "overdue_days": 12,
+                "safety_severity": 0.67,
+                "traffic_impact": 0.58,
+                "degradation_indicator": 0.32,
+                "overdue_days": 29,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -575,18 +516,41 @@
             "chainage_km": "KM 60.0"
         },
         {
-            "id": "J13",
+            "id": "J6",
             "department": "OHE",
-            "block_id": "B8",
+            "block_id": "B4",
             "duration": 3.0,
             "required_resources": {
                 "R_CREW_OHE": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.87,
-                "traffic_impact": 0.75,
-                "degradation_indicator": 0.19,
-                "overdue_days": 26,
+                "safety_severity": 0.39,
+                "traffic_impact": 0.79,
+                "degradation_indicator": 0.15,
+                "overdue_days": 2,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "OHE Cantilever & Contact Wire Inspection",
+            "due_date": null,
+            "safety_clearance_required": "Power Isolation & Permit-to-Work",
+            "chainage_km": "KM 50.0"
+        },
+        {
+            "id": "J7",
+            "department": "OHE",
+            "block_id": "B5",
+            "duration": 1.0,
+            "required_resources": {
+                "R_CREW_OHE": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.29,
+                "traffic_impact": 0.95,
+                "degradation_indicator": 0.89,
+                "overdue_days": 20,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -598,18 +562,41 @@
             "chainage_km": "KM 30.0"
         },
         {
-            "id": "J14",
+            "id": "J8",
             "department": "S&T",
-            "block_id": "B2",
+            "block_id": "B8",
+            "duration": 2.0,
+            "required_resources": {
+                "R_CREW_SIG": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.9,
+                "traffic_impact": 0.68,
+                "degradation_indicator": 0.23,
+                "overdue_days": 8,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Point Machine & Track Circuit Testing",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 30.0"
+        },
+        {
+            "id": "J9",
+            "department": "S&T",
+            "block_id": "B5",
             "duration": 3.0,
             "required_resources": {
                 "R_CREW_SIG": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.78,
-                "traffic_impact": 0.99,
-                "degradation_indicator": 0.63,
-                "overdue_days": 31,
+                "safety_severity": 0.63,
+                "traffic_impact": 0.91,
+                "degradation_indicator": 0.46,
+                "overdue_days": 14,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -621,64 +608,87 @@
             "chainage_km": "KM 20.0"
         },
         {
-            "id": "J15",
-            "department": "OHE",
-            "block_id": "B2",
-            "duration": 3.0,
+            "id": "J10",
+            "department": "S&T",
+            "block_id": "B8",
+            "duration": 1.0,
             "required_resources": {
-                "R_CREW_OHE": 1
+                "R_CREW_SIG": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.43,
-                "traffic_impact": 0.61,
-                "degradation_indicator": 0.84,
-                "overdue_days": 22,
+                "safety_severity": 0.78,
+                "traffic_impact": 0.87,
+                "degradation_indicator": 0.24,
+                "overdue_days": 10,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
             "is_fixed": false,
             "fixed_start": null,
-            "job_type": "OHE Cantilever & Contact Wire Inspection",
+            "job_type": "Point Machine & Track Circuit Testing",
             "due_date": null,
-            "safety_clearance_required": "Power Isolation & Permit-to-Work",
+            "safety_clearance_required": "Standard Track Possession Clearance",
             "chainage_km": "KM 60.0"
         },
         {
-            "id": "J16",
-            "department": "OHE",
+            "id": "J11",
+            "department": "S&T",
             "block_id": "B2",
-            "duration": 3.0,
+            "duration": 2.0,
             "required_resources": {
-                "R_CREW_OHE": 1
+                "R_CREW_SIG": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.79,
-                "traffic_impact": 0.35,
-                "degradation_indicator": 0.99,
-                "overdue_days": 17,
+                "safety_severity": 0.44,
+                "traffic_impact": 1.0,
+                "degradation_indicator": 0.58,
+                "overdue_days": 35,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
             "is_fixed": false,
             "fixed_start": null,
-            "job_type": "OHE Cantilever & Contact Wire Inspection",
+            "job_type": "Point Machine & Track Circuit Testing",
             "due_date": null,
-            "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 60.0"
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 0.0"
         },
         {
-            "id": "J17",
+            "id": "J12",
+            "department": "S&T",
+            "block_id": "B2",
+            "duration": 3.0,
+            "required_resources": {
+                "R_CREW_SIG": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.9,
+                "traffic_impact": 0.78,
+                "degradation_indicator": 0.79,
+                "overdue_days": 21,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Point Machine & Track Circuit Testing",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 10.0"
+        },
+        {
+            "id": "J13",
             "department": "OHE",
-            "block_id": "B5",
+            "block_id": "B7",
             "duration": 1.0,
             "required_resources": {
                 "R_CREW_OHE": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.65,
-                "traffic_impact": 0.54,
-                "degradation_indicator": 0.64,
-                "overdue_days": 12,
+                "safety_severity": 0.51,
+                "traffic_impact": 0.96,
+                "degradation_indicator": 0.89,
+                "overdue_days": 16,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -687,21 +697,44 @@
             "job_type": "OHE Cantilever & Contact Wire Inspection",
             "due_date": null,
             "safety_clearance_required": "Power Isolation & Permit-to-Work",
-            "chainage_km": "KM 30.0"
+            "chainage_km": "KM 20.0"
         },
         {
-            "id": "J18",
+            "id": "J14",
+            "department": "S&T",
+            "block_id": "B2",
+            "duration": 3.0,
+            "required_resources": {
+                "R_CREW_SIG": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.37,
+                "traffic_impact": 0.68,
+                "degradation_indicator": 0.65,
+                "overdue_days": 9,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Point Machine & Track Circuit Testing",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 50.0"
+        },
+        {
+            "id": "J15",
             "department": "Engineering",
-            "block_id": "B7",
-            "duration": 2.0,
+            "block_id": "B1",
+            "duration": 3.0,
             "required_resources": {
                 "R_TIE": 1
             },
             "tci_inputs": {
-                "safety_severity": 0.23,
-                "traffic_impact": 0.81,
-                "degradation_indicator": 0.83,
-                "overdue_days": 27,
+                "safety_severity": 0.12,
+                "traffic_impact": 0.94,
+                "degradation_indicator": 0.89,
+                "overdue_days": 19,
                 "inspection_urgency": 0.0,
                 "data_confidence": 1.0
             },
@@ -710,7 +743,76 @@
             "job_type": "Track Tamping & Ballast Cleaning",
             "due_date": null,
             "safety_clearance_required": "Standard Track Possession Clearance",
-            "chainage_km": "KM 60.0"
+            "chainage_km": "KM 30.0"
+        },
+        {
+            "id": "J16",
+            "department": "Engineering",
+            "block_id": "B4",
+            "duration": 3.0,
+            "required_resources": {
+                "R_BCM": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.18,
+                "traffic_impact": 0.54,
+                "degradation_indicator": 0.16,
+                "overdue_days": 34,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Track Tamping & Ballast Cleaning",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 20.0"
+        },
+        {
+            "id": "J17",
+            "department": "Engineering",
+            "block_id": "B8",
+            "duration": 3.0,
+            "required_resources": {
+                "R_TIE": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 0.57,
+                "traffic_impact": 0.65,
+                "degradation_indicator": 0.97,
+                "overdue_days": 34,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Track Tamping & Ballast Cleaning",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 30.0"
+        },
+        {
+            "id": "J18",
+            "department": "S&T",
+            "block_id": "B5",
+            "duration": 2.0,
+            "required_resources": {
+                "R_CREW_SIG": 1
+            },
+            "tci_inputs": {
+                "safety_severity": 1.0,
+                "traffic_impact": 0.68,
+                "degradation_indicator": 0.49,
+                "overdue_days": 33,
+                "inspection_urgency": 0.0,
+                "data_confidence": 1.0
+            },
+            "is_fixed": false,
+            "fixed_start": null,
+            "job_type": "Point Machine & Track Circuit Testing",
+            "due_date": null,
+            "safety_clearance_required": "Standard Track Possession Clearance",
+            "chainage_km": "KM 70.0"
         },
         {
             "id": "J_FIXED_1",
@@ -805,6 +907,71 @@
             "end_time": 12.0,
             "reason": "OHE Mast Replacement",
             "department": null
+        }
+    ],
+    "weather": {
+        "ambient_temp_celsius": 33.5,
+        "rail_temp_celsius": 49.0,
+        "destressing_temp_celsius": 40.0,
+        "fog_visibility_meters": 1200.0,
+        "monsoon_warning": false
+    },
+    "asset_telemetry": [
+        {
+            "block_id": "B1",
+            "trc_tqi_score": 23.9,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 27.9,
+            "days_since_tamping": 51
+        },
+        {
+            "block_id": "B2",
+            "trc_tqi_score": 22.3,
+            "usfd_flaw_severity": "OBS",
+            "cumulative_gmt": 39.4,
+            "days_since_tamping": 67
+        },
+        {
+            "block_id": "B3",
+            "trc_tqi_score": 25.5,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 22.5,
+            "days_since_tamping": 70
+        },
+        {
+            "block_id": "B4",
+            "trc_tqi_score": 22.9,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 22.4,
+            "days_since_tamping": 32
+        },
+        {
+            "block_id": "B5",
+            "trc_tqi_score": 35.8,
+            "usfd_flaw_severity": "OBS",
+            "cumulative_gmt": 22.5,
+            "days_since_tamping": 45
+        },
+        {
+            "block_id": "B6",
+            "trc_tqi_score": 26.5,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 37.0,
+            "days_since_tamping": 64
+        },
+        {
+            "block_id": "B7",
+            "trc_tqi_score": 24.1,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 52.7,
+            "days_since_tamping": 66
+        },
+        {
+            "block_id": "B8",
+            "trc_tqi_score": 31.2,
+            "usfd_flaw_severity": "NORMAL",
+            "cumulative_gmt": 28.5,
+            "days_since_tamping": 60
         }
     ]
 }

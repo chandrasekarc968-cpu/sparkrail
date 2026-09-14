@@ -39,7 +39,9 @@ from src.data_pipeline.models import (
     IsolatorSwitch,
     PossessionEntity,
     ShadowPossessionBundle,
-    SpeedRestrictionZone
+    SpeedRestrictionZone,
+    WeatherContext,
+    AssetConditionTelemetry
 )
 from src.data_pipeline.coordinates import CoordinateTransformer
 
@@ -78,9 +80,33 @@ def generate_synthetic_data(
     trains = []
     for i in range(num_trains):
         is_premium = i < 3
-        cat = "premium" if is_premium else "freight"
+        if is_premium:
+            cat = "premium"
+            t_type = "PREMIUM"
+            t_name = f"Vande Bharat Exp {20000+i}" if i == 0 else (f"Rajdhani Exp {12400+i}" if i == 1 else f"Shatabdi Exp {12000+i}")
+            tonnage = 450.0 if i == 0 else 850.0
+            is_loaded = False
+            spd = 130.0
+        elif i % 2 == 0:
+            cat = "freight"
+            t_type = "LOADED_FREIGHT"
+            t_name = f"Loaded Coal BOXN {50000+i}" if i % 4 == 0 else f"Bulk Cement BCN/E {52000+i}"
+            tonnage = 5200.0 if i % 4 == 0 else 4800.0
+            is_loaded = True
+            spd = 75.0
+        else:
+            cat = "freight"
+            t_type = "EMPTY_FREIGHT"
+            t_name = f"Empty BOXN Rake {70000+i}"
+            tonnage = 1400.0
+            is_loaded = False
+            spd = 85.0
+
         start_t = float(i)
         end_t = start_t + (3.0 if is_premium else 6.0)
+        trip_dur = end_t - start_t
+        crew_hours = round(trip_dur + random.uniform(2.5, 5.0), 1)
+        crew_expiry = round(start_t + crew_hours, 1)
         
         # Stagger routes
         route_len = random.randint(3, min(6, num_blocks))
@@ -97,13 +123,19 @@ def generate_synthetic_data(
         
         trains.append(Train(
             id=f"T{i+1}",
-            name=f"Vande Bharat Exp {20000+i}" if is_premium else f"Container Freight {50000+i}",
+            name=t_name,
             category=cat,
             scheduled_start=start_t,
             scheduled_end=end_t,
             route=route_blocks,
             min_travel_times=mtt,
-            max_speed_kmh=130.0 if is_premium else 75.0
+            max_speed_kmh=spd,
+            gross_tonnage_tonnes=tonnage,
+            is_loaded_freight=is_loaded,
+            train_type=t_type,
+            crew_duty_remaining_hours=crew_hours,
+            crew_duty_expiry_timestamp=round(start_t + crew_hours, 1),
+            designated_crew_stations=["SFG", "PRYJ", "MZP"]
         ))
         
     # 4. Maintenance Jobs
@@ -180,7 +212,32 @@ def generate_synthetic_data(
     else:
         fixed_blocks = []
     
-    return Scenario(blocks=blocks, trains=trains, jobs=jobs, resources=resources, fixed_blocks=fixed_blocks)
+    weather = WeatherContext(
+        ambient_temp_celsius=33.5,
+        rail_temp_celsius=49.0,
+        destressing_temp_celsius=40.0,
+        fog_visibility_meters=1200.0,
+        monsoon_warning=False
+    )
+    asset_telemetry = [
+        AssetConditionTelemetry(
+            block_id=b.id,
+            trc_tqi_score=round(random.uniform(22.0, 38.0), 1),
+            usfd_flaw_severity="OBS" if b.id in ("B2", "B5") else "NORMAL",
+            cumulative_gmt=round(random.uniform(20.0, 55.0), 1),
+            days_since_tamping=random.randint(30, 90)
+        )
+        for b in blocks
+    ]
+    return Scenario(
+        blocks=blocks,
+        trains=trains,
+        jobs=jobs,
+        resources=resources,
+        fixed_blocks=fixed_blocks,
+        weather=weather,
+        asset_telemetry=asset_telemetry
+    )
 
 def save_synthetic_data(
     path: str = "data/synthetic",

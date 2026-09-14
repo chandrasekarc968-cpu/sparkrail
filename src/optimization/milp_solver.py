@@ -240,16 +240,39 @@ class MaintenanceSchedulerMILP:
             if train.category.lower() == "premium":
                 model.addCons(train_delays[train.id] <= 1.0, name=f"premium_limit_{train.id}")
 
+            # Crew Management System (CMS) & Statutory HOER Hours Guard
+            expiry_t = getattr(train, "crew_duty_expiry_timestamp", None)
+            if expiry_t is not None:
+                max_crew_slack = max(2.0, float(expiry_t - train.scheduled_end))
+                model.addCons(train_delays[train.id] <= max_crew_slack, name=f"hoer_crew_guard_{train.id}")
+
+        # Weather & Peak Summer Rail Temperature Modifiers (IRPWM Para 509)
+        if scenario.weather and scenario.weather.is_summer_buckling_risk:
+            for job in jobs:
+                if job.department in (Department.CIVIL, Department.ENGINEERING) and not job.is_fixed:
+                    dur = int(job.duration)
+                    for t_midday in range(12, min(16, self.horizon - dur + 1)):
+                        if (job.id, t_midday) in x:
+                            model.addCons(x[job.id, t_midday] == 0, name=f"summer_buckling_{job.id}_{t_midday}")
+
         # 3. Objective Function Formulation
         tci_term = quicksum(job_tcis.get(job.id, 0.0) * u[job.id] for job in jobs)
         closure_term = quicksum(y[k, t] for k in blocks for t in range(self.horizon))
         startup_term = quicksum(v[k, t] for k in blocks for t in range(self.horizon))
         shadow_term = quicksum(shadow[k, t] for k in blocks for t in range(self.horizon))
         
-        # Weighted delay term with premium train multiplier
+        # Weighted delay term with Heavy Freight Kinetic Energy & Fuel Loss Penalty
         delay_terms = []
         for train in trains:
-            mult = 3.0 if train.category.lower() == "premium" else 1.0
+            is_prem = (train.category.lower() == "premium")
+            tonnage = getattr(train, "gross_tonnage_tonnes", 1500.0) or 1500.0
+            spd = getattr(train, "max_speed_kmh", 75.0) or 75.0
+            is_loaded = getattr(train, "is_loaded_freight", False)
+
+            base_w = 4.0 if is_prem else 1.0
+            kinetic_w = 2.5 * (tonnage / 1000.0) * ((spd / 100.0) ** 2)
+            loaded_bonus = 2.0 if is_loaded else 0.0
+            mult = base_w + kinetic_w + loaded_bonus
             delay_terms.append(mult * train_delays[train.id])
         weighted_delay_term = quicksum(delay_terms)
 
@@ -520,15 +543,33 @@ class MaintenanceSchedulerMILP:
                 if incompat:
                     continue
 
-                # 2. Premium train delay limit check (max 1.0 hr)
+                # 1b. Weather & Peak Summer Rail Temperature check (IRPWM Para 509)
+                if scenario.weather and scenario.weather.is_summer_buckling_risk:
+                    if job.department in (Department.CIVIL, Department.ENGINEERING) and not job.is_fixed:
+                        if not (t_cand + dur <= 12 or t_cand >= 16):
+                            continue
+
+                # 2. Premium train delay limit check (max 1.0 hr) & HOER Crew Duty Guard
                 hypothetical_delays = 0.0
+                crew_timeout_violation = False
                 for tr in scenario.trains:
-                    if tr.category.lower() == "premium" and k in tr.route:
+                    if k in tr.route:
                         tr_s = int(tr.scheduled_start)
                         tr_e = int(tr.scheduled_end)
-                        for t in range(max(t_cand, tr_s), min(t_cand + dur, tr_e)):
-                            hypothetical_delays += 1.0
-                if hypothetical_delays > 1.0:
+                        overlap = max(0, min(t_cand + dur, tr_e) - max(t_cand, tr_s))
+                        if overlap > 0:
+                            if tr.category.lower() == "premium":
+                                hypothetical_delays += float(overlap)
+                            
+                            # HOER crew expiry check
+                            expiry_t = getattr(tr, "crew_duty_expiry_timestamp", None)
+                            if expiry_t is not None:
+                                allowable_slack = max(0.0, float(expiry_t - tr.scheduled_end))
+                                if float(overlap) > allowable_slack:
+                                    crew_timeout_violation = True
+                                    break
+
+                if hypothetical_delays > 1.0 or crew_timeout_violation:
                     continue
 
                 # 3. Resource capacity check

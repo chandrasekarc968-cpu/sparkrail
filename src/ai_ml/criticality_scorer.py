@@ -327,3 +327,35 @@ class TaskCriticalityScorer:
             data_confidence=round(data_confidence, 3)
         )
         return self.calculate_tci(inputs)
+
+    @staticmethod
+    def enrich_from_asset_telemetry(
+        tci_inputs: TCIInputs,
+        telemetry: Any
+    ) -> TCIInputs:
+        """
+        Feeds TMS Track Recording Car (TRC) TQI scores and Ultrasonic Flaw Detection (USFD)
+        fracture risk metrics into the Task Criticality Index.
+        """
+        usfd_scores = {"NORMAL": 0.0, "OBS": 0.50, "REM": 0.85, "IMR": 1.0}
+        flaw_code = getattr(telemetry, "usfd_flaw_severity", "NORMAL").upper()
+        flaw_severity = usfd_scores.get(flaw_code, 0.0)
+
+        tqi = getattr(telemetry, "trc_tqi_score", 25.0)
+        tqi_norm = min(1.0, max(0.0, (tqi - 15.0) / 35.0))
+
+        gmt = getattr(telemetry, "cumulative_gmt", 30.0)
+        gmt_norm = min(1.0, gmt / 60.0)
+
+        new_safety = max(tci_inputs.safety_severity, flaw_severity)
+        new_degrad = max(tci_inputs.degradation_indicator, 0.6 * tqi_norm + 0.4 * gmt_norm)
+        new_urgency = max(tci_inputs.inspection_urgency, 1.0 if flaw_code in ("IMR", "REM") else (0.4 if flaw_code == "OBS" else 0.0))
+
+        return TCIInputs(
+            safety_severity=round(new_safety, 3),
+            traffic_impact=tci_inputs.traffic_impact,
+            degradation_indicator=round(new_degrad, 3),
+            overdue_days=tci_inputs.overdue_days,
+            inspection_urgency=round(new_urgency, 3),
+            data_confidence=tci_inputs.data_confidence
+        )

@@ -6,6 +6,7 @@ import time
 import uuid
 import logging
 from typing import Dict, Any, List, Optional
+from pydantic import BaseModel
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +31,12 @@ from src.data_pipeline.models import (
     PlanningCapabilitiesResponse,
     ConflictItem,
     PossessionEntity,
-    Train
+    Train,
+    WhatIfScenarioRequest,
+    WhatIfScenarioResponse,
+    BlockShiftRequest,
+    BlockShiftResponse,
+    ScheduleJustification
 )
 from src.data_pipeline.topology import CanonicalRailwayTopology
 from src.data_pipeline.synthetic_data import (
@@ -44,6 +50,8 @@ from src.data_pipeline.synthetic_data import (
 from src.data_pipeline.ingestion import DataIngestor, DataIngestionError
 from src.data_pipeline.geometry_validator import validate_network_geometry, GeometryValidationError
 from src.ai_ml.criticality_scorer import TaskCriticalityScorer
+from src.ai_ml.justification_generator import JustificationGenerator
+from src.simulation.what_if_service import WhatIfSimulatorService
 from src.optimization.milp_solver import MaintenanceSchedulerMILP, SCIP_AVAILABLE
 from src.simulation.evaluator import KPIEvaluator
 from src.api.advisory import router as advisory_router
@@ -269,6 +277,30 @@ def build_schedule_explainability(scenario: Scenario, schedule_data: Dict[str, A
             if block_id in t.route and (t.scheduled_start >= end_time or t.scheduled_end <= start_time)
         ]
         
+        # Generate full bilingual XAI justification
+        if job:
+            bilingual_just = JustificationGenerator.generate_job_justification(
+                job=job,
+                scheduled_info=sj if isinstance(sj, dict) else sj.model_dump(),
+                scenario=scenario,
+                job_tci=tci_val
+            )
+            headline_en = bilingual_just.headline_en
+            headline_hi = bilingual_just.headline_hi
+            detailed_en = bilingual_just.detailed_en
+            detailed_hi = bilingual_just.detailed_hi
+            tradeoff_en = bilingual_just.tradeoff_en
+            tradeoff_hi = bilingual_just.tradeoff_hi
+            active_constraints = bilingual_just.binding_constraints
+        else:
+            headline_en = f"Block {job_id} on {block_id}"
+            headline_hi = f"ब्लॉक {job_id} सेक्शन {block_id}"
+            detailed_en = " ".join(priority_reasons)
+            detailed_hi = "नियमित रखरखाव कार्य।"
+            tradeoff_en = "Standard clearance."
+            tradeoff_hi = "मानक क्लीयरेंस।"
+            active_constraints = ["Track possession exclusivity"]
+
         explanations[job_id] = {
             "job_id": job_id,
             "tci": tci_val,
@@ -277,11 +309,13 @@ def build_schedule_explainability(scenario: Scenario, schedule_data: Dict[str, A
             "window_rationale": f"Scheduled in operational corridor gap [T+{start_time:.1f}h - T+{end_time:.1f}h].",
             "consolidation_rationale": consolidation,
             "protected_trains": protected_trains[:3],
-            "active_constraints": [
-                "Track possession exclusivity",
-                "Department traction power isolation (PTW)" if (job and job.department.value == "OHE") else "Standard track possession clearance",
-                "Resource capacity limit"
-            ]
+            "active_constraints": active_constraints,
+            "headline_en": headline_en,
+            "headline_hi": headline_hi,
+            "detailed_en": detailed_en,
+            "detailed_hi": detailed_hi,
+            "tradeoff_en": tradeoff_en,
+            "tradeoff_hi": tradeoff_hi
         }
         
     return explanations
@@ -444,6 +478,7 @@ def get_schedule_v1(run_id: str):
     return get_schedule(run_id)
 
 from src.optimization.disruption_engine import DynamicDisruptionEngine, DisruptionResolution
+from src.data_pipeline.models import DisruptionEvent
 
 @app.post("/api/v1/disruption/live-update", response_model=DisruptionResolution)
 def handle_disruption_update(event: DisruptionEvent):
@@ -465,6 +500,71 @@ def handle_disruption_update(event: DisruptionEvent):
     except Exception as e:
         logger.error(f"Disruption handling failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to resolve disruption.")
+
+# ----------------- What-If Scenario Sandbox Endpoints ----------------- #
+
+@app.post("/api/v1/simulation/scenario", response_model=WhatIfScenarioResponse)
+def simulate_what_if_scenario(req: WhatIfScenarioRequest):
+    """What-If Sandbox & Scenario Simulator for Senior Controllers."""
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        if not os.path.exists(os.path.join(synth_path, "scenario.json")):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+
+        try:
+            baseline_sched = get_schedule("latest").model_dump()
+        except Exception:
+            baseline_sched = optimize_schedule().model_dump()
+
+        svc = WhatIfSimulatorService(get_config())
+        return svc.run_what_if_scenario(scenario, baseline_sched, req)
+    except Exception as e:
+        logger.error(f"What-If scenario simulation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Simulation failed: {e}")
+
+@app.post("/api/v1/simulation/evaluate-shift", response_model=BlockShiftResponse)
+def evaluate_block_shift_endpoint(req: BlockShiftRequest):
+    """Lightweight evaluation of shifting a block on Digital Marey Chart."""
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        if not os.path.exists(os.path.join(synth_path, "scenario.json")):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+
+        try:
+            baseline_sched = get_schedule("latest").model_dump()
+        except Exception:
+            baseline_sched = optimize_schedule().model_dump()
+
+        svc = WhatIfSimulatorService(get_config())
+        return svc.evaluate_block_shift(scenario, baseline_sched, req)
+    except Exception as e:
+        logger.error(f"Block shift evaluation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Shift evaluation failed: {e}")
+
+@app.get("/api/v1/simulation/xai-briefing")
+def get_xai_briefing():
+    """Returns bilingual executive briefing for Senior Controllers."""
+    try:
+        synth_path = os.path.join(get_base_data_dir(), "synthetic")
+        if not os.path.exists(os.path.join(synth_path, "scenario.json")):
+            save_synthetic_data(path=synth_path)
+        ingestor = DataIngestor({"data_pipeline": {"use_local_synthetic": True, "synthetic_data_path": synth_path}})
+        scenario = ingestor.load_scenario()
+
+        try:
+            schedule = get_schedule("latest").model_dump()
+        except Exception:
+            schedule = optimize_schedule().model_dump()
+
+        return JustificationGenerator.generate_executive_briefing(scenario, schedule)
+    except Exception as e:
+        logger.error(f"Error generating XAI briefing: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate XAI briefing.")
+
 
 class BlockGrantResponse(BaseModel):
     block_id: str
