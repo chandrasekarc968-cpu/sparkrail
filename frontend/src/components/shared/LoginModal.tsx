@@ -7,6 +7,11 @@ import {
   X,
   AlertCircle,
   KeyRound,
+<<<<<<< HEAD
+=======
+  CheckCircle2,
+  Building2,
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
   Sparkles
 } from 'lucide-react';
 import { ApiClient } from '../../api/client';
@@ -94,9 +99,14 @@ export function LoginModal({
       const response = await ApiClient.login(identifier.trim(), password);
       onLoginSuccess(response.user);
       onClose();
+<<<<<<< HEAD
     } catch (err: unknown) {
       const errorObj = err as { data?: { detail?: string }; message?: string };
       const msg = errorObj?.data?.detail || errorObj?.message || 'Authentication failed. Verify credentials.';
+=======
+    } catch (err: any) {
+      const msg = err?.data?.detail || err?.message || 'Authentication failed. Verify credentials.';
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
       setErrorMessage(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);
@@ -115,7 +125,11 @@ export function LoginModal({
       await ApiClient.logout();
       onLogoutSuccess();
       onClose();
+<<<<<<< HEAD
     } catch {
+=======
+    } catch (err) {
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
       onLogoutSuccess();
       onClose();
     } finally {

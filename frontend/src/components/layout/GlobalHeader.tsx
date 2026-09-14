@@ -12,7 +12,12 @@ import {
   ShieldAlert,
   FileCheck,
   Download,
+<<<<<<< HEAD
   KeyRound
+=======
+  KeyRound,
+  ShieldCheck
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
 } from 'lucide-react';
 import { useAppContext } from '../../context/useAppContext';
 import { Button } from '../ui/Button';

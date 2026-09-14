@@ -69,6 +69,7 @@ SEED_PERSONNEL: List[Dict[str, Any]] = [
         "division_code": "ALL",
         "zone_code": "IR",
         "is_active": True
+<<<<<<< HEAD
     },
     {
         "pf_number": "PF-ECR-90806",
@@ -79,6 +80,8 @@ SEED_PERSONNEL: List[Dict[str, Any]] = [
         "division_code": "ECR-DDU",
         "zone_code": "ECR",
         "is_active": True
+=======
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
     }
 ]
 

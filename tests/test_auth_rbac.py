@@ -450,6 +450,7 @@ def test_tamper_evident_audit_logging(seeded_db):
     # Restore original for cleanliness
     e2.action = original_action
     seeded_db.commit()
+<<<<<<< HEAD
 
 
 def test_read_only_operator_role_restrictions(client, rbac_client):
@@ -532,3 +533,5 @@ def test_shadow_and_live_mode_rejects_development_bypass(client, monkeypatch):
         json={"division_code": "PRYJ", "horizon_hours": 24}
     )
     assert res_live_dev.status_code == 401
+=======
+>>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
