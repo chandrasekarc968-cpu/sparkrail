@@ -36,16 +36,12 @@ class Role(str, Enum):
     SSE_SIGNAL = "SSE_SIGNAL"
     STATION_MASTER = "STATION_MASTER"
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
-<<<<<<< HEAD
     ADMIN = "ADMIN"
     READ_ONLY_OPERATOR = "READ_ONLY_OPERATOR"
-=======
->>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
 
 
 # Role-to-Capabilities Mapping for Indian Railways BDMS
 ROLE_CAPABILITIES: Dict[Role, List[str]] = {
-<<<<<<< HEAD
     Role.READ_ONLY_OPERATOR: [
         "VIEW_CORRIDOR",
         "VIEW_MAREY_CHART",
@@ -60,8 +56,6 @@ ROLE_CAPABILITIES: Dict[Role, List[str]] = {
         "OVERRIDE_AI_RECOMMENDATION",
         "ALL_PERMISSIONS"
     ],
-=======
->>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
     Role.SR_DOM: [
         "SANCTION_BLOCK",
         "EMERGENCY_OVERRIDE",

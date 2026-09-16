@@ -228,22 +228,6 @@ def get_current_actor(
 
     actor_id = x_actor_id or "DEV_CONTROLLER_01"
     role = x_actor_role
-<<<<<<< HEAD
-=======
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        if token == "DEV_ADMIN_TOKEN":
-            actor_id = "SR_DOM_OFFICER"
-            role = "SR_DOM"
-        else:
-            try:
-                from src.auth.security import decode_access_token
-                payload = decode_access_token(token)
-                actor_id = payload.get("pf_number") or payload.get("sub") or actor_id
-                role = payload.get("role") or role
-            except Exception:
-                pass
->>>>>>> eb1ff7de39b31eff8ea9c754fe33b6232af61be3
     return {"actor_id": actor_id, "role": role}
 
 def validate_actor_role_authorization(actor: Dict[str, Optional[str]], claimed_role: str) -> None:
