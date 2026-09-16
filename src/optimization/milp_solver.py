@@ -22,6 +22,15 @@ except ImportError:
         ImportWarning
     )
 
+# Optional commercial backend. Guarded so the solver remains importable and
+# degrades to SCIP/heuristic when gurobipy (licensed) is absent.
+try:
+    import gurobipy as gp
+    from gurobipy import GRB
+    GUROBI_AVAILABLE = True
+except ImportError:
+    GUROBI_AVAILABLE = False
+
 class MaintenanceSchedulerMILP:
     """
     Mixed-Integer Linear Programming (MILP) scheduler for railway track possessions.
@@ -38,6 +47,17 @@ class MaintenanceSchedulerMILP:
         self.w_startup = float(weights.get("separate_closure_penalty", 2.0))
         self.w_shadow = float(weights.get("shadow_consolidation_reward", 10.0))
         self.horizon = int(opt_cfg.get("horizon_hours", 24))
+        # Solver backend selection: "scip" (default, open-source) or "gurobi"
+        # (commercial, optional). Falls back to SCIP if Gurobi is requested but
+        # the licensed gurobipy package is not installed.
+        self.solver_backend = str(opt_cfg.get("solver", "scip")).lower()
+        if self.solver_backend == "gurobi" and not GUROBI_AVAILABLE:
+            warnings.warn(
+                "Gurobi backend requested but gurobipy is not installed/licensed; "
+                "falling back to PySCIPOpt.",
+                ImportWarning
+            )
+            self.solver_backend = "scip"
 
     @staticmethod
     def are_departments_incompatible(d1: Department, d2: Department) -> bool:
@@ -374,6 +394,273 @@ class MaintenanceSchedulerMILP:
             "total_closure_time": total_closure,
             "objective_value": round(float(model.getObjVal()), 2),
             "objective_components": obj_components
+        }
+
+    def _solve_gurobi(self, scenario: Scenario, job_tcis: Dict[str, float]) -> Dict[str, Any]:
+        """
+        Gurobi-backed solve path (commercial, optional).
+
+        Faithful port of :meth:`_solve_scip`: identical decision variables,
+        identical constraint set (notably the shadow-block constraint
+        ``2 * shadow[k,t] <= sum(all_active)``) and identical objective. This
+        keeps solver choice a deployment knob, not a behavioural change.
+
+        Raises a clear error only if invoked when gurobipy is unavailable
+        (the backend selection in :meth:`solve` normally prevents that).
+        """
+        if not GUROBI_AVAILABLE:
+            raise RuntimeError("Gurobi backend selected but gurobipy is not installed.")
+
+        m = gp.Model("SparkRail_Shadow_Block_MILP")
+        m.setParam("TimeLimit", self.time_limit)
+        m.setParam("OutputFlag", 0)
+
+        blocks = [b.id for b in scenario.blocks]
+        jobs = scenario.jobs
+        trains = scenario.trains
+        resources = scenario.resources
+        fixed_blocks = scenario.fixed_blocks
+
+        # 1. Decision variables
+        x: Dict[Tuple[str, int], Any] = {}
+        u: Dict[str, Any] = {}
+        y: Dict[Tuple[str, int], Any] = {}
+        v: Dict[Tuple[str, int], Any] = {}
+        shadow: Dict[Tuple[str, int], Any] = {}
+
+        for k in blocks:
+            for t in range(self.horizon):
+                y[k, t] = m.addVar(vtype=GRB.BINARY, name=f"y_{k}_{t}")
+                v[k, t] = m.addVar(vtype=GRB.BINARY, name=f"v_{k}_{t}")
+                shadow[k, t] = m.addVar(vtype=GRB.BINARY, name=f"shadow_{k}_{t}")
+
+        for job in jobs:
+            u[job.id] = m.addVar(vtype=GRB.BINARY, name=f"u_{job.id}")
+            dur = int(job.duration)
+            for t in range(self.horizon):
+                if t <= self.horizon - dur:
+                    x[job.id, t] = m.addVar(vtype=GRB.BINARY, name=f"x_{job.id}_{t}")
+
+        # 2. Constraints
+        for job in jobs:
+            dur = int(job.duration)
+            valid_starts = [x[job.id, t] for t in range(self.horizon - dur + 1)]
+            m.addConstr(gp.quicksum(valid_starts) == u[job.id], name=f"job_select_{job.id}")
+            if job.is_fixed and job.fixed_start is not None:
+                start_t = int(job.fixed_start)
+                if 0 <= start_t <= self.horizon - dur:
+                    m.addConstr(x[job.id, start_t] == 1, name=f"fixed_start_{job.id}")
+                    m.addConstr(u[job.id] == 1, name=f"fixed_sched_{job.id}")
+                else:
+                    m.addConstr(u[job.id] == 0, name=f"fixed_out_bounds_{job.id}")
+
+        for fb in fixed_blocks:
+            k = fb.block_id
+            start = max(0, int(fb.start_time))
+            end = min(self.horizon, int(fb.end_time))
+            for t in range(start, end):
+                m.addConstr(y[k, t] == 1, name=f"fb_{fb.id}_{t}")
+            for job in jobs:
+                if not job.is_fixed and job.block_id == k:
+                    dur = int(job.duration)
+                    for t_start in range(self.horizon - dur + 1):
+                        if (job.id, t_start) in x:
+                            if not (t_start + dur <= start or t_start >= end):
+                                m.addConstr(x[job.id, t_start] == 0, name=f"no_fb_overlap_{job.id}_{fb.id}_{t_start}")
+
+        for job in jobs:
+            k = job.block_id
+            dur = int(job.duration)
+            for t_start in range(self.horizon - dur + 1):
+                for t_active in range(t_start, t_start + dur):
+                    m.addConstr(y[k, t_active] >= x[job.id, t_start], name=f"closure_{job.id}_{t_start}_{t_active}")
+
+        for k in blocks:
+            m.addConstr(v[k, 0] >= y[k, 0], name=f"startup_{k}_0")
+            for t in range(1, self.horizon):
+                m.addConstr(v[k, t] >= y[k, t] - y[k, t - 1], name=f"startup_{k}_{t}")
+
+        for k in blocks:
+            for t in range(self.horizon):
+                ohe_active = []
+                st_active = []
+                all_active = []
+                for job in jobs:
+                    if job.block_id == k:
+                        dur = int(job.duration)
+                        active_vars = [
+                            x[job.id, t_start]
+                            for t_start in range(max(0, t - dur + 1), min(t + 1, self.horizon - dur + 1))
+                            if (job.id, t_start) in x
+                        ]
+                        if active_vars:
+                            all_active.extend(active_vars)
+                            if job.department == Department.OHE:
+                                ohe_active.extend(active_vars)
+                            elif job.department == Department.S_AND_T:
+                                st_active.extend(active_vars)
+                if ohe_active and st_active:
+                    m.addConstr(
+                        gp.quicksum(ohe_active) + gp.quicksum(st_active) <= 1,
+                        name=f"incompat_ohe_st_{k}_{t}"
+                    )
+                if len(all_active) >= 2:
+                    # Shadow-block consolidation requirement (spec shadow constraint).
+                    m.addConstr(2 * shadow[k, t] <= gp.quicksum(all_active), name=f"shadow_req_{k}_{t}")
+                else:
+                    m.addConstr(shadow[k, t] == 0, name=f"no_shadow_{k}_{t}")
+
+        for r in resources:
+            is_heavy_machine = r.name.startswith("BCM") or r.name.startswith("CSM") or r.name.startswith("TTM")
+            for t in range(self.horizon):
+                res_usage = []
+                for job in jobs:
+                    req = job.required_resources.get(r.id, 0)
+                    if req > 0:
+                        dur = int(job.duration)
+                        for t_start in range(max(0, t - dur + 1), min(t + 1, self.horizon - dur + 1)):
+                            if (job.id, t_start) in x:
+                                res_usage.append(req * x[job.id, t_start])
+                        if is_heavy_machine and (job.id, t) in x:
+                            res_usage.append(req * x[job.id, t] * 0.5)
+                if res_usage:
+                    m.addConstr(gp.quicksum(res_usage) <= r.capacity, name=f"cap_{r.id}_{t}")
+
+        for k in blocks:
+            for t in range(self.horizon - 12):
+                m.addConstr(gp.quicksum(y[k, t + i] for i in range(13)) <= 12, name=f"hoer_{k}_{t}")
+
+        train_delays: Dict[str, Any] = {}
+        for train in trains:
+            train_delays[train.id] = m.addVar(lb=0.0, vtype=GRB.CONTINUOUS, name=f"delay_{train.id}")
+            t_start = max(0, int(train.scheduled_start))
+            t_end = min(self.horizon, int(train.scheduled_end))
+            overlap_closures = [
+                y[k, t] for k in train.route if k in blocks for t in range(t_start, t_end)
+            ]
+            if overlap_closures:
+                m.addConstr(train_delays[train.id] >= gp.quicksum(overlap_closures), name=f"train_delay_{train.id}")
+                if train.category.lower() == "premium":
+                    m.addConstr(gp.quicksum(overlap_closures) == 0, name=f"headway_excl_{train.id}")
+            else:
+                m.addConstr(train_delays[train.id] == 0.0, name=f"zero_delay_{train.id}")
+            if train.category.lower() == "premium":
+                m.addConstr(train_delays[train.id] <= 1.0, name=f"premium_limit_{train.id}")
+            expiry_t = getattr(train, "crew_duty_expiry_timestamp", None)
+            if expiry_t is not None:
+                max_crew_slack = max(2.0, float(expiry_t - train.scheduled_end))
+                m.addConstr(train_delays[train.id] <= max_crew_slack, name=f"hoer_crew_guard_{train.id}")
+
+        if scenario.weather and scenario.weather.is_summer_buckling_risk:
+            for job in jobs:
+                if job.department in (Department.CIVIL, Department.ENGINEERING) and not job.is_fixed:
+                    dur = int(job.duration)
+                    for t_midday in range(12, min(16, self.horizon - dur + 1)):
+                        if (job.id, t_midday) in x:
+                            m.addConstr(x[job.id, t_midday] == 0, name=f"summer_buckling_{job.id}_{t_midday}")
+
+        # 3. Objective (identical to SCIP formulation)
+        tci_term = gp.quicksum(job_tcis.get(job.id, 0.0) * u[job.id] for job in jobs)
+        closure_term = gp.quicksum(y[k, t] for k in blocks for t in range(self.horizon))
+        startup_term = gp.quicksum(v[k, t] for k in blocks for t in range(self.horizon))
+        shadow_term = gp.quicksum(shadow[k, t] for k in blocks for t in range(self.horizon))
+
+        delay_terms = []
+        for train in trains:
+            is_prem = (train.category.lower() == "premium")
+            tonnage = getattr(train, "gross_tonnage_tonnes", 1500.0) or 1500.0
+            spd = getattr(train, "max_speed_kmh", 75.0) or 75.0
+            is_loaded = getattr(train, "is_loaded_freight", False)
+            base_w = 4.0 if is_prem else 1.0
+            kinetic_w = 2.5 * (tonnage / 1000.0) * ((spd / 100.0) ** 2)
+            loaded_bonus = 2.0 if is_loaded else 0.0
+            mult = base_w + kinetic_w + loaded_bonus
+            delay_terms.append(mult * train_delays[train.id])
+        weighted_delay_term = gp.quicksum(delay_terms)
+
+        objective = (
+            self.w_closure * closure_term
+            + self.w_startup * startup_term
+            + self.w_delay * weighted_delay_term
+            - self.w_tci * tci_term
+            - self.w_shadow * shadow_term
+        )
+        m.setObjective(objective, GRB.MINIMIZE)
+        m.optimize()
+
+        status = m.Status
+        optimal_like = status in (GRB.OPTIMAL, GRB.TIME_LIMIT, GRB.SUBOPTIMAL)
+        if not optimal_like:
+            diagnostics = self._diagnose_infeasibility(scenario, job_tcis)
+            return {
+                "status": "infeasible" if status == GRB.INFEASIBLE else "failed",
+                "solver": "Gurobi",
+                "scheduled_jobs": [],
+                "unscheduled_jobs": [
+                    UnscheduledJobReason(job_id=j.id, reason="Infeasible model constraint").model_dump()
+                    for j in jobs
+                ],
+                "train_delays": {t.id: 0.0 for t in trains},
+                "total_closure_time": 0.0,
+                "objective_value": 0.0,
+                "diagnostics": diagnostics,
+            }
+
+        scheduled_jobs: List[Dict[str, Any]] = []
+        scheduled_ids = set()
+        block_time_jobs: Dict[Tuple[str, int], List[str]] = {}
+        for job in jobs:
+            dur = int(job.duration)
+            if u[job.id].X > 0.5:
+                start_time = -1
+                for t in range(self.horizon - dur + 1):
+                    if (job.id, t) in x and x[job.id, t].X > 0.5:
+                        start_time = t
+                        break
+                if start_time >= 0:
+                    scheduled_ids.add(job.id)
+                    assigned_res = [r.name for r in resources if job.required_resources.get(r.id, 0) > 0]
+                    sched_obj = ScheduledJob(
+                        job_id=job.id, block_id=job.block_id, start_time=float(start_time),
+                        end_time=float(start_time + job.duration), tci=float(job_tcis.get(job.id, 0.0)),
+                        department=job.department, assigned_resources=assigned_res,
+                    )
+                    scheduled_jobs.append(sched_obj.model_dump())
+                    for t in range(start_time, int(start_time + job.duration)):
+                        block_time_jobs.setdefault((job.block_id, t), []).append(job.id)
+
+        for s_job in scheduled_jobs:
+            k = s_job["block_id"]
+            start = int(s_job["start_time"])
+            end = int(s_job["end_time"])
+            partners = set()
+            for t in range(start, end):
+                for other_id in block_time_jobs.get((k, t), []):
+                    if other_id != s_job["job_id"]:
+                        partners.add(other_id)
+            if partners:
+                s_job["is_shadow_block"] = True
+                s_job["shadow_with_jobs"] = sorted(list(partners))
+
+        unscheduled_jobs = self._derive_unscheduled_reasons(scenario, scheduled_ids, job_tcis, scheduled_jobs)
+        total_closure = float(sum(y[k, t].X for k in blocks for t in range(self.horizon)))
+        delays = {train.id: round(float(train_delays[train.id].X), 2) for train in trains}
+        obj_components = {
+            "tci_term": round(float(sum(job_tcis.get(j.id, 0.0) * u[j.id].X for j in jobs)), 2),
+            "closure_hours": round(total_closure, 2),
+            "startup_penalties": round(float(sum(v[k, t].X for k in blocks for t in range(self.horizon))), 2),
+            "shadow_rewards": round(float(sum(shadow[k, t].X for k in blocks for t in range(self.horizon))), 2),
+            "train_delay_hours": round(float(sum(delays.values())), 2),
+        }
+        return {
+            "status": "optimal" if status == GRB.OPTIMAL else "feasible",
+            "solver": "Gurobi",
+            "scheduled_jobs": scheduled_jobs,
+            "unscheduled_jobs": unscheduled_jobs,
+            "train_delays": delays,
+            "total_closure_time": total_closure,
+            "objective_value": round(float(m.ObjVal), 2),
+            "objective_components": obj_components,
         }
 
     def _diagnose_infeasibility(self, scenario: Scenario, job_tcis: Dict[str, float]) -> Dict[str, Any]:

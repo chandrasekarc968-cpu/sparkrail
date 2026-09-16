@@ -1,0 +1,32 @@
+# Distributed data infrastructure — optional.
+#
+# Enables the Lambda/Kappa lakehouse described in spec Sec 1:
+#   * src/data_pipeline/adapters/kafka_adapter.py   streaming ingest (Kafka)
+#   * src/data_pipeline/batch_ingestion.py          NiFi-style batch orchestration
+#   * src/data_pipeline/spark_streaming.py          Spark Structured Streaming joins
+#   * src/data_pipeline/storage/delta_lake.py       Delta Lake ACID storage
+#   * src/data_pipeline/storage/postgis_store.py    PostgreSQL + PostGIS serving
+#
+# None of this is required to run SparkRail: every module degrades to the
+# local synthetic / SQLite / in-memory implementation when absent.
+
+# --- Streaming -------------------------------------------------------------
+kafka-python>=2.0.2
+
+# --- Batch orchestration ---------------------------------------------------
+# NiFi itself is not a Python package; this provides HTTP client bindings for
+# driving a NiFi REST API (processor start/stop, flowfile provenance).
+requests>=2.31.0
+nifi-python-swagger-client>=0.4.0
+
+# --- Processing ------------------------------------------------------------
+pyspark>=3.5.0
+
+# --- Storage ---------------------------------------------------------------
+deltalake>=0.17.0
+pyarrow>=14.0.0
+
+# --- Serving & GIS ---------------------------------------------------------
+psycopg2-binary>=2.9.9
+geoalchemy2>=0.14.0
+shapely>=2.0.0

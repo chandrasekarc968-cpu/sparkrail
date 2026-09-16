@@ -148,13 +148,17 @@ def get_base_data_dir() -> str:
 
 def get_config() -> Dict[str, Any]:
     config_path = os.getenv("SPARKRAIL_CONFIG_PATH", "config/settings.yaml")
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r") as f:
-                return yaml.safe_load(f) or {}
-        except Exception as e:
-            logger.warning(f"Failed to load config from {config_path}: {e}")
-    return {}
+    # Shared resolver expands ${ENV_VAR:default} placeholders that yaml.safe_load
+    # would otherwise pass through verbatim (e.g. xgboost_model_path, postgis.url).
+    from src.config_loader import load_config as _shared_load_config
+    try:
+        cfg = _shared_load_config(config_path)
+    except Exception as e:
+        logger.warning(f"Failed to load config from {config_path}: {e}")
+        return {}
+    if not cfg:
+        logger.warning(f"Config at {config_path} is empty or missing; using defaults.")
+    return cfg
 
 # 1. Health Endpoint
 @app.get("/health", response_model=HealthResponse)

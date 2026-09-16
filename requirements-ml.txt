@@ -1,0 +1,20 @@
+# Deep learning stack — optional.
+#
+# Enables:
+#   * src/ai_ml/gnn_encoder.py        heterogeneous GNN state encoder (spec Sec 3.2)
+#   * src/ai_ml/ppo_agent.py          PPO tactical dispatcher (spec Sec 3.2)
+#
+# Not required for the advisory pipeline: the system falls back to the
+# rule-based / MILP path when these are absent.
+#
+# CPU wheels (~250 MB). For CUDA, follow https://pytorch.org/get-started/
+# instead of this file, then install torch-geometric on top.
+
+torch>=2.1.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch-geometric>=2.4.0
+
+# SUMO digital twin (spec: high-fidelity simulation environment).
+# Requires a SUMO installation and SUMO_HOME set.
+traci>=1.19.0

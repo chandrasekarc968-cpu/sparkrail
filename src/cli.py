@@ -12,10 +12,10 @@ from src.optimization.rolling_horizon import RollingHorizonScheduler
 from src.simulation.evaluator import KPIEvaluator
 
 def load_config(path="config/settings.yaml"):
-    if not os.path.exists(path):
-        return {}
-    with open(path, "r") as f:
-        return yaml.safe_load(f) or {}
+    # Delegates to the shared resolver that expands ${ENV_VAR:default} placeholders,
+    # which plain yaml.safe_load does not interpret.
+    from src.config_loader import load_config as _shared_load_config
+    return _shared_load_config(path)
 
 def generate_data(args):
     out_dir = getattr(args, "output", "data/synthetic")

@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional
 from src.data_pipeline.models import Scenario
 from src.simulation.simulator import LocalSimulator
+from src.simulation.mttg import MTTGCalculator, unmeasured_summary
 
 class KPIEvaluator:
     """
@@ -22,9 +23,13 @@ class KPIEvaluator:
         "mttg_minutes": 30.0
     }
 
-    def __init__(self, scenario: Scenario):
+    def __init__(self, scenario: Scenario, mttg_calculator: Optional[MTTGCalculator] = None):
         self.scenario = scenario
         self.simulator = LocalSimulator(scenario)
+        # MTTG is measured from real demand-to-grant intervals when a calculator
+        # is supplied. Without one it is reported as unmeasured rather than
+        # silently defaulting to a fabricated constant.
+        self.mttg_calculator = mttg_calculator
         
     def evaluate(self, schedule: Dict[str, Any], job_tcis: Dict[str, float]) -> Dict[str, Any]:
         """Calculates all production IR KPIs and compares against baseline and pilot targets."""
@@ -107,6 +112,13 @@ class KPIEvaluator:
             if getattr(getattr(j, "tci_inputs", None), "data_confidence", 1.0) < 0.70
         )
 
+        # Mean Time To Grant: measured from real advisory lifecycle events.
+        mttg_metrics = (
+            self.mttg_calculator.summary()
+            if self.mttg_calculator is not None
+            else unmeasured_summary()
+        )
+
         measured_metrics = {
             "bue_percent": round(bue, 2),
             "bue_baseline_percent": round(base_bue, 2),
@@ -123,7 +135,11 @@ class KPIEvaluator:
             "downstream_delay_per_block_hour_minutes": delay_per_block_hour,
             "class1_passenger_punctuality_impact_percent": class1_impact,
             "rolling_horizon_planning_adherence_percent": 100.0,
-            "mttg_minutes": 22.5,
+            "mttg_minutes": mttg_metrics["mttg_minutes"],
+            "mttg_median_minutes": mttg_metrics["mttg_median_minutes"],
+            "mttg_p90_minutes": mttg_metrics["mttg_p90_minutes"],
+            "mttg_sample_count": mttg_metrics["mttg_sample_count"],
+            "mttg_measured": mttg_metrics["mttg_measured"],
             "high_crit_completion_percent": 100.0,
             "asset_downtime_reduction_percent": downtime_reduction,
             "solver_runtime_seconds": solver_runtime,

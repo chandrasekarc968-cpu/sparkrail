@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-09-16T12:56:46.570228+00:00",
+  "model_path": "models\\tci_degradation_xgb.model",
+  "sha256": "657009f0034a7c8defbf71e8664ff6910b858ce3c60cfd4ddc4939fe1c736632",
+  "feature_names": [
+    "cumulative_gmt",
+    "days_since_tamping",
+    "trc_tqi_score",
+    "usfd_severity_code",
+    "asset_age_years",
+    "ambient_temp_celsius",
+    "rail_temp_celsius",
+    "rail_temp_delta_from_destress",
+    "fog_visibility_meters",
+    "monsoon_flag"
+  ],
+  "feature_schema_version": "1.1.0",
+  "training_source": "synthetic:12000",
+  "metrics": {
+    "rmse": 0.03242,
+    "mae": 0.02583,
+    "r2": 0.95016,
+    "train_samples": 9600,
+    "test_samples": 2400,
+    "feature_importances": {
+      "usfd_severity_code": 0.58614,
+      "cumulative_gmt": 0.14348,
+      "days_since_tamping": 0.06726,
+      "trc_tqi_score": 0.06331,
+      "monsoon_flag": 0.0589,
+      "asset_age_years": 0.03128,
+      "rail_temp_delta_from_destress": 0.02424,
+      "rail_temp_celsius": 0.02219,
+      "ambient_temp_celsius": 0.00166,
+      "fog_visibility_meters": 0.00154
+    }
+  },
+  "provenance_note": "Trained on a physics-informed synthetic label derived from IR degradation mechanics. Retrain on real TMS/USFD history before operational use."
+}

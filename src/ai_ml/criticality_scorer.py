@@ -2,7 +2,12 @@ import math
 import os
 import hashlib
 from typing import Dict, Any, Tuple, Optional, List
-from src.data_pipeline.models import TCIInputs, TCIExplanation
+from src.data_pipeline.models import (
+    TCIInputs,
+    TCIExplanation,
+    AssetConditionTelemetry,
+    WeatherContext,
+)
 
 class TaskCriticalityScorer:
     """
@@ -16,7 +21,32 @@ class TaskCriticalityScorer:
     """
     
     MODEL_VERSION = "1.0.0"
-    FEATURE_SCHEMA_VERSION = "1.0.0"
+    FEATURE_SCHEMA_VERSION = "1.1.0"
+
+    # Feature contract for the XGBoost Asset Degradation Velocity model.
+    # Order is significant: the trained artifact expects exactly this order.
+    # Spec Sec 2 names these inputs: cumulative GMT, historical frequency of
+    # localised tamping, localised weather extremes (thermal expansion), and
+    # asset metallurgical age.
+    DEGRADATION_FEATURE_NAMES: List[str] = [
+        "cumulative_gmt",
+        "days_since_tamping",
+        "trc_tqi_score",
+        "usfd_severity_code",
+        "asset_age_years",
+        "ambient_temp_celsius",
+        "rail_temp_celsius",
+        "rail_temp_delta_from_destress",
+        "fog_visibility_meters",
+        "monsoon_flag",
+    ]
+
+    USFD_SEVERITY_CODES: Dict[str, float] = {
+        "NORMAL": 0.0,
+        "OBS": 1.0,
+        "REM": 2.0,
+        "IMR": 3.0,
+    }
 
     # Standard Indian Railways Analytic Hierarchy Process (AHP) baseline weights (4-factor)
     AHP_BASELINE_WEIGHTS = {
@@ -140,7 +170,9 @@ class TaskCriticalityScorer:
 
         try:
             import xgboost as xgb
-            self._xgb_model = xgb.XGBRegressor()
+
+            # Native Booster API: avoids a hard scikit-learn dependency.
+            self._xgb_model = xgb.Booster()
             self._xgb_model.load_model(self.xgb_model_path)
         except Exception as e:
             raise NotImplementedError(
@@ -155,26 +187,92 @@ class TaskCriticalityScorer:
         normalized_ratio = min(1.0, math.log1p(days) / math.log1p(30))
         return normalized_ratio * 100.0
 
-    def _get_degradation_score_100(self, inputs: TCIInputs) -> float:
-        """Retrieves degradation normalized to [0, 100]."""
+    @classmethod
+    def build_degradation_features(
+        cls,
+        telemetry: Optional[AssetConditionTelemetry] = None,
+        weather: Optional[WeatherContext] = None,
+        asset_age_years: float = 0.0,
+    ) -> List[float]:
+        """
+        Assembles the degradation feature vector in the order the trained
+        XGBoost model expects.
+
+        Missing telemetry is imputed with IR-typical mid-range values rather
+        than zeros, so an absent feed does not silently read as "perfect track".
+        """
+        telemetry = telemetry or AssetConditionTelemetry(block_id="UNKNOWN")
+        weather = weather or WeatherContext()
+
+        usfd_code = cls.USFD_SEVERITY_CODES.get(
+            str(telemetry.usfd_flaw_severity).strip().upper(), 0.0
+        )
+        rail_delta = float(weather.rail_temp_celsius) - float(
+            weather.destressing_temp_celsius
+        )
+
+        return [
+            float(telemetry.cumulative_gmt),
+            float(telemetry.days_since_tamping),
+            float(telemetry.trc_tqi_score),
+            usfd_code,
+            float(asset_age_years),
+            float(weather.ambient_temp_celsius),
+            float(weather.rail_temp_celsius),
+            rail_delta,
+            float(weather.fog_visibility_meters),
+            1.0 if bool(weather.monsoon_warning) else 0.0,
+        ]
+
+    def _get_degradation_score_100(
+        self,
+        inputs: TCIInputs,
+        telemetry: Optional[AssetConditionTelemetry] = None,
+        weather: Optional[WeatherContext] = None,
+        asset_age_years: float = 0.0,
+    ) -> float:
+        """
+        Asset Degradation Velocity sub-score, normalised to [0, 100].
+
+        With a trained artifact present this runs XGBoost survival-style
+        regression over the full physical feature vector. Without one it uses
+        the deterministic rule-based proxy.
+        """
         if self.use_xgb:
             if self._xgb_model is None:
                 self._init_xgb_model()
-            pred = float(self._xgb_model.predict([[inputs.degradation_indicator]])[0])
+            import xgboost as xgb
+
+            features = self.build_degradation_features(telemetry, weather, asset_age_years)
+            expected = self._xgb_model.num_features()
+            if expected and len(features) != expected:
+                raise ValueError(
+                    f"Degradation feature vector has {len(features)} features but the "
+                    f"model expects {expected}. Feature contract mismatch."
+                )
+            pred = float(self._xgb_model.predict(xgb.DMatrix([features]))[0])
             return max(0.0, min(100.0, pred * 100.0))
-        
+
         # Rule-based degradation
         raw = max(0.0, min(1.0, inputs.degradation_indicator))
         return raw * 100.0
 
-    def calculate_tci(self, inputs: TCIInputs) -> Tuple[float, TCIExplanation]:
+    def calculate_tci(
+        self,
+        inputs: TCIInputs,
+        telemetry: Optional[AssetConditionTelemetry] = None,
+        weather: Optional[WeatherContext] = None,
+        asset_age_years: float = 0.0,
+    ) -> Tuple[float, TCIExplanation]:
         """
         Calculates the normalized TCI [0-100] and returns a detailed TCIExplanation object.
         Deterministic, transparent, explainable.
         """
         s_safety_100 = max(0.0, min(1.0, inputs.safety_severity)) * 100.0
         s_delay_100 = max(0.0, min(1.0, inputs.traffic_impact)) * 100.0
-        s_degrad_100 = self._get_degradation_score_100(inputs)
+        s_degrad_100 = self._get_degradation_score_100(
+            inputs, telemetry, weather, asset_age_years
+        )
         s_overdue_100 = self._compute_overdue_score_100(inputs.overdue_days)
         s_urgency_100 = max(0.0, min(1.0, inputs.inspection_urgency)) * 100.0
         # Data confidence penalty: Lower confidence translates to higher uncertainty penalty

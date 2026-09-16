@@ -1,10 +1,49 @@
+# ---------------------------------------------------------------------------
+# SparkRail core runtime.
+# Everything here is required for the advisory pipeline to run end to end.
+# Heavy / optional stacks live in requirements-*.txt (see bottom of file).
+# ---------------------------------------------------------------------------
+
+# --- Web API ---------------------------------------------------------------
 fastapi>=0.110.0,<1.0.0
 uvicorn[standard]>=0.28.0,<1.0.0
 pydantic>=2.5.3,<3.0.0
-pyyaml>=6.0.1,<7.0.0
-pytest>=8.0.0,<9.0.0
 httpx>=0.27.0,<1.0.0
+
+# --- Numerics --------------------------------------------------------------
+# numpy/pandas were previously imported by the optimisation and KPI layers
+# without being declared, which broke clean installs.
+numpy>=1.26.0,<3.0.0
+pandas>=2.0.0,<3.0.0
+
+# --- Configuration ---------------------------------------------------------
+pyyaml>=6.0.1,<7.0.0
+
+# --- Optimisation ----------------------------------------------------------
+# SCIP is the default MILP backend (spec Sec 5.1).
 pyscipopt>=5.0.0; platform_system != "Unsupported"
+# OR-Tools CP-SAT powers Tier-2 macro allocation. It was previously imported
+# in src/optimization/macro_allocator.py but missing here, so the CP-SAT path
+# silently fell through to the ALNS heuristic on every clean install.
+ortools>=9.8.0,<10.0.0; platform_system != "Unsupported"
+
+# --- ML: Task Criticality Index -------------------------------------------
+# XGBoost powers the Asset Degradation Velocity sub-score (spec Sec 2).
+# Without it the model file is absent and criticality_scorer raises
+# NotImplementedError, forcing the rule-based fallback.
+xgboost>=2.0.0,<4.0.0
+
+# --- Auth, persistence, audit ---------------------------------------------
 sqlalchemy>=2.0.0,<3.0.0
 bcrypt>=4.1.0,<6.0.0
 pyjwt>=2.8.0,<3.0.0
+
+# --- Tests -----------------------------------------------------------------
+pytest>=8.0.0,<9.0.0
+
+# ---------------------------------------------------------------------------
+# Optional stacks — install explicitly when you need them.
+#   pip install -r requirements-ml.txt      # GNN encoder + PPO agent
+#   pip install -r requirements-infra.txt   # Kafka / Spark / Delta / PostGIS
+#   pip install -r requirements-commercial.txt  # Gurobi solver
+# ---------------------------------------------------------------------------

@@ -1,0 +1,16 @@
+# Commercial solver — optional.
+#
+# Spec Sec 5.1 recommends Gurobi for final production rollout:
+#   "Gurobi is strongly recommended for the final production rollout due to its
+#    unmatched computational speed on extremely large-scale combinatorial
+#    problems."
+#
+# Gurobi is proprietary and requires a licence. Install this only if you hold
+# one. SparkRail selects the backend via config/settings.yaml:
+#
+#   optimization:
+#     solver: gurobi        # or "scip" (default, open source)
+#
+# If gurobipy is absent the solver transparently falls back to SCIP.
+
+gurobipy>=11.0.0
