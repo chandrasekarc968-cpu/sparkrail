@@ -24,7 +24,7 @@ def test_config_resolves_placeholders():
     # other ${VAR:default} placeholders resolve to their defaults
     assert cfg["data_pipeline"]["postgis"]["url"].startswith("postgresql://")
     assert cfg["api"]["port"] == "8000"
-    assert cfg["data_pipeline"]["kafka"]["bootstrap_servers"] == "localhost:9092"
+    assert cfg["data_pipeline"]["kafka"]["bootstrap_servers"] == "kafka:9092"
 
 
 def test_config_env_override(monkeypatch):
@@ -83,19 +83,22 @@ def test_mttg_empty_is_none():
     s = calc.summary()
     assert s["mttg_measured"] is False
     assert s["mttg_minutes"] is None
-    assert unmeasured_summary() is None
+    # unmeasured_summary() documents the unmeasured shape (still no number claimed)
+    u = unmeasured_summary()
+    assert u["mttg_measured"] is False
+    assert u["mttg_minutes"] is None
+    assert u["mttg_sample_count"] == 0
 
 
 def test_mttg_records():
-    from src.simulation.mttg import MTTGCalculator, GrantRecord
+    from src.simulation.mttg import MTTGCalculator
     calc = MTTGCalculator()
-    calc.add(GrantRecord(job_id="J1", requested_iso="2026-01-01T10:00:00+00:00",
-                         granted_iso="2026-01-01T10:25:00+00:00"))
-    calc.add(GrantRecord(job_id="J2", requested_iso="2026-01-01T11:00:00+00:00",
-                         granted_iso="2026-01-01T11:15:00+00:00"))
+    # record() parses ISO timestamps into GrantRecord(demand_id, submitted_at, granted_at)
+    calc.record("J1", "2026-01-01T10:00:00+00:00", "2026-01-01T10:25:00+00:00")  # 25 min
+    calc.record("J2", "2026-01-01T11:00:00+00:00", "2026-01-01T11:15:00+00:00")  # 15 min
     s = calc.summary()
     assert s["mttg_measured"] is True
-    assert s["mttg_minutes"] == 20.0
+    assert s["mttg_minutes"] == 20.0  # mean of 25 and 15
     assert s["mttg_sample_count"] == 2
 
 
@@ -111,8 +114,9 @@ def test_strategic_rbp_allocates_52_weeks():
     from src.optimization.strategic_rbp import StrategicRBPAllocator
 
     blocks = [TrackBlock(id=f"B{i}", chainage_start=float(i * 2),
-                         chainage_end=float((i + 1) * 2)) for i in range(4)]
-    resources = [Resource(id="R_BCM_1", name="BCM-1", capacity=2)]
+                         chainage_end=float((i + 1) * 2),
+                         description=f"Block {i}") for i in range(4)]
+    resources = [Resource(id="R_BCM_1", name="BCM-1", capacity=1)]
     jobs = [
         MaintenanceJob(
             id=f"J{i}", department=Department.CIVIL, block_id=f"B{i % 4}",
@@ -149,10 +153,12 @@ def test_stochastic_eta_weight_normalisation():
     # build a minimal scenario: 4 trains (freight + passenger mix) so the
     # evaluator has a meaningful ETA spread to reason about.
     blocks = [TrackBlock(id=f"B{i}", chainage_start=float(i * 2),
-                         chainage_end=float((i + 1) * 2)) for i in range(4)]
+                         chainage_end=float((i + 1) * 2),
+                         description=f"Block {i}") for i in range(4)]
     trains = [
         Train(id=f"TR{i}", category="freight" if i % 2 == 0 else "express",
-              scheduled_start=0.0, scheduled_end=12.0, route=[f"B{i % 4}"])
+              scheduled_start=0.0, scheduled_end=12.0, route=[f"B{i % 4}"],
+              min_travel_times={f"B{i % 4}": 1.0})
         for i in range(4)
     ]
     scenario = Scenario(blocks=blocks, trains=trains, jobs=[], resources=[])
@@ -161,7 +167,7 @@ def test_stochastic_eta_weight_normalisation():
         scenario, history=None, n_scenarios=40, seed=7,
     )
     # a 4h window with low expected freight delay should be robust
-    rob = evaluator.evaluate(window_start=10.0, window_duration=4.0)
+    rob = evaluator.evaluate(block_id="B0", start=10.0, end=14.0)
     assert rob.expected_delay_hours <= rob.worst_case_delay_hours + 1e-6
     assert 0.0 <= rob.clash_free_probability <= 1.0
 

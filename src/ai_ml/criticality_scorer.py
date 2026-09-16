@@ -250,7 +250,11 @@ class TaskCriticalityScorer:
                     f"Degradation feature vector has {len(features)} features but the "
                     f"model expects {expected}. Feature contract mismatch."
                 )
-            pred = float(self._xgb_model.predict(xgb.DMatrix([features]))[0])
+            pred = float(
+                self._xgb_model.predict(
+                    xgb.DMatrix([features], feature_names=self.DEGRADATION_FEATURE_NAMES)
+                )[0]
+            )
             return max(0.0, min(100.0, pred * 100.0))
 
         # Rule-based degradation

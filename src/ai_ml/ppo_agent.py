@@ -56,7 +56,7 @@ class PolicyNet:
     def forward(self, obs: np.ndarray) -> Dict[str, np.ndarray]:
         h = np.maximum(0.0, self.W1 @ obs + self.b1)          # (hidden,)
         logits = self.W2 @ h + self.b2                        # (act,)
-        value = float(self.Wv @ h + self.bv)                  # scalar
+        value = float((self.Wv @ h + self.bv).item())          # scalar
         probs = _softmax(logits)
         return {"h": h, "logits": logits, "probs": probs, "value": value}
 

@@ -14,7 +14,8 @@ services:
       - ALLOW_DEV_BYPASS=false
       - SPARKRAIL_LIVE_ENABLED=false
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-generate-random-strong-secret-in-production}
-      - DATABASE_URL=sqlite:////app/data/sparkrail_auth.db
+      - DATABASE_URL=postgresql://railway_user:password@postgis:5432/railway_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     volumes:
       - sparkrail-data:/app/data
     security_opt:
@@ -25,7 +26,49 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    depends_on:
+      - postgis
+      - kafka
+
+  postgis:
+    image: postgis/postgis:15-3.3
+    container_name: sparkrail-postgis
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: railway_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: railway_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - sparkrail-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U railway_user -d railway_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: bitnami/kafka:3.6
+    container_name: sparkrail-kafka
+    restart: unless-stopped
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+    volumes:
+      - sparkrail-kafka-data:/bitnami/kafka
 
 volumes:
   sparkrail-data:
     name: sparkrail-audit-and-data
+  sparkrail-db-data:
+    name: sparkrail-db-data
+  sparkrail-kafka-data:
+    name: sparkrail-kafka-data

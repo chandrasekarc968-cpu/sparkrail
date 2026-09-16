@@ -15,7 +15,7 @@ def _build_scenario():
         Scenario, TrackBlock, Train, MaintenanceJob, Resource, TCIInputs, Department,
     )
     blocks = [TrackBlock(id=f"B{i}", chainage_start=float(i * 2), chainage_end=float((i + 1) * 2),
-                         description=f"Block {i}")]
+                         description=f"Block {i}") for i in range(4)]
     trains = [Train(id="TR1", category="express", scheduled_start=0.0, scheduled_end=12.0,
                     route=["B0", "B1", "B2"], min_travel_times={"B0": 1.0})]
     resources = [Resource(id="R1", name="BCM-1", capacity=2)]

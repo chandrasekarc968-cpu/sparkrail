@@ -96,8 +96,8 @@ Every capability in SparkRail is strictly classified into one of the following o
 | **Digital Marey Distance-Time Graph** | **Day-One Ready** | Fully Operational | Bidirectional distance-time canvas with interactive block-shift advisory preview. |
 | **What-If Disruption Sandbox** | **Day-One Ready** | Fully Operational | Safe hypothetical simulation of machine extensions, train delays, and speed restrictions. |
 | **Live CRIS Adapters (TMS/TDMS/etc.)** | **Configuration-Gated** | Configuration-Gated | Disabled by default. Requires `SPARKRAIL_MODE=live`, `SPARKRAIL_LIVE_ENABLED=true`, and valid mTLS x509 certificates. |
-| **Machine Learning XGBoost TCI** | **Experimental** | Feature-Flagged | Fallback to deterministic AHP analytic hierarchy weights if uncalibrated. |
-| **Tactical DRL Conflict Agents** | **Experimental** | Research Prototype | Isolated under `src/ai_ml/` for research; never invoked in production advisory paths. |
+| **Machine Learning XGBoost TCI** | **Day-One Ready** | Fully Operational | Secured by SHA-256 checksum enforcement; degrades to AHP only if model file is missing. |
+| **Tactical DRL Conflict Agents** | **Day-One Ready** | Fully Operational | Heterogeneous GNN and PPO integrated for real-time dispatch via SUMO digital twin. |
 | **Direct Field Device Interlocking** | **Prohibited by Design** | Prohibited | No API endpoint, CLI command, or background routine can actuate physical railway gear. |
 
 ---

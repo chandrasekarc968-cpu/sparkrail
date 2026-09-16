@@ -9,8 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY requirements*.txt ./
+RUN pip install --no-cache-dir --user -r requirements.txt \
+    && pip install --no-cache-dir --user -r requirements-infra.txt \
+    && pip install --no-cache-dir --user -r requirements-ml.txt \
+    && pip install --no-cache-dir --user -r requirements-commercial.txt
 
 # Final runtime image
 FROM python:3.11-slim as runner
@@ -19,6 +22,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    default-jre \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -u 10001 -m -s /bin/bash sparkrail
 

@@ -25,10 +25,10 @@ data_pipeline:
   use_local_synthetic: true
   synthetic_data_path: "data/synthetic"
   kafka:
-    bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap_servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
     topics: ["train_movements", "signal_status"]
   postgis:
-    url: ${DATABASE_URL:postgresql://user:pass@localhost:5432/railway}
+    url: ${DATABASE_URL:postgresql://railway_user:password@postgis:5432/railway_db}
 
 simulation:
   use_sumo: false
